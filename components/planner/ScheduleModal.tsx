@@ -47,7 +47,7 @@ export function ScheduleModal({ jobs }: { jobs?: any[] }) {
     
     setLoading(true);
     try {
-      const scheduledFor = new Date(${date}T:00).toISOString();
+      const scheduledFor = new Date(`${date}T${time}:00`).toISOString();
       
       await supabase.from('scheduled_posts').insert({
         job_id: selectedJob,

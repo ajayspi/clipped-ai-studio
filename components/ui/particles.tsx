@@ -98,7 +98,7 @@ export function Particles({ className = "" }: { className?: string }) {
   return (
     <canvas
       ref={canvasRef}
-      className={bsolute inset-0 pointer-events-none z-0 }
+      className="absolute inset-0 pointer-events-none z-0"
       style={{ opacity: 0.8 }}
     />
   );

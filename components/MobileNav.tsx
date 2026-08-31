@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -18,7 +18,6 @@ export function MobileNav() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
-  // Close menu on route change
   useEffect(() => {
     setIsOpen(false);
   }, [pathname]);
@@ -64,7 +63,7 @@ export function MobileNav() {
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={\`flex items-center gap-3 rounded-md px-4 py-3 text-base font-medium transition-colors \${isActive ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"}\`}
+                      className={`flex items-center gap-3 rounded-md px-4 py-3 text-base font-medium transition-colors ${isActive ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"}`}
                     >
                       <Icon className="w-5 h-5" />
                       {item.name}
