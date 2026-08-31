@@ -1,7 +1,7 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
-import { Video, Zap, Shield, ExternalLink, Play, Sparkles, Wand2, Rocket, Layers, Scissors, Clapperboard, CheckCircle2 } from "lucide-react";
+import { Video, Zap, Shield, ExternalLink, Play, Sparkles, Wand2, Rocket, Layers, Scissors, Clapperboard, CheckCircle2, Activity, Cpu, Globe, Languages, Database, Gauge } from "lucide-react";
 import { Particles } from "@/components/ui/particles";
 import { motion } from "framer-motion";
 
@@ -145,6 +145,33 @@ export default function HomePage() {
                 <s.icon className="w-10 h-10 text-primary mb-6" />
                 <h3 className="text-2xl font-bold mb-3">{s.title}</h3>
                 <p className="text-white/60 leading-relaxed">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Performance & Data Showcase */}
+        <div className="w-full max-w-7xl mx-auto px-6 mt-40">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">Unmatched AI Performance.</h2>
+            <p className="text-white/50 max-w-2xl mx-auto text-lg">Clipped isn't just a wrapper. We orchestrate a pipeline of 7 specialized models to render studio-quality output in seconds.</p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {[
+              { icon: Cpu, label: "Models Supported", value: "5+", desc: "OpenAI, Anthropic, Gemini, Luma, Kling" },
+              { icon: Gauge, label: "Render Speed", value: "10x", desc: "Faster than manual Premiere Pro editing" },
+              { icon: Languages, label: "TTS Languages", value: "50+", desc: "Featuring native 11Labs & Coqui clones" },
+              { icon: Database, label: "Video Formats", value: "4K", desc: "Lossless 9:16 and 16:9 MP4 exports" },
+            ].map((stat, i) => (
+              <div key={i} className="flex flex-col p-6 rounded-2xl bg-white/[0.02] border border-white/10 hover:bg-white/[0.04] transition-colors relative overflow-hidden group">
+                <div className="absolute -right-10 -top-10 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
+                  <stat.icon className="w-40 h-40" />
+                </div>
+                <stat.icon className="w-8 h-8 text-primary mb-4" />
+                <div className="text-4xl font-black text-white mb-2">{stat.value}</div>
+                <div className="text-sm font-bold text-white/80 mb-1 tracking-wider uppercase">{stat.label}</div>
+                <div className="text-xs text-white/40 leading-relaxed">{stat.desc}</div>
               </div>
             ))}
           </div>
