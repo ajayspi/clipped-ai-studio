@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # ----------------------------------------------------------------------------
+  # PostgreSQL Database Service
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: clipped-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: clipped
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d clipped"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - clipped-network
+
+  # ----------------------------------------------------------------------------
+  # Next.js Application Service
+  # ----------------------------------------------------------------------------
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: clipped-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file: .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - NEXT_TELEMETRY_DISABLED=1
+      - DATABASE_URL=postgresql://postgres:postgrespassword@postgres:5432/clipped
+      - NEXT_PUBLIC_APP_URL=http://150.230.139.174:3000
+      - AUTH_TRUST_HOST=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - clipped-network
+
+# ------------------------------------------------------------------------------
+# Persistent Storage & Bridge Network
+# ------------------------------------------------------------------------------
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  clipped-network:
+    driver: bridge
