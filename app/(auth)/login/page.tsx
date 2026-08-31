@@ -2,12 +2,13 @@
 
 import Link from "next/link"
 import { useState } from "react"
-import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Video, Loader2 } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 
 export default function LoginPage() {
   const router = useRouter()
+  const supabase = createClient()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -18,15 +19,15 @@ export default function LoginPage() {
     setError("")
     setLoading(true)
     try {
-      const result = await signIn("credentials", {
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
-        redirect: false,
       })
-      if (result?.error) {
-        setError("Invalid email or password.")
+      if (signInError) {
+        setError(signInError.message || "Invalid email or password.")
       } else {
         router.push("/dashboard")
+        router.refresh()
       }
     } catch {
       setError("Something went wrong. Please try again.")
@@ -74,7 +75,6 @@ export default function LoginPage() {
             <input
               id="password"
               type="password"
-              placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -84,19 +84,18 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 disabled:opacity-50 transition-colors"
+            className="flex w-full items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow hover:bg-primary/90 disabled:opacity-50"
           >
-            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            Sign In
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign In"}
           </button>
         </form>
 
-        <p className="text-center text-sm text-muted-foreground">
+        <div className="text-center text-sm">
           Don&apos;t have an account?{" "}
-          <Link href="/register" className="font-medium text-primary hover:underline">
-            Create one
+          <Link href="/register" className="font-medium underline underline-offset-4 hover:text-primary">
+            Sign up
           </Link>
-        </p>
+        </div>
       </div>
     </div>
   )
