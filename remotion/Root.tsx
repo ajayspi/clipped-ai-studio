@@ -1,5 +1,5 @@
 import React from 'react';
-import { Composition, CalculateMetadataFunction } from 'remotion';
+import { Composition, CalculateMetadataFunction, registerRoot } from 'remotion';
 import { MainComposition, MainCompositionProps } from './Composition';
 
 // Default props just for the Remotion Studio preview (if run directly via remotion cli)
@@ -84,3 +84,5 @@ export const RemotionRoot: React.FC = () => {
     </>
   );
 };
+
+registerRoot(RemotionRoot);
