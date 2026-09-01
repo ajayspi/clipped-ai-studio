@@ -14,8 +14,27 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Clipped",
-  description: "Clip ideas into viral videos with AI",
+  title: {
+    default: "Clipped AI | The Autonomous Video Generation Studio",
+    template: "%s | Clipped AI"
+  },
+  description: "Transform ideas into viral videos instantly. Clipped AI automates scriptwriting, voiceovers, character consistency, and video generation in one seamless dashboard.",
+  keywords: ["AI Video Generator", "Text to Video", "OpenAI", "Kling AI", "Luma", "Content Creation"],
+  authors: [{ name: "Clipped AI Team" }],
+  creator: "Clipped AI",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://clipped.ai",
+    title: "Clipped AI | The Autonomous Video Generation Studio",
+    description: "Transform ideas into viral videos instantly. Clipped AI automates scriptwriting, voiceovers, character consistency, and video generation in one seamless dashboard.",
+    siteName: "Clipped AI",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Clipped AI | The Autonomous Video Generation Studio",
+    description: "Transform ideas into viral videos instantly.",
+  },
 };
 
 export default function RootLayout({

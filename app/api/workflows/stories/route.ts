@@ -30,11 +30,12 @@ export async function POST(req: Request) {
     // 1. Generate unique Job ID
     const jobId = crypto.randomUUID();
 
-    // 2. Synchronous Supabase render_jobs pending insert
+    // 2. Synchronous Supabase render_jobs insert
+    // Using 'processing' instead of 'pending' so the separate Remotion render-worker ignores it.
     try {
       await supabase.from('render_jobs').insert({
         id: jobId,
-        status: 'pending',
+        status: 'processing',
         progress: 0,
         logs: JSON.stringify({
           workflow: 'stories',

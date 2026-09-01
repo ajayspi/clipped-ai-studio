@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, Zap, ArrowRight, Wand2 } from "lucide-react";
+import { Sparkles, Zap, ArrowRight, Wand2, Loader2 } from "lucide-react";
 
 interface MissionPromptBarProps {
   onStartMission?: (prompt: string) => void;
 }
 
-const SUGGESTIONS = [
+export const SUGGESTIONS = [
   "Ancient Roman Engineering & Aqueducts",
   "5 Psychology Tricks That Actually Work",
   "Quantum Computing in 60 Seconds",
@@ -21,17 +21,45 @@ export function MissionPromptBar({ onStartMission }: MissionPromptBarProps) {
   const [prompt, setPrompt] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const cleanPrompt = prompt.trim();
-    if (!cleanPrompt) return;
+    if (!cleanPrompt || isSubmitting) return;
 
     setIsSubmitting(true);
+
     if (onStartMission) {
       onStartMission(cleanPrompt);
-    } else {
-      router.push(`/create/auto?prompt=${encodeURIComponent(cleanPrompt)}&autoStart=true`);
+      setIsSubmitting(false);
+      return;
     }
+
+    try {
+      const res = await fetch("/api/workflows/mission", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: cleanPrompt,
+          aspectRatio: "9:16",
+          style: "cinematic",
+          voice: "alloy",
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.jobId) {
+          router.push(`/create/mission/${data.jobId}`);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("Direct mission API dispatch error, using fallback navigation:", err);
+    }
+
+    // Resilient fallback navigation
+    const fallbackJobId = crypto.randomUUID();
+    router.push(`/create/mission/${fallbackJobId}?prompt=${encodeURIComponent(cleanPrompt)}&autoStart=true`);
   };
 
   const handleSuggestionClick = (suggestion: string) => {
@@ -70,19 +98,29 @@ export function MissionPromptBar({ onStartMission }: MissionPromptBarProps) {
               type="text"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
+              disabled={isSubmitting}
               placeholder="Type any video topic & hit Enter (e.g., 'How black holes warp spacetime')..."
-              className="w-full rounded-xl border border-border/60 bg-background/80 py-3.5 pl-10 pr-4 text-sm font-medium text-foreground placeholder:text-muted-foreground focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 backdrop-blur-md transition-all"
+              className="w-full rounded-xl border border-border/60 bg-background/80 py-3.5 pl-10 pr-4 text-sm font-medium text-foreground placeholder:text-muted-foreground focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 backdrop-blur-md transition-all disabled:opacity-60"
             />
           </div>
 
           <button
             type="submit"
             disabled={!prompt.trim() || isSubmitting}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-fuchsia-600 px-6 py-3.5 text-sm font-semibold text-white shadow-md shadow-violet-500/25 hover:opacity-95 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none transition-all cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-fuchsia-600 px-6 py-3.5 text-sm font-semibold text-white shadow-md shadow-violet-500/25 hover:opacity-95 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none transition-all cursor-pointer min-w-[150px]"
           >
-            <Zap className="w-4 h-4" />
-            <span>Auto Generate</span>
-            <ArrowRight className="w-4 h-4 ml-0.5" />
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Starting...</span>
+              </>
+            ) : (
+              <>
+                <Zap className="w-4 h-4" />
+                <span>Auto Generate</span>
+                <ArrowRight className="w-4 h-4 ml-0.5" />
+              </>
+            )}
           </button>
         </form>
 
@@ -94,7 +132,8 @@ export function MissionPromptBar({ onStartMission }: MissionPromptBarProps) {
               key={topic}
               type="button"
               onClick={() => handleSuggestionClick(topic)}
-              className="rounded-lg border border-border/40 bg-accent/30 hover:bg-accent/70 hover:text-foreground px-2.5 py-1 transition-colors text-[11px] text-left cursor-pointer"
+              disabled={isSubmitting}
+              className="rounded-lg border border-border/40 bg-accent/30 hover:bg-accent/70 hover:text-foreground px-2.5 py-1 transition-colors text-[11px] text-left cursor-pointer disabled:opacity-50"
             >
               {topic}
             </button>

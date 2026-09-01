@@ -6,7 +6,7 @@ Sentinel monitoring and lifecycle management for Clipped AI Studio 'create' sect
 ## 🔒 My Identity
 - Archetype: sentinel
 - Working directory: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\sentinel
-- Orchestrator: 561b8e5f-cb4f-4691-b741-ca0feac24051
+- Orchestrator: a96ac2f2-f545-409e-b167-78ba7a0210a5
 - Victory Auditor: [to be spawned on victory claim]
 - Cron 1 (Progress): task-35 (*/8 * * * *)
 - Cron 2 (Liveness): task-37 (*/10 * * * *)
