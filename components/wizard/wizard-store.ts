@@ -62,6 +62,7 @@ interface WizardState {
 
   beats: Beat[];
   platforms: string[];
+  publishingPlatforms: string[];
 
   voiceoverMode: string;
   voiceService: string;
@@ -89,6 +90,7 @@ interface WizardState {
 
   set: <K extends keyof WizardState>(key: K, value: WizardState[K]) => void;
   togglePlatform: (id: string) => void;
+  togglePublishingPlatform: (id: string) => void;
 
   busy: string | null;
   setBusy: (busy: string | null) => void;
@@ -133,7 +135,7 @@ const initialState = {
   subtitleBoxColor: '#000000',
   subtitleUppercase: false,
   subtitleMaxWidth: 82,
-  platforms: ['youtube'],
+  publishingPlatforms: ['youtube'],
   aspectRatio: '9:16',
   variants: 1,
   autoPublish: false,
@@ -162,6 +164,12 @@ export const useWizardStore = create<WizardState>((set, get) => ({
       platforms: s.platforms.includes(id)
         ? s.platforms.filter((p) => p !== id)
         : [...s.platforms, id],
+    })),
+  togglePublishingPlatform: (id) =>
+    set((s) => ({
+      publishingPlatforms: s.publishingPlatforms.includes(id)
+        ? s.publishingPlatforms.filter((p) => p !== id)
+        : [...s.publishingPlatforms, id],
     })),
   setBusy: (busy) => set({ busy }),
   setError: (error) => set({ error }),

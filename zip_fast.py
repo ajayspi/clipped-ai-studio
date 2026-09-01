@@ -6,6 +6,8 @@ def zipdir(path, ziph):
         if 'node_modules' in root or '.git' in root or '.next\\cache' in root or '.next/cache' in root:
             continue
         for file in files:
+            if file.endswith('.zip'):
+                continue
             ziph.write(os.path.join(root, file), 
                        os.path.relpath(os.path.join(root, file), path))
 
