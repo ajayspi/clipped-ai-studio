@@ -52,4 +52,28 @@ Build `lib/quotas.ts` to track usage in Supabase (enforcing the 3 videos/month f
 ### Verification (Cost-Safe Execution)
 - [ ] MUST implement strict "dry-run" execution defaults for the Social APIs to prevent accidental live posting to social accounts during testing.
 - [ ] Must build E2E integration tests in `tests/e2e/tier6-integration.test.ts` verifying dry-run paths.
+ 
++## Follow-up — 2026-08-31T23:31:02Z
++
++This is a single self-contained fix; keep it small and focused. Finalizing the Clipped AI video platform by fixing background worker syntax errors and conducting a dry-run end-to-end video generation test.
++
++Working directory: `C:\Users\vigilare\.gemini\antigravity\scratch\clipped`
++Integrity mode: demo
++
++## Requirements
++
++### R1. Fix Background Workers
++Restore the stripped template literals (backticks) in `scripts/publish-worker.ts` and `scripts/render-worker.ts`. These were corrupted by PowerShell escaping, causing PM2 crash loops. Ensure they compile cleanly.
++
++### R2. E2E Verification
++Conduct a dry-run End-to-End test of the video generation pipeline. Verify that a video job correctly passes from the UI to Supabase, and is successfully picked up by the fixed `render-worker`.
++
++## Acceptance Criteria
++
++### Implementation Quality
++- [ ] Running `npx tsc --noEmit` on the scripts folder passes without syntax errors related to missing backticks or template literals.
++- [ ] The background workers can be started via PM2 and maintain a stable uptime without immediate crash loops.
++
++### E2E
++- [ ] A test video generation job inserted into `render_jobs` is demonstrably picked up by the `render-worker` in the logs.
 

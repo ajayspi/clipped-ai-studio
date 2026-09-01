@@ -9,7 +9,10 @@
     "lint": "eslint .",
     "test": "node tests/e2e/standalone-runner.js",
     "test:e2e": "node tests/e2e/standalone-runner.js",
-    "worker": "tsx scripts/render-worker.ts"
+    "worker": "tsx scripts/render-worker.ts",
+    "worker:render": "tsx scripts/render-worker.ts",
+    "worker:publish": "tsx scripts/publish-worker.ts",
+    "workers": "pm2 start ecosystem.config.js"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

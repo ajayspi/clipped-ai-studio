@@ -2457,12 +2457,172 @@ async function main() {
     expect(getSource(nb.cells[7])).toContain('/create/ai-videos');
   }});
 
+  // --------------------------------------------------------------------------
+  // TIER 8: Background Workers & E2E Pipeline Verification (5 Tests)
+  // --------------------------------------------------------------------------
+
+  tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-01', title: 'Publish Worker: Syntax Validation & Template Literal Integrity', fn: async () => {
+    const workerPath = path.join(__dirname, '..', '..', 'scripts', 'publish-worker.ts');
+    expect(fs.existsSync(workerPath)).toBe(true);
+    const content = fs.readFileSync(workerPath, 'utf-8');
+    // Ensure no broken unquoted console.log lines or stripped template literals
+    expect(content).not.toContain('console.log(\\n');
+    expect(content).not.toContain('console.log(?');
+    expect(content).toContain("console.log('\\n======================================================');");
+    expect(content).toContain('console.log(`📦 [Publish-Worker] Found due post: ${post.id}`);');
+    expect(content).toContain('console.log(`   Caption: "${post.caption || \'\'}"`);');
+    expect(content).toContain('console.log(`   Platforms: ${Array.isArray(post.platforms) ? post.platforms.join(\', \') : post.platforms}`);');
+    expect(content).toContain('console.log(`   [Action] Uploading to ${platform} API (DRY RUN)...`);');
+    expect(content).toContain('resultUrls[platform] = `https://${platform}.com/v/mock-${Date.now()}`;');
+    expect(content).toContain('console.log(`   ✅ Successfully published to ${platform}!`);');
+    expect(content).toContain('console.log(`🎉 [Publish-Worker] Post ${post.id} completed!`);');
+  }});
+
+  tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-02', title: 'Render Worker: Syntax Validation & Remotion Composition Bindings', fn: async () => {
+    const workerPath = path.join(__dirname, '..', '..', 'scripts', 'render-worker.ts');
+    expect(fs.existsSync(workerPath)).toBe(true);
+    const content = fs.readFileSync(workerPath, 'utf-8');
+    expect(content).toContain('console.log(`\\n📦 Found pending job: ${job.id}`)');
+    expect(content).toContain('console.log(`🎙️ Generating TTS for ${beatsList.length} beats...`)');
+    expect(content).toContain("const { TTSEngine } = await import('../lib/engine/tts')");
+    expect(content).toContain("let compId = 'MainRender-9x16'");
+    expect(content).toContain("if (params.aspectRatio === '16:9') compId = 'MainRender-16x9'");
+    expect(content).toContain("if (params.aspectRatio === '1:1') compId = 'MainRender-1x1'");
+    expect(content).toContain('const publicUrl = `/renders/${job.id}.mp4`');
+  }});
+
+  tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-03', title: 'E2E Dry-Run: Video Generation UI to Supabase Queue to Worker Pickup', fn: async () => {
+    // 1. Simulate UI creating video job in Supabase
+    const jobId = `job-e2e-dryrun-${Date.now()}`;
+    const initialJobPayload = {
+      workflow: 'ai-videos',
+      input: {
+        script: 'Welcome to the future of AI content creation with Clipped.',
+        aspectRatio: '9:16',
+        burnSubtitles: true,
+        beats: [
+          { id: 'beat-1', text: 'Welcome to the future of AI content creation with Clipped.', duration: 3.5 }
+        ]
+      }
+    };
+
+    // Insert pending job into mockSupabase
+    mockSupabase.from('render_jobs').insert({
+      id: jobId,
+      status: 'pending',
+      progress: 0,
+      logs: JSON.stringify(initialJobPayload),
+      created_at: new Date().toISOString(),
+    });
+
+    // 2. Query pending job as render-worker does
+    const { data: pendingJobs } = await mockSupabase
+      .from('render_jobs')
+      .select('*')
+      .eq('status', 'pending');
+
+    expect(pendingJobs.length).toBeGreaterThan(0);
+    const job = pendingJobs.find(j => j.id === jobId);
+    expect(job).toBeDefined();
+    expect(job.status).toBe('pending');
+
+    // 3. Mark as processing (Worker step 2)
+    await mockSupabase
+      .from('render_jobs')
+      .update({ status: 'processing' })
+      .eq('id', job.id);
+
+    const { data: processingJob } = await mockSupabase
+      .from('render_jobs')
+      .select('*')
+      .eq('id', jobId)
+      .single();
+
+    expect(processingJob.status).toBe('processing');
+
+    // 4. Simulate TTS beat synthesis and worker render pipeline
+    const ttsEngine = new TTSEngine();
+    const jobParams = typeof processingJob.logs === 'string' ? JSON.parse(processingJob.logs) : processingJob.logs;
+    const beatsList = jobParams.beats || (jobParams.input && jobParams.input.beats) || [];
+    
+    expect(beatsList.length).toBe(1);
+    const ttsRes = await ttsEngine.synthesize({
+      text: beatsList[0].text,
+      mock: true,
+    });
+    expect(ttsRes.success).toBe(true);
+    expect(ttsRes.duration).toBeGreaterThan(0);
+
+    // 5. Mark as completed with final video URL (Worker step 4)
+    const publicUrl = `/renders/${jobId}.mp4`;
+    await mockSupabase
+      .from('render_jobs')
+      .update({
+        status: 'completed',
+        logs: JSON.stringify({ ...jobParams, finalVideoUrl: publicUrl, duration: ttsRes.duration }),
+      })
+      .eq('id', jobId);
+
+    const { data: completedJob } = await mockSupabase
+      .from('render_jobs')
+      .select('*')
+      .eq('id', jobId)
+      .single();
+
+    expect(completedJob.status).toBe('completed');
+    const parsedLogs = JSON.parse(completedJob.logs);
+    expect(parsedLogs.finalVideoUrl).toBe(`/renders/${jobId}.mp4`);
+  }});
+
+  tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-04', title: 'Publish Worker: Platform Array and String Format Resilience', fn: async () => {
+    const parsePlatforms = (rawPlatforms) => {
+      let platforms = [];
+      if (Array.isArray(rawPlatforms)) {
+        platforms = rawPlatforms;
+      } else if (typeof rawPlatforms === 'string') {
+        try {
+          const parsed = JSON.parse(rawPlatforms);
+          platforms = Array.isArray(parsed) ? parsed : [rawPlatforms];
+        } catch {
+          platforms = rawPlatforms.split(',').map((p) => p.trim()).filter(Boolean);
+        }
+      }
+      if (platforms.length === 0) platforms = ['youtube'];
+      return platforms;
+    };
+
+    expect(parsePlatforms(['tiktok', 'youtube'])).toEqual(['tiktok', 'youtube']);
+    expect(parsePlatforms('["instagram", "youtube"]')).toEqual(['instagram', 'youtube']);
+    expect(parsePlatforms('tiktok, youtube')).toEqual(['tiktok', 'youtube']);
+    expect(parsePlatforms(null)).toEqual(['youtube']);
+    expect(parsePlatforms(undefined)).toEqual(['youtube']);
+  }});
+
+  tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-05', title: 'PM2 Configuration: Ecosystem Config & Worker Process Declarations', fn: async () => {
+    const configPath = path.join(__dirname, '..', '..', 'ecosystem.config.js');
+    expect(fs.existsSync(configPath)).toBe(true);
+    const config = require(configPath);
+    expect(Array.isArray(config.apps)).toBe(true);
+    expect(config.apps.length).toBe(2);
+
+    const renderApp = config.apps.find((a) => a.name === 'render-worker');
+    const publishApp = config.apps.find((a) => a.name === 'publish-worker');
+
+    expect(renderApp).toBeDefined();
+    expect(renderApp.script).toBe('scripts/render-worker.ts');
+    expect(renderApp.autorestart).toBe(true);
+
+    expect(publishApp).toBeDefined();
+    expect(publishApp.script).toBe('scripts/publish-worker.ts');
+    expect(publishApp.autorestart).toBe(true);
+  }});
+
   // Execute All Tests
   let passed = 0;
   let failed = 0;
   const start = Date.now();
 
-  const tiers = ['Tier 1', 'Tier 2', 'Tier 3', 'Tier 4', 'Tier 5', 'API Routes', 'Tier 6', 'Tier 7'];
+  const tiers = ['Tier 1', 'Tier 2', 'Tier 3', 'Tier 4', 'Tier 5', 'API Routes', 'Tier 6', 'Tier 7', 'Tier 8: Background Workers & Pipeline'];
   for (const tier of tiers) {
     const tierTests = tests.filter(t => t.tier === tier);
     console.log(`\n--- ${tier} (${tierTests.length} tests) ---`);

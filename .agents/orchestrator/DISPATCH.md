@@ -1,13 +1,36 @@
-## 2026-08-29T11:50:29Z
-You are the Project Orchestrator for the Clipped deployment configurations task.
-Workspace Root: C:\Users\vigilare\.gemini\antigravity\scratch\clipped
-Your Working Directory: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\orchestrator
-Original User Request: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\ORIGINAL_REQUEST.md
+# Dispatch Log
 
-Please review the latest user request under ## 2026-08-29T11:49:50Z in ORIGINAL_REQUEST.md:
-1. Implement Local Docker Environment (Dockerfile and docker-compose.yml with Next.js web app, local PostgreSQL to mimic Supabase, FFmpeg installed in web container).
-2. Implement Google Colab Notebook (deployment/colab/clipped-studio.ipynb with valid Jupyter Notebook JSON, installing pnpm, ffmpeg, exposing port 3000 via localtunnel or ngrok).
-3. Implement Oracle Cloud Setup Script (deployment/oracle/setup.sh, well-commented bash script with `set -e`, Node 20, pnpm, Docker, FFmpeg for Oracle Linux / Ubuntu A100).
-4. Verify all syntax/linting in a cost-safe manner.
+## 2026-08-31T23:33:05Z
 
-Initialize your BRIEFING.md, plan, coordinate the specialist agents, execute the implementation and verification, update progress.md continuously, and report back when completed.
+<USER_REQUEST>
+You are the SWE Orchestrator for the Clipped AI video platform.
+
+Workspace Directory: `C:\Users\vigilare\.gemini\antigravity\scratch\clipped`
+Agent Working Directory: `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\orchestrator`
+Authoritative Request: `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\ORIGINAL_REQUEST.md`
+
+## Task Overview
+This is a single self-contained fix; keep it small and focused. Finalizing the Clipped AI video platform by fixing background worker syntax errors and conducting a dry-run end-to-end video generation test.
+
+Integrity mode: demo
+
+## Requirements
+### R1. Fix Background Workers
+Restore the stripped template literals (backticks) in `scripts/publish-worker.ts` and `scripts/render-worker.ts`. These were corrupted by PowerShell escaping, causing PM2 crash loops. Ensure they compile cleanly.
+
+### R2. E2E Verification
+Conduct a dry-run End-to-End test of the video generation pipeline. Verify that a video job correctly passes from the UI to Supabase, and is successfully picked up by the fixed `render-worker`.
+
+## Acceptance Criteria
+### Implementation Quality
+- [ ] Running `npx tsc --noEmit` on the scripts folder passes without syntax errors related to missing backticks or template literals.
+- [ ] The background workers can be started via PM2 and maintain a stable uptime without immediate crash loops.
+
+### E2E
+- [ ] A test video generation job inserted into `render_jobs` is demonstrably picked up by the `render-worker` in the logs.
+
+## Coordination & Handoff
+- Update `progress.md` and `BRIEFING.md` in your working directory as milestones progress.
+- Run tests to establish correctness.
+- When implementation and verification are complete, notify the Sentinel (parent) via send_message with a complete summary and verification results.
+</USER_REQUEST>

@@ -162,7 +162,7 @@ export function ScheduleModal({ jobs }: { jobs?: any[] }) {
                         key={p}
                         type="button"
                         onClick={() => togglePlatform(p)}
-                        className={px-3 py-1.5 rounded-md text-xs font-medium capitalize border transition-colors }
+                        className={"px-3 py-1.5 rounded-md text-xs font-medium capitalize border transition-colors " + (platforms.includes(p) ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground")}
                       >
                         {p}
                       </button>

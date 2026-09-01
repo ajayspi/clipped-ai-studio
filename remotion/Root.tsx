@@ -1,4 +1,5 @@
-import { Composition } from 'remotion';
+import React from 'react';
+import { Composition, CalculateMetadataFunction } from 'remotion';
 import { MainComposition, MainCompositionProps } from './Composition';
 
 // Default props just for the Remotion Studio preview (if run directly via remotion cli)
@@ -25,6 +26,17 @@ const defaultProps: MainCompositionProps = {
   }
 };
 
+const calculateCustomMetadata: CalculateMetadataFunction<MainCompositionProps> = ({ props }) => {
+  const beats = props?.beats || [];
+  const totalDuration = beats.length > 0
+    ? beats.reduce((acc: number, b) => acc + (b.duration || 3), 0)
+    : 3;
+  return {
+    durationInFrames: Math.max(1, Math.floor(totalDuration * 30)),
+    props,
+  };
+};
+
 export const RemotionRoot: React.FC = () => {
   return (
     <>
@@ -36,6 +48,7 @@ export const RemotionRoot: React.FC = () => {
         width={1080}
         height={1920}
         defaultProps={defaultProps}
+        calculateMetadata={calculateCustomMetadata}
       />
       <Composition
         id="MainRender-16x9"
@@ -45,6 +58,7 @@ export const RemotionRoot: React.FC = () => {
         width={1920}
         height={1080}
         defaultProps={defaultProps}
+        calculateMetadata={calculateCustomMetadata}
       />
       <Composition
         id="MainRender-1x1"
@@ -54,6 +68,7 @@ export const RemotionRoot: React.FC = () => {
         width={1080}
         height={1080}
         defaultProps={defaultProps}
+        calculateMetadata={calculateCustomMetadata}
       />
       {/* Keeping legacy ID just in case */}
       <Composition
@@ -64,6 +79,7 @@ export const RemotionRoot: React.FC = () => {
         width={1080}
         height={1920}
         defaultProps={defaultProps}
+        calculateMetadata={calculateCustomMetadata}
       />
     </>
   );

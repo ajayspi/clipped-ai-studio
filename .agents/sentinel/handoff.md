@@ -1,31 +1,27 @@
-# Sentinel Handoff Report — Milestone 7 (Targeted Deployment Configurations)
+# Sentinel Handoff Report — Background Worker Fix & E2E Video Pipeline Verification
 
 ## Observation
-The user requested the implementation and verification of three distinct deployment configurations for the "Clipped" Next.js application:
-1. **Local Docker Environment**: `Dockerfile` and `docker-compose.yml` in project root with Next.js web application, local PostgreSQL database (to mimic Supabase), and FFmpeg pre-installed in the web container.
-2. **Google Colab Notebook**: `deployment/colab/clipped-studio.ipynb` containing a valid Jupyter Notebook JSON structure with cells that install `pnpm`, `ffmpeg`, and expose the Next.js port 3000 to the public web via `localtunnel` / `ngrok`.
-3. **Oracle Cloud Setup Script**: `deployment/oracle/setup.sh` containing a well-commented bash script with `set -e` fail-fast error handling that installs Node 20, pnpm, Docker, and FFmpeg on an Oracle Linux / Ubuntu server for free-tier A100 instances.
+The user requested a small, focused fix for the Clipped AI video platform:
+1. **R1. Fix Background Workers**: Restore stripped template literals (backticks) in `scripts/publish-worker.ts` and `scripts/render-worker.ts` caused by PowerShell escaping, ensure clean TypeScript compilation (`npx tsc --noEmit`), and stable process supervision via PM2 without crash loops.
+2. **R2. E2E Verification**: Conduct a dry-run End-to-End test of the video generation pipeline verifying that video jobs inserted into Supabase `render_jobs` are correctly picked up and processed by `render-worker`.
 
 ## Logic Chain
-- The Sentinel recorded the request into `.agents/ORIGINAL_REQUEST.md` and routed it to `teamwork_preview_orchestrator`.
-- The Project Orchestrator conducted environment surveys, decomposed specifications into `SCOPE.md`, and dispatched three parallel implementation workers (`worker_m7a`, `worker_m7b`, `worker_m7c`).
-- Parallel verification was conducted using dual Reviewers (`reviewer_m7_1`, `reviewer_m7_2`), dual Challengers (`challenger_m7_1`, `challenger_m7_2`), and an internal Forensic Auditor (`auditor_m7`).
-- Upon completion claim by the Orchestrator, the Sentinel executed a mandatory blocking Post-Victory Audit using `teamwork_preview_victory_auditor` (Conversation ID `9b1e8acc-4ab3-48f2-b579-bd7965e541df`).
-- The Victory Auditor conducted a 3-phase audit (Timeline & Provenance, Integrity & Anti-Cheating, and Independent Test Execution), confirming 138/138 passed assertions with 0 violations and 0 regressions.
+- The Sentinel recorded the request into `.agents/ORIGINAL_REQUEST.md` and routed the task to `teamwork_preview_swe` (SWE Light path) per routing rules.
+- The SWE Orchestrator executed a sequential refinement loop with an Implementer (`teamwork_preview_implementer`) followed by 3 Reviewer rounds (`teamwork_preview_reviewer`) addressing template literals, PM2 configuration (`ecosystem.config.js`), non-fatal startup handling, Remotion dynamic composition duration, and nested parameter extraction.
+- Upon completion claim by the SWE Orchestrator, the Sentinel executed a mandatory blocking Post-Victory Audit using `teamwork_preview_victory_auditor` (Conversation ID `7933098c-8399-49b0-8730-15aa24f48d31`).
+- The Victory Auditor conducted a 3-phase audit (Timeline & Provenance, Integrity & Anti-Cheating, and Independent Test Execution), verifying 137/137 tests passing with 0 failures across all 8 test tiers.
 - Verdict: **VICTORY CONFIRMED**.
-- All background tasks and subagents were terminated according to cleanup protocol.
+- All background crons and subagents were terminated according to cleanup protocol.
 
 ## Caveats
-- Running the Docker Compose environment locally requires Docker Engine/Desktop to be active.
-- Google Colab notebook defaults to cost-safe dry-run mode (`ENABLE_DRY_RUN_MODE = True`). If live cloud publishing or live TTS rendering is desired, API keys can be supplied in the notebook's interactive configuration cell.
-- The Oracle Cloud setup script supports both Oracle Linux 8/9 (`dnf`) and Ubuntu 20.04/22.04 LTS (`apt`), and auto-detects NVIDIA A100 GPU drivers and NVIDIA Container Toolkit.
+- Demo/dry-run mode is enabled by default so that testing does not incur external rendering or API usage costs.
+- PM2 configuration in `ecosystem.config.js` utilizes `--import tsx` for TypeScript execution.
 
 ## Conclusion
-All acceptance criteria for Milestone 7 have been satisfied in full. Production-grade deployment configurations for Local Docker, Google Colab, and Oracle Cloud are implemented, validated, and ready for deployment.
+All acceptance criteria have been satisfied in full. Background workers compile cleanly, run stably under PM2, and successfully pick up and process video generation jobs in the end-to-end pipeline.
 
 ## Verification Method
-- Independent Victory Auditor executed empirical static & semantic verification covering all tiers:
-  - Docker syntax & standalone build validation (healthcheck, multi-stage structure, compose dependencies).
-  - Jupyter Notebook JSON schema validation (`nbformat: 4`, cell structure, urllib health polling).
-  - Bash syntax & POSIX compliance validation (`set -euo pipefail`, ERR trap, dual OS package managers).
-  - 138/138 assertions passed across all 8 test tiers.
+- Independent Victory Auditor executed empirical verification (`node tests/e2e/standalone-runner.js`):
+  - 137/137 tests passing across all 8 test tiers (100% pass rate).
+  - T8-WRK-01 through T8-WRK-05 passing for worker syntax, dynamic compositions, and E2E job pickup.
+

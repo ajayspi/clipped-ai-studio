@@ -17,6 +17,7 @@ import { registerTier5Tests } from './tier5-adversarial-hardening.test';
 import { registerApiRouteTests } from './api-routes.test';
 import { registerTier6Tests } from './tier6-integration.test';
 import { registerM6StressTests } from './stress-m6-quotas-publishing.test';
+import { registerWorkersE2ETests } from './tier7-workers-e2e.test';
 
 export async function runAllTests() {
   console.log('\n' + '='.repeat(80));
@@ -32,6 +33,7 @@ export async function runAllTests() {
   await registerApiRouteTests();
   await registerTier6Tests();
   await registerM6StressTests();
+  await registerWorkersE2ETests();
 
   console.log(`[INFO] Registered test suites. Executing test matrix...\n`);
 
@@ -46,6 +48,7 @@ export async function runAllTests() {
     'Tier 5: Adversarial Hardening': summary.results.filter((r) => r.tier === 'tier5'),
     'API Routes & Supabase Contract': summary.results.filter((r) => r.tier === 'api'),
     'Tier 6: External Integrations (TTS, Publishing, Quotas, Audio)': summary.results.filter((r) => r.tier === 'tier6'),
+    'Tier 7: Background Workers & E2E Pipeline': summary.results.filter((r) => r.tier === 'tier7'),
   };
 
   for (const [tierName, tests] of Object.entries(tierMap)) {
