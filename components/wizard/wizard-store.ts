@@ -136,7 +136,7 @@ const initialState = {
   subtitleUppercase: false,
   subtitleMaxWidth: 82,
   publishingPlatforms: ['youtube'],
-  aspectRatio: '9:16',
+  aspectRatio: '9:16' as AspectRatio,
   variants: 1,
   autoPublish: false,
   busy: null,

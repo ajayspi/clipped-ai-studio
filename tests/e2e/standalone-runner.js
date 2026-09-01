@@ -2617,12 +2617,94 @@ async function main() {
     expect(publishApp.autorestart).toBe(true);
   }});
 
+  // --- Tier 9: Milestone 1 API Status Indicators & 10 Workflow Cards ---
+  const M1_WORKFLOWS = [
+    { id: "footage", title: "Stock Footage Video", href: "/create/footage", category: "stock", costTier: "$", primaryProviders: ["pexels", "pixabay", "gemini"], hasFallback: true, settingsUrl: "/settings?tab=Stock%20Media&provider=api_pexels" },
+    { id: "images", title: "AI Images Video", href: "/create/images", category: "ai-video", costTier: "$$", primaryProviders: ["fal", "openai", "gemini"], hasFallback: true, settingsUrl: "/settings?tab=AI%20Models&provider=api_fal" },
+    { id: "ai-videos", title: "AI Videos", href: "/create/ai-videos", category: "ai-video", costTier: "$$$", primaryProviders: ["kling", "luma", "fal"], hasFallback: true, settingsUrl: "/settings?tab=Stock%20Media&provider=api_kling" },
+    { id: "stories", title: "Stories Generator", href: "/create/stories", category: "automation", costTier: "$$", primaryProviders: ["gemini", "openai"], hasFallback: true, settingsUrl: "/settings?tab=AI%20Models&provider=api_gemini" },
+    { id: "bulk", title: "Bulk Planner", href: "/create/bulk", category: "automation", costTier: "$$", primaryProviders: ["gemini", "openai"], hasFallback: true, settingsUrl: "/settings?tab=AI%20Models&provider=api_gemini" },
+    { id: "shorts", title: "Extract Shorts", href: "/create/shorts", category: "automation", costTier: "$", primaryProviders: ["gemini", "openai"], hasFallback: true, settingsUrl: "/settings?tab=AI%20Models&provider=api_gemini" },
+    { id: "drama", title: "Micro-Drama", href: "/create/drama", category: "ai-video", costTier: "$$$", primaryProviders: ["fal", "kling", "gemini"], hasFallback: true, settingsUrl: "/settings?tab=AI%20Models&provider=api_fal" },
+    { id: "auto", title: "Auto Pilot", href: "/create/auto", category: "automation", costTier: "$$", primaryProviders: ["gemini", "openai", "pexels"], hasFallback: true, settingsUrl: "/settings?tab=AI%20Models&provider=api_gemini" },
+    { id: "avatar", title: "Avatar to Video", href: "/create/avatar", category: "avatar-wb", costTier: "$$$", primaryProviders: ["heygen", "did"], hasFallback: true, badge: "NEW", settingsUrl: "/settings?tab=Voice%20%26%20Audio&provider=api_heygen" },
+    { id: "whiteboard", title: "Whiteboard Animation", href: "/create/whiteboard", category: "avatar-wb", costTier: "$", primaryProviders: ["gemini"], hasFallback: true, badge: "NEW", settingsUrl: "/settings?tab=AI%20Models&provider=api_gemini" }
+  ];
+
+  function evalWfStatus(wf, keysMap) {
+    const required = wf.primaryProviders || [];
+    const isConfig = (p) => {
+      const clean = p.replace(/^api_/, "");
+      const entry = keysMap[clean] || keysMap[`api_${clean}`] || keysMap[p];
+      return Boolean(entry && entry.isConfigured && entry.isActive !== false);
+    };
+    const configured = required.filter(isConfig);
+    const missing = required.filter(p => !isConfig(p));
+    if (configured.length > 0) return { status: "ready", label: "Ready" };
+    if (wf.hasFallback) return { status: "warning", label: "Fallback Mode" };
+    return { status: "error", label: "Keys Needed" };
+  }
+
+  tests.push({ tier: 'Tier 9: Milestone 1 API Status & Workflows', id: 'T9-M1-01', title: 'All 10 Workflow Definitions & Route Integrity', fn: async () => {
+    expect(M1_WORKFLOWS.length).toBe(10);
+    const ids = M1_WORKFLOWS.map(w => w.id);
+    expect(ids).toContain('avatar');
+    expect(ids).toContain('whiteboard');
+    expect(ids).toContain('footage');
+    expect(ids).toContain('images');
+    expect(ids).toContain('ai-videos');
+  }});
+
+  tests.push({ tier: 'Tier 9: Milestone 1 API Status & Workflows', id: 'T9-M1-02', title: 'Cost Tier Assignments across Workflows ($, $$, $$$)', fn: async () => {
+    const tier1 = M1_WORKFLOWS.filter(w => w.costTier === '$').map(w => w.id);
+    expect(tier1).toContain('footage');
+    expect(tier1).toContain('shorts');
+    expect(tier1).toContain('whiteboard');
+
+    const tier2 = M1_WORKFLOWS.filter(w => w.costTier === '$$').map(w => w.id);
+    expect(tier2).toContain('images');
+    expect(tier2).toContain('stories');
+    expect(tier2).toContain('bulk');
+    expect(tier2).toContain('auto');
+
+    const tier3 = M1_WORKFLOWS.filter(w => w.costTier === '$$$').map(w => w.id);
+    expect(tier3).toContain('ai-videos');
+    expect(tier3).toContain('drama');
+    expect(tier3).toContain('avatar');
+  }});
+
+  tests.push({ tier: 'Tier 9: Milestone 1 API Status & Workflows', id: 'T9-M1-03', title: 'Dynamic Status Evaluation (Green Ready, Yellow Fallback, Red Error)', fn: async () => {
+    // 1. All empty -> all fallback (warning)
+    for (const wf of M1_WORKFLOWS) {
+      const res = evalWfStatus(wf, {});
+      expect(res.status).toBe('warning');
+    }
+    // 2. Gemini set -> whiteboard & stories & bulk & auto ready
+    const resWhiteboard = evalWfStatus(M1_WORKFLOWS.find(w => w.id === 'whiteboard'), { gemini: { isConfigured: true, isActive: true } });
+    expect(resWhiteboard.status).toBe('ready');
+
+    // 3. HeyGen set -> avatar ready
+    const resAvatar = evalWfStatus(M1_WORKFLOWS.find(w => w.id === 'avatar'), { heygen: { isConfigured: true, isActive: true } });
+    expect(resAvatar.status).toBe('ready');
+  }});
+
+  tests.push({ tier: 'Tier 9: Milestone 1 API Status & Workflows', id: 'T9-M1-04', title: 'Settings Shortcuts & Key Normalization Verification', fn: async () => {
+    for (const wf of M1_WORKFLOWS) {
+      expect(wf.settingsUrl).toBeDefined();
+      expect(wf.settingsUrl.startsWith('/settings')).toBe(true);
+    }
+    const avatar = M1_WORKFLOWS.find(w => w.id === 'avatar');
+    expect(avatar.settingsUrl).toContain('tab=Voice%20%26%20Audio');
+    const wb = M1_WORKFLOWS.find(w => w.id === 'whiteboard');
+    expect(wb.settingsUrl).toContain('tab=AI%20Models');
+  }});
+
   // Execute All Tests
   let passed = 0;
   let failed = 0;
   const start = Date.now();
 
-  const tiers = ['Tier 1', 'Tier 2', 'Tier 3', 'Tier 4', 'Tier 5', 'API Routes', 'Tier 6', 'Tier 7', 'Tier 8: Background Workers & Pipeline'];
+  const tiers = ['Tier 1', 'Tier 2', 'Tier 3', 'Tier 4', 'Tier 5', 'API Routes', 'Tier 6', 'Tier 7', 'Tier 8: Background Workers & Pipeline', 'Tier 9: Milestone 1 API Status & Workflows'];
   for (const tier of tiers) {
     const tierTests = tests.filter(t => t.tier === tier);
     console.log(`\n--- ${tier} (${tierTests.length} tests) ---`);

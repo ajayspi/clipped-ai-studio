@@ -1,709 +1,282 @@
-# Explorer Survey 2: API Routes & Workflows Mapping Report
+# Clipped AI Studio — Dashboard, Library, Planner & Media Architecture Survey Report
 
-**Project**: Clipped (Next.js 14 / Next 16 App Router AI Video Creator Studio)  
-**Surveyor**: Explorer Survey 2 (API Routes & Workflows Mapping)  
-**Date**: 2026-08-29  
-**Working Directory**: `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_survey_2`  
-**Authoritative Request**: `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\ORIGINAL_REQUEST.md`
+**Explorer**: explorer_survey_2  
+**Date**: 2026-09-01  
+**Scope**: Exploration of `app/(app)/library`, `app/(app)/planner`, `app/(app)/dashboard`, media/image handling, data models, empty vs active states, and database seeding requirements.
 
 ---
 
-## 1. Executive Summary & Mapping Scope
+## Executive Summary
 
-This survey conducts a comprehensive investigation of the backend API route architecture, workflow handlers, rendering pipelines, and Supabase database interactions for the Clipped Next.js 14 application.
-
-### Key Objectives
-1. Audit all existing API routes under `app/api/*`.
-2. Inspect Supabase database integration (`schema.sql`, `lib/db.ts`) with special focus on the `render_jobs` table (columns, status transitions, payload structure).
-3. Conduct a gap analysis against the 6 target AI workflows specified in `ORIGINAL_REQUEST.md`.
-4. Provide authoritative request/response schemas, validation rules, engine bindings, and database insertion patterns for all 6 target workflow routes:
-   - **AI Videos** (`app/api/workflows/ai-videos/route.ts`)
-   - **Stories** (`app/api/workflows/stories/route.ts`)
-   - **Bulk Plan** (`app/api/workflows/bulk-plan/route.ts`)
-   - **Extract Shorts** (`app/api/workflows/extract-shorts/route.ts`)
-   - **Micro-Drama** (`app/api/workflows/micro-drama/route.ts`)
-   - **Auto Pilot** (`app/api/workflows/auto/route.ts`)
+This report presents a thorough structural and functional analysis of the Clipped AI Studio dashboard, specifically detailing:
+1. **The Library & Dashboard Video Flow** (`app/(app)/library/page.tsx`, `app/(app)/dashboard/page.tsx`, `components/dashboard/DashboardCard.tsx`, `components/dashboard/PublishModal.tsx`).
+2. **The Planner & Content Calendar Flow** (`app/(app)/planner/page.tsx`, `components/planner/ScheduleModal.tsx`, `supabase/migrations/20260831_create_scheduled_posts.sql`, `scripts/publish-worker.ts`).
+3. **Image & Media Handling Across the Application** (`public/` assets, thumbnail resolution logic, preview fallbacks, and mock asset requirements for realistic studio rendering).
+4. **Data Models and Seeder Blueprint** (`schema.sql`, `seed_videos.js`, `scripts/seed.ts`).
 
 ---
 
-## 2. Existing API Routes & Workflow Handlers Audit
+## 1. Library & Video Management Architecture
 
-The current codebase contains four active API route handlers:
+### 1.1 Page Architecture (`app/(app)/library/page.tsx`)
+- **Route**: `/library`
+- **Rendering Mode**: Server Component (`export const dynamic = 'force-dynamic'`, `export const revalidate = 0`)
+- **Database Queries**:
+  1. Primary query:
+     ```typescript
+     supabase
+       .from('videos')
+       .select(`*, render_jobs (*)`)
+       .order('created_at', { ascending: false })
+     ```
+  2. Legacy / Direct jobs fallback query:
+     ```typescript
+     supabase
+       .from('render_jobs')
+       .select('*')
+       .is('video_id', null)
+       .order('created_at', { ascending: false })
+     ```
+- **Data Transformation Pipeline**:
+  - The page iterates over `videos` and selects the latest associated `render_job` (`videoRecord.render_jobs[videoRecord.render_jobs.length - 1]`).
+  - It parses `job.logs` (handles both stringified JSON and pre-parsed JSON objects).
+  - Thumbnail resolution order:
+    1. `firstClip.thumbnail` where `firstClip = parsedLogs?.videos?.[0]?.video || parsedLogs?.videos?.[0]`
+    2. `firstClip.previewUrl`
+    3. `null` (falls back to component-level placeholder).
+  - Video properties passed to card:
+    - `id`: Job ID or Video ID
+    - `video_id`: Video ID
+    - `title`: `videoRecord.title || parsedLogs?.subject || "Video " + id.slice(0, 8)`
+    - `created_at`: Timestamp
+    - `status`: `job.status` or `videoRecord.status` (`'pending' | 'processing' | 'completed' | 'failed'`)
+    - `thumbnail`: URL string or null
+    - `parsedLogs`: Parsed logs object
+    - `clipCount`: `parsedLogs?.videos?.length || 0`
+    - `workflowType`: `videoRecord.workflow || parsedLogs?.workflowType || "Footage"`
 
-```
-app/api/
-├── auth/
-│   └── [...nextauth]/
-│       └── route.ts              # NextAuth v5 authentication handler
-├── health/
-│   └── route.ts                  # System health & version check endpoint
-└── workflows/
-    ├── generate/
-    │   └── route.ts              # Footage Workflow handler (Stock video matching)
-    └── images/
-        └── route.ts              # AI Images Workflow handler (Flux AI scene generation)
-```
+### 1.2 Library Empty State vs Active State
+| State | Trigger Condition | Visual & Functional Behavior |
+|---|---|---|
+| **Empty State** | `allContent.length === 0` | Displays a centered dashed container (`border border-dashed bg-card h-64 p-8 text-center`) with a muted `Video` icon (opacity 20%), a "No videos yet" heading, descriptive copy ("Get started by creating your first AI-generated short-form video in the creation wizard"), and a primary CTA button linking to `/create/footage`. |
+| **Active State** | `allContent.length > 0` | Displays a responsive multi-column CSS masonry grid (`columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6`) containing `DashboardCard` components. |
 
-### 2.1 Audit of Existing Routes
+### 1.3 Video Card Component (`components/dashboard/DashboardCard.tsx`)
+- **Visual Design**: Vertical 9:16 aspect ratio (`aspect-[9/16]`) card with Framer Motion hover elevation (`y: -4`) and smooth transitions.
+- **Top Badge**: Workflow type tag in uppercase with frosted glass background (`bg-black/70 backdrop-blur-md text-[10px] font-bold`).
+- **Thumbnail Handling**:
+  - If `video.thumbnail` is present: renders `<img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />`.
+  - If `video.thumbnail` is null/empty: renders a dark zinc placeholder with `<Video className="w-16 h-16 text-white" />` at 30% opacity.
+- **Status Overlay Handling**:
+  - If `status === 'pending'` or `status === 'processing'`: renders an animated overlay with `<Loader2 className="animate-spin" />`, an animated progress bar (`w-[45%] animate-pulse`), and text `"Rendering... ~2 mins left"`.
+  - If `status === 'completed'`: renders a hover overlay with a centered circular play button (`h-10 w-10 bg-primary text-white hover:scale-110`).
+- **Footer & Hover Actions**:
+  - Video title (truncated with `line-clamp-1`).
+  - Creation date (`toLocaleDateString()`) and clip count (`${video.clipCount} clips`).
+  - On hover: reveals HD Download button, Share button (triggers `PublishModal`), and Delete button.
 
-#### 1. `POST /api/auth/[...nextauth]` (`app/api/auth/[...nextauth]/route.ts`)
-- **Purpose**: Exposes NextAuth.js v5 route handlers (`GET`, `POST`) backed by `lib/auth.ts`.
-- **Functionality**: Manages user authentication sessions, OAuth providers, and JWT issuance.
+### 1.4 Publishing Modal (`components/dashboard/PublishModal.tsx`)
+- Interactive dialog allowing multi-platform social distribution to **YouTube Shorts**, **TikTok**, and **Instagram Reels**.
+- Allows custom titles and tag descriptions.
+- Posts payload `{ jobId, platforms, title, description }` to `/api/publish`.
 
-#### 2. `GET /api/health` (`app/api/health/route.ts`)
-- **Purpose**: System health monitor.
-- **Response**: `{ status: "ok", app: "clipped", version: "0.1.0", timestamp: "..." }`.
+---
 
-#### 3. `POST /api/workflows/generate` (`app/api/workflows/generate/route.ts`)
-- **Workflow**: Footage Video Workflow (`/create/footage`).
-- **Request Body**:
-  ```ts
-  {
-    workflow?: string; // 'footage'
-    script: string;    // Required narration text
-    voice?: string;   // Optional TTS voice (default 'alloy')
-  }
+## 2. Planner & Content Calendar Architecture
+
+### 2.1 Page Architecture (`app/(app)/planner/page.tsx`)
+- **Route**: `/planner`
+- **Rendering Mode**: Server Component (`force-dynamic`, `revalidate = 0`)
+- **Database Query**:
+  ```typescript
+  supabase
+    .from('scheduled_posts')
+    .select('*, render_jobs(logs)')
+    .order('scheduled_for', { ascending: true })
   ```
-- **Handler Mechanism**:
-  1. Validates `script` presence. Returns HTTP 400 `{ error: "Script is required" }` if absent.
-  2. Generates `const jobId = crypto.randomUUID()`.
-  3. Launches async background execution (`setTimeout(..., 0)`):
-     - Invokes `videoOrchestrator.generateVideoPlan(script, ['pixabay', 'pexels'])`.
-     - Upon completion, inserts job record into Supabase `render_jobs` table.
-  4. Returns immediate HTTP 200 JSON `{ success: true, jobId, message: "Job started successfully" }`.
+- **Calendar Logic**:
+  - Generates a 7-day rolling window starting from current local date:
+    ```typescript
+    const today = new Date();
+    const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(today, i));
+    ```
+  - For each day in `weekDays`, filters scheduled posts using date-fns `isSameDay(new Date(post.scheduled_for), day)`.
 
-#### 4. `POST /api/workflows/images` (`app/api/workflows/images/route.ts`)
-- **Workflow**: AI Images Video Workflow (`/create/images`).
-- **Request Body**:
-  ```ts
-  {
-    script: string;       // Required prompt/narration
-    style?: string;       // e.g. "cinematic, photorealistic"
-    aspectRatio?: string; // "16:9" | "9:16" | "1:1"
-    voice?: string;       // TTS voice selection
-  }
+### 2.2 Planner Empty State vs Active State
+| State | Trigger Condition | Visual & Functional Behavior |
+|---|---|---|
+| **Empty State** | `dayPosts.length === 0` for a day column | Each empty day column displays an internal empty state container: `flex-1 flex items-center justify-center text-muted-foreground/30 text-xs text-center p-4` with text `"No posts scheduled"`. If no posts exist across all 7 days, all 7 columns show this empty placeholder. |
+| **Active State** | `dayPosts.length > 0` | Populates the day column with post cards showing:<br>• **Time Badge**: `format(new Date(post.scheduled_for), 'h:mm a')` inside an accent badge.<br>• **Status Icon**: `CheckCircle2` (green) for `published`, `XCircle` (red) for `failed`, `Clock` (muted) for `pending`.<br>• **Post Title/Caption**: `post.caption || parsed.subject || 'Untitled Video'`.<br>• **Platform Pills**: Array of platform chips (`youtube`, `tiktok`, `instagram`) with capitalized text. |
+
+### 2.3 Schedule Modal Component (`components/planner/ScheduleModal.tsx`)
+- **Trigger**: "Schedule Post" button in the page header with `Plus` icon.
+- **Data Fetching on Open**: Queries Supabase for completed jobs:
+  ```typescript
+  supabase
+    .from('render_jobs')
+    .select('*')
+    .eq('status', 'completed')
+    .order('created_at', { ascending: false })
   ```
-- **Handler Mechanism**:
-  1. Validates `script`.
-  2. Generates `jobId = crypto.randomUUID()`.
-  3. Launches async background execution:
-     - Calls `sceneMatcher.analyzeScript(script)` to break text into scenes.
-     - Calls `imageGenerator.generateForScenes(analysis.scenes, { style, aspectRatio })`.
-     - Logs completed/failed status and result payload into Supabase `render_jobs`.
-  4. Returns immediate HTTP 200 JSON `{ success: true, jobId, message: "AI Image generation started" }`.
+- **Form Controls**:
+  - **Video Selector**: Dropdown showing subject/title of completed render jobs.
+  - **Caption & Hashtags**: Multi-line textarea.
+  - **Date & Time Pickers**: Native HTML5 `date` and `time` inputs (defaults date to today, time to "12:00").
+  - **Platform Selectors**: Toggle buttons for `youtube`, `tiktok`, `instagram`.
+- **Submission**: Inserts into `scheduled_posts`:
+  ```typescript
+  await supabase.from('scheduled_posts').insert({
+    job_id: selectedJob,
+    caption,
+    platforms,
+    scheduled_for: scheduledFor,
+    status: 'pending'
+  });
+  ```
 
-### 2.2 Status of `app/api/render/*`
-- Currently, there are no dedicated endpoints under `app/api/render/*`.
-- Video generation orchestration in Clipped is handled via dedicated workflow endpoints under `app/api/workflows/*`. These endpoints track their execution lifecycle through the PostgreSQL `render_jobs` table in Supabase.
-- If a standalone render status polling endpoint is needed in the future (e.g. `GET /api/render/[id]`), the client can directly query Supabase or use a dedicated route.
-
----
-
-## 3. Supabase Schema & `render_jobs` Architecture
-
-The database architecture is defined in `schema.sql` and initialized via the Supabase client in `lib/db.ts`.
-
-### 3.1 `render_jobs` Table Schema
-
+### 2.4 Database Table Schema (`scheduled_posts`)
+Defined in `supabase/migrations/20260831_create_scheduled_posts.sql`:
 ```sql
-CREATE TABLE render_jobs (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    video_id UUID REFERENCES videos(id) ON DELETE CASCADE,
-    status TEXT DEFAULT 'pending',
-    progress INTEGER DEFAULT 0,
-    error_message TEXT,
-    logs TEXT, -- Stores JSON serialized string or JSONB object in PostgreSQL
-    started_at TIMESTAMP WITH TIME ZONE,
-    completed_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+CREATE TABLE IF NOT EXISTS scheduled_posts (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  job_id UUID REFERENCES render_jobs(id) ON DELETE CASCADE,
+  platforms JSONB NOT NULL DEFAULT '[]'::jsonb,
+  caption TEXT,
+  scheduled_for TIMESTAMPTZ NOT NULL,
+  status VARCHAR(50) DEFAULT 'pending',
+  result_urls JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-```
-
-### 3.2 Columns & Data Types
-
-| Column | PostgreSQL Type | Nullable | Default | Description |
-|---|---|---|---|---|
-| `id` | `UUID` | No | `uuid_generate_v4()` | Primary key; matches `jobId` returned to frontend. |
-| `video_id` | `UUID` | Yes | `NULL` | Foreign key referencing `videos.id`. Optional during initial generation. |
-| `status` | `TEXT` | Yes | `'pending'` | Lifecycle state: `'pending'`, `'processing'`, `'completed'`, `'failed'`. |
-| `progress` | `INTEGER` | Yes | `0` | Progress indicator (0 to 100). |
-| `error_message` | `TEXT` | Yes | `NULL` | Human-readable error description when status is `'failed'`. |
-| `logs` | `TEXT` / `JSON` | Yes | `NULL` | Structured execution payload (scenes, video URLs, analysis, series parts). |
-| `started_at` | `TIMESTAMPTZ` | Yes | `NULL` | Timestamp when background engine execution commenced. |
-| `completed_at` | `TIMESTAMPTZ` | Yes | `NULL` | Timestamp when job completed or failed. |
-| `created_at` | `TIMESTAMPTZ` | No | `now()` | Timestamp when job record was created. |
-
-### 3.3 Status Lifecycle State Machine
-
-```
-   [Job Request Received]
-              │
-              ▼
-   ┌──────────────────────┐
-   │ status: 'pending'    │  <-- Inserted immediately before background execution
-   │ progress: 0          │
-   └──────────┬───────────┘
-              │
-              ▼
-   ┌──────────────────────┐
-   │ status: 'processing' │  <-- (Optional intermediate state during long tasks)
-   │ progress: 10..90     │
-   └──────────┬───────────┘
-              │
-        ┌─────┴──────────────┐
-        ▼                    ▼
-┌──────────────────┐  ┌──────────────────┐
-│ status:          │  │ status: 'failed' │
-│   'completed'    │  │ progress: 0      │
-│ progress: 100    │  │ error_message:   │
-│ logs: { ... }    │  │   "Error string" │
-└──────────────────┘  └──────────────────┘
-```
-
-### 3.4 Key Architectural Finding: Immediate `pending` Insertion
-
-**Observation**: In the existing `generate/route.ts` and `images/route.ts`, the database insert was only performed *inside* the background `setTimeout` callback upon completion or failure.  
-**Problem**: When the frontend receives `{ success: true, jobId }` and immediately redirects to `/dashboard?job=${jobId}`, the dashboard server component queries `supabase.from('render_jobs').select('*')`. If the background job is still processing, the job record may not exist in the database yet.  
-**Requirement & Standard**: All 6 new workflow routes (as well as existing ones) must perform an **immediate synchronous insert** of the `pending` job into `render_jobs` before starting the background process, and then update the record with `status: 'completed'` / `'failed'` when the engine finishes.
-
-```ts
-// Standard Insertion Pattern:
-const jobId = crypto.randomUUID()
-
-// 1. Immediate Pending Insert
-await supabase.from('render_jobs').insert({
-  id: jobId,
-  video_id: null,
-  status: 'pending',
-  progress: 0,
-  logs: { workflow: 'ai-videos', input: { script, model, ... } },
-  started_at: new Date().toISOString()
-})
-
-// 2. Async Engine Processing
-setTimeout(async () => {
-  try {
-    const result = await videoGenerator.generate(...)
-    await supabase.from('render_jobs').update({
-      status: 'completed',
-      progress: 100,
-      logs: result,
-      completed_at: new Date().toISOString()
-    }).eq('id', jobId)
-  } catch (err: any) {
-    await supabase.from('render_jobs').update({
-      status: 'failed',
-      error_message: err.message,
-      completed_at: new Date().toISOString()
-    }).eq('id', jobId)
-  }
-}, 0)
+CREATE INDEX IF NOT EXISTS idx_scheduled_posts_status_time ON scheduled_posts(status, scheduled_for);
 ```
 
 ---
 
-## 4. Gap Analysis & Endpoint Specifications for 6 Target Workflows
+## 3. Image & Media Asset Handling Across the Studio
 
-The following table summarizes the implementation status of all 8 workflows in Clipped:
+### 3.1 Existing Asset Inventory in `public/`
+The repository currently contains the following raster assets:
+- `/hero-bg.jpg` (871 KB) — High-res abstract neural nodes background used on landing page.
+- `/thumbnail_history.jpg` (841 KB) — 9:16 vertical thumbnail for historical documentary video ("The Fall of Rome").
+- `/thumbnail_drama.jpg` (970 KB) — 9:16 vertical thumbnail for cyberpunk drama video ("Neon Nights").
+- `/thumbnail_brain.jpg` (855 KB) — 9:16 vertical thumbnail for educational neuroscience video ("How Memory Works").
 
-| Workflow | UI Route | API Endpoint | Engine Module | Status |
-|---|---|---|---|---|
-| **Footage Video** | `/create/footage` | `POST /api/workflows/generate` | `lib/engine/orchestrator.ts` | **Existing** |
-| **AI Images** | `/create/images` | `POST /api/workflows/images` | `lib/engine/image-generator.ts` | **Existing** |
-| **1. AI Videos** | `/create/ai-videos` | `POST /api/workflows/ai-videos` | `lib/engine/video-generator.ts` | **Missing (Target 1)** |
-| **2. Stories** | `/create/stories` | `POST /api/workflows/stories` | `lib/engine/stories-orchestrator.ts` | **Missing (Target 2)** |
-| **3. Bulk Plan** | `/create/bulk` | `POST /api/workflows/bulk-plan` | `lib/engine/bulk-planner.ts` | **Missing (Target 3)** |
-| **4. Extract Shorts** | `/create/shorts` | `POST /api/workflows/extract-shorts` | `lib/engine/shorts-extractor.ts` | **Missing (Target 4)** |
-| **5. Micro-Drama** | `/create/drama` | `POST /api/workflows/micro-drama` | `lib/engine/drama-orchestrator.ts` | **Missing (Target 5)** |
-| **6. Auto Pilot** | `/create/auto` | `POST /api/workflows/auto` | `lib/engine/auto-pilot.ts` | **Missing (Target 6)** |
+### 3.2 Thumbnail Resolution Chain in Dashboard/Library
+```
+render_jobs.logs (JSON string or object)
+  └── parsedLogs.videos[0].video.thumbnail
+        ├── Found → Render <img> with hover zoom (scale-105)
+        └── Not found → parsedLogs.videos[0].previewUrl
+              ├── Found → Render <img>
+              └── Not found → Fallback <Video className="w-16 h-16 text-white" /> at 30% opacity
+```
+
+### 3.3 Media Handling in Other Studio Components
+- **Wizard Scenes Step** (`components/wizard/ScenesStep.tsx`):
+  - Renders candidate media for each script beat:
+    - If URL ends with `.mp4` -> `<video src={...} muted loop autoPlay />`
+    - Otherwise -> `<img src={...} />`
+    - Fallback: `<Video className="w-6 h-6 text-muted-foreground opacity-50" />`
+- **Live Player** (`components/wizard/LivePlayer.tsx`):
+  - Uses Remotion Player (`@remotion/player`) with dynamic aspect ratios (`9:16`, `16:9`, `1:1`).
+- **Create Hub** (`app/(app)/create/page.tsx`):
+  - Uses Lucide icons with colorful background tints for the 8 creation workflows (`/create/footage`, `/create/images`, `/create/ai-videos`, `/create/stories`, `/create/bulk`, `/create/shorts`, `/create/drama`, `/create/auto`).
 
 ---
 
-## 5. Detailed Specifications for the 6 Target API Endpoints
+## 4. Current State Analysis & Gap Identification
 
-### 5.1 Route 1: AI Videos (`app/api/workflows/ai-videos/route.ts`)
-
-#### Endpoint Summary
-- **HTTP Method**: `POST`
-- **Path**: `/api/workflows/ai-videos`
-- **Engine Dependency**: `lib/engine/video-generator.ts` (`videoGenerator`)
-
-#### Request Schema (TypeScript & JSON)
-```ts
-export interface AIVideosRequest {
-  workflow?: "ai-videos";
-  script: string;                   // Narration or prompt for AI video generation (Required)
-  model?: "kling-v1" | "luma-dream-machine" | "veo-2" | "minimax"; // Default: "kling-v1"
-  aspectRatio?: "16:9" | "9:16" | "1:1";                            // Default: "9:16"
-  duration?: number;                // Duration per scene in seconds (5 or 10, default: 5)
-  cameraMotion?: "dynamic" | "static" | "pan_left" | "pan_right" | "zoom_in" | "zoom_out"; // Default: "dynamic"
-  negativePrompt?: string;          // Exclusion prompt
-  voice?: string;                   // TTS voice (default: "alloy")
-}
-```
-
-```json
-{
-  "workflow": "ai-videos",
-  "script": "A cybernetic falcon soaring over a neon Tokyo skyline at midnight, rain splashing on glass skyscrapers.",
-  "model": "kling-v1",
-  "aspectRatio": "9:16",
-  "duration": 5,
-  "cameraMotion": "zoom_in",
-  "negativePrompt": "blurry, low quality, watermark",
-  "voice": "onyx"
-}
-```
-
-#### Validation & Error Handling
-- Validate `script` is non-empty string. Return `400` `{ error: "Script is required" }` if missing.
-- Validate `aspectRatio` is one of `'16:9' | '9:16' | '1:1'`.
-
-#### Response Schema
-- **Success (HTTP 200)**:
-  ```json
-  {
-    "success": true,
-    "jobId": "e3b0c442-98fc-1c14-9afb-4c8996fb9242",
-    "message": "AI Video generation started successfully"
-  }
-  ```
-- **Failure (HTTP 500)**:
-  ```json
-  {
-    "error": "Failed to trigger AI video workflow"
-  }
-  ```
-
-#### Database Payload (`render_jobs.logs`)
-```json
-{
-  "workflow": "ai-videos",
-  "model": "kling-v1",
-  "aspectRatio": "9:16",
-  "scenes": [
-    {
-      "id": "scene-0",
-      "text": "A cybernetic falcon soaring over a neon Tokyo skyline at midnight...",
-      "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-      "duration": 5
-    }
-  ]
-}
-```
+### 4.1 Why Library & Dashboard Currently Look Empty / Unfinished
+1. **Existing Seeder Limitation (`seed_videos.js`)**:
+   - `seed_videos.js` inserts records into `videos` with `status: 'processing'` and into `render_jobs` with `status: 'pending'`, `progress: 0`, and **null logs**.
+   - As a result:
+     - `parsedLogs` is empty.
+     - `thumbnail` is null.
+     - `status` is pending/processing.
+     - Cards display spinning loaders ("Rendering... ~2 mins left") and dark placeholder icons without any visual imagery or completed status.
+2. **Planner Seeding Missing**:
+   - There is no seed data inserted into `scheduled_posts`.
+   - The Planner calendar displays "No posts scheduled" on every single day column.
+3. **Asset Utilization**:
+   - Existing high-quality thumbnails (`/thumbnail_history.jpg`, `/thumbnail_drama.jpg`, `/thumbnail_brain.jpg`) are referenced in `app/page.tsx` (landing page) but are NOT injected into the Supabase `render_jobs.logs` for the Library.
 
 ---
 
-### 5.2 Route 2: Stories Generator (`app/api/workflows/stories/route.ts`)
+## 5. Specification for Supabase Seeder Script (`scripts/seed.ts`)
 
-#### Endpoint Summary
-- **HTTP Method**: `POST`
-- **Path**: `/api/workflows/stories`
-- **Engine Dependency**: `lib/engine/stories-orchestrator.ts` (`storiesOrchestrator`)
+To ensure the studio displays a rich, vibrant, and realistic active state, the new seeder script should satisfy the following specification:
 
-#### Request Schema (TypeScript & JSON)
-```ts
-export interface StoriesRequest {
-  workflow?: "stories";
-  topic: string;                    // Topic or story premise (Required)
-  storyType?: "reddit-story" | "historical-mystery" | "urban-legend" | "motivational" | "sci-fi-twist"; // Default: "reddit-story"
-  partsCount?: number;              // Number of episodes/parts (1-5, default: 3)
-  visualStyle?: "footage" | "ai-images" | "ai-videos"; // Default: "ai-images"
-  voice?: string;                   // Narrator voice (default: "onyx")
-  aspectRatio?: "9:16" | "16:9";    // Default: "9:16"
-  includeHooks?: boolean;           // Cliffhangers between parts (default: true)
-}
-```
-
-```json
-{
-  "workflow": "stories",
-  "topic": "The bizarre unsolved disappearance of the Flannan Isles lighthouse keepers in 1900.",
-  "storyType": "historical-mystery",
-  "partsCount": 3,
-  "visualStyle": "ai-images",
-  "voice": "onyx",
-  "aspectRatio": "9:16",
-  "includeHooks": true
-}
-```
-
-#### Validation & Error Handling
-- Validate `topic` is provided. Return `400` `{ error: "Story topic is required" }`.
-- Bound `partsCount` between 1 and 5.
-
-#### Response Schema
-- **Success (HTTP 200)**:
-  ```json
-  {
-    "success": true,
-    "jobId": "7d9b2384-245b-481d-8422-4916a4a2b901",
-    "seriesId": "story-series-1740809700",
-    "partsCount": 3,
-    "message": "Story series generation queued"
-  }
-  ```
-
-#### Database Payload (`render_jobs.logs`)
-```json
-{
-  "workflow": "stories",
-  "topic": "The bizarre unsolved disappearance of the Flannan Isles lighthouse keepers",
-  "storyType": "historical-mystery",
-  "series": [
-    {
-      "part": 1,
-      "title": "Part 1: The Abandoned Rock",
-      "script": "...",
-      "hook": "Wait until you hear what the logbook said...",
-      "scenes": [...]
-    },
-    {
-      "part": 2,
-      "title": "Part 2: The Final Entry",
-      "script": "...",
-      "hook": "Follow for the shocking conclusion in Part 3!",
-      "scenes": [...]
-    },
-    {
-      "part": 3,
-      "title": "Part 3: The Ghost Island",
-      "script": "...",
-      "scenes": [...]
-    }
-  ]
-}
-```
+### 5.1 Target Tables & Record Hierarchy
+1. **`users` Table**:
+   - Ensure an active user exists (e.g. `admin@prostudio.com` with ID e.g. `00000000-0000-0000-0000-000000000001` or fetch existing user).
+2. **`videos` Table**:
+   - Insert at least 6-8 video records covering diverse workflows:
+     - "The Fall of Rome: A 60-Second History" (workflow: `footage`)
+     - "Neon Nights: Episode 1 - Memory Drive" (workflow: `micro-drama`)
+     - "How Memory Works (Neuroscience Explained)" (workflow: `footage`)
+     - "Daily Motivation: The 1% Mindset" (workflow: `ai-videos`)
+     - "Cyberpunk Chronicles: The Neon Oracle" (workflow: `micro-drama`)
+     - "Top 5 Space Mysteries Science Can't Explain" (workflow: `stories`)
+     - "SaaS Growth Secrets: 0 to $10k MRR" (workflow: `bulk-plan`)
+3. **`render_jobs` Table**:
+   - Insert corresponding render jobs linked to `video_id`.
+   - Set status primarily to `'completed'` (5-7 jobs) with 1 `'processing'` job to showcase active rendering UI.
+   - Supply rich `logs` JSON structured as:
+     ```json
+     {
+       "subject": "The Fall of Rome: A 60-Second History",
+       "workflowType": "Footage",
+       "duration": 45,
+       "burnSubtitles": true,
+       "finalVideoUrl": "/renders/sample-rome.mp4",
+       "videos": [
+         {
+           "video": {
+             "id": "vid-1",
+             "title": "Roman Colosseum Sunset",
+             "thumbnail": "/thumbnail_history.jpg",
+             "previewUrl": "/thumbnail_history.jpg",
+             "platform": "pexels"
+           },
+           "score": 1,
+           "reason": "Top visual match"
+         },
+         {
+           "video": {
+             "id": "vid-2",
+             "title": "Ancient Architecture Drone",
+             "thumbnail": "/thumbnail_history.jpg",
+             "platform": "pexels"
+           }
+         }
+       ]
+     }
+     ```
+   - For other videos, use `/thumbnail_drama.jpg`, `/thumbnail_brain.jpg`, and high-quality vertical Unsplash/Pexels URLs (e.g. curated neon cityscape, astronaut/space, fitness/motivation portraits).
+4. **`scheduled_posts` Table**:
+   - Insert at least 6-8 scheduled post records tied to completed `render_jobs`.
+   - Dates must be dynamically computed relative to `new Date()` (today, tomorrow, day+2, day+3, day+4, day+5) so that regardless of when the seed runs, the 7-day grid view in `/planner` displays active scheduled cards.
+   - Varying platforms: `['youtube', 'tiktok']`, `['instagram']`, `['youtube', 'tiktok', 'instagram']`.
+   - Varying status: mix of `'published'` (for today/past) and `'pending'` (for upcoming).
+   - Engaging captions with hashtags (e.g. `"#shorts #history #viral"`, `"#scifi #drama #cyberpunk"`).
 
 ---
 
-### 5.3 Route 3: Bulk Planner (`app/api/workflows/bulk-plan/route.ts`)
+## 6. Dashboard UI Enhancement & Sidebar Recommendations
 
-#### Endpoint Summary
-- **HTTP Method**: `POST`
-- **Path**: `/api/workflows/bulk-plan`
-- **Engine Dependency**: `lib/engine/bulk-planner.ts` (`bulkPlanner`)
-
-#### Request Schema (TypeScript & JSON)
-```ts
-export interface BulkPlanRequest {
-  workflow?: "bulk-plan";
-  niche: string;                    // Niche/category prompt (Required)
-  contentCount?: number;            // Number of videos: 7 (1 wk), 14 (2 wks), 30 (1 mo) (Default: 7)
-  cadence?: "daily" | "twice-daily" | "weekdays-only"; // Default: "daily"
-  visualStyle?: "footage" | "images" | "ai-videos";    // Default: "footage"
-  voice?: string;                   // Narrator voice (default: "alloy")
-  platforms?: Array<"youtube" | "tiktok" | "instagram">; // Target platforms
-  aspectRatio?: "9:16" | "16:9" | "1:1";               // Default: "9:16"
-}
-```
-
-```json
-{
-  "workflow": "bulk-plan",
-  "niche": "Stoic Wisdom & Daily Mental Models",
-  "contentCount": 7,
-  "cadence": "daily",
-  "visualStyle": "footage",
-  "voice": "onyx",
-  "platforms": ["youtube", "tiktok", "instagram"],
-  "aspectRatio": "9:16"
-}
-```
-
-#### Validation & Error Handling
-- Validate `niche` is provided. Return `400` `{ error: "Niche is required" }`.
-- Validate `contentCount` (must be > 0 and <= 30).
-
-#### Response Schema
-- **Success (HTTP 200)**:
-  ```json
-  {
-    "success": true,
-    "jobId": "5fa23bc0-21a4-4f28-a309-8bb4e1329c04",
-    "planId": "bulk-plan-1740809700",
-    "totalVideos": 7,
-    "message": "Bulk plan batch created and queued for rendering"
-  }
-  ```
-
-#### Database Payload (`render_jobs.logs`)
-```json
-{
-  "workflow": "bulk-plan",
-  "niche": "Stoic Wisdom & Daily Mental Models",
-  "totalVideos": 7,
-  "calendar": [
-    {
-      "day": 1,
-      "title": "Control What You Can",
-      "hook": "Epictetus once said...",
-      "script": "...",
-      "keywords": ["ancient rome", "stoic statue", "peaceful mind"],
-      "scheduledDate": "2026-08-30T08:00:00Z"
-    }
-  ]
-}
-```
+To fulfill Requirements R1 & R2 from `ORIGINAL_REQUEST.md`:
+1. **Collapsible Glassmorphism Sidebar (`components/sidebar.tsx` & `app/(app)/layout.tsx`)**:
+   - Implement expandable / collapsible state (icon-only mode `w-16` vs expanded mode `w-64`).
+   - Add glassmorphism CSS styling: `backdrop-blur-xl bg-background/80 border-r border-border/40 shadow-sm`.
+   - Add collapse toggle button (e.g., `ChevronLeft` / `ChevronRight` or `PanelLeftClose` / `PanelLeftOpen`).
+   - Include active state indicators with vibrant accent gradients and tooltips for icon-only mode.
+2. **Dashboard Vibrancy & Icons**:
+   - Enhance `components/sidebar.tsx`, `components/dashboard/DashboardCard.tsx`, and page headers with vibrant color badges, glow effects, and icons.
+   - At least 5 new icons integrated (e.g. `Sparkles`, `Share2`, `Flame`, `TrendingUp`, `Layers`, `CalendarCheck`).
 
 ---
 
-### 5.4 Route 4: Extract Shorts (`app/api/workflows/extract-shorts/route.ts`)
+## 7. Conclusion
 
-#### Endpoint Summary
-- **HTTP Method**: `POST`
-- **Path**: `/api/workflows/extract-shorts`
-- **Engine Dependency**: `lib/engine/shorts-extractor.ts` (`shortsExtractor`)
-
-#### Request Schema (TypeScript & JSON)
-```ts
-export interface ExtractShortsRequest {
-  workflow?: "extract-shorts";
-  sourceType?: "url" | "upload";    // Default: "url"
-  videoUrl?: string;                // Long-form video URL (Required if sourceType === 'url')
-  clipCount?: number;               // Number of shorts to extract (1-10, default: 3)
-  clipDuration?: "<30s" | "30-60s" | "60-90s"; // Target duration (default: "30-60s")
-  strategy?: "viral-hooks" | "key-takeaways" | "humor-reactions"; // Extraction focus
-  captions?: boolean;               // Generate burned-in captions (default: true)
-  captionStyle?: "hormozi" | "minimal" | "yellow-pop"; // Subtitle styling
-  aspectRatio?: "9:16" | "1:1";     // Default: "9:16"
-}
-```
-
-```json
-{
-  "workflow": "extract-shorts",
-  "sourceType": "url",
-  "videoUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-  "clipCount": 3,
-  "clipDuration": "30-60s",
-  "strategy": "viral-hooks",
-  "captions": true,
-  "captionStyle": "hormozi",
-  "aspectRatio": "9:16"
-}
-```
-
-#### Validation & Error Handling
-- If `sourceType === 'url'`, validate `videoUrl` is valid URL. Return `400` `{ error: "Valid video URL is required" }`.
-- Bound `clipCount` between 1 and 10.
-
-#### Response Schema
-- **Success (HTTP 200)**:
-  ```json
-  {
-    "success": true,
-    "jobId": "1b9a5281-7dc8-410a-9d2a-5799a4c0a521",
-    "clipCount": 3,
-    "message": "Shorts extraction initiated"
-  }
-  ```
-
-#### Database Payload (`render_jobs.logs`)
-```json
-{
-  "workflow": "extract-shorts",
-  "sourceUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-  "extractedClips": [
-    {
-      "id": "clip-1",
-      "startTime": 42.5,
-      "endTime": 87.2,
-      "viralityScore": 94,
-      "hookTitle": "The Secret Formula Nobody Talks About",
-      "summary": "Key insight at timestamp 0:42",
-      "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4"
-    }
-  ]
-}
-```
-
----
-
-### 5.5 Route 5: Micro-Drama (`app/api/workflows/micro-drama/route.ts`)
-
-#### Endpoint Summary
-- **HTTP Method**: `POST`
-- **Path**: `/api/workflows/micro-drama`
-- **Engine Dependency**: `lib/engine/drama-orchestrator.ts` (`dramaOrchestrator`)
-
-#### Request Schema (TypeScript & JSON)
-```ts
-export interface DramaCharacter {
-  name: string;                     // Character identifier (e.g. "Detective Marcus")
-  description: string;              // Appearance / LoRA / face prompt description
-  voice?: string;                   // Character voice ID
-  avatarUrl?: string;               // Optional reference portrait URL
-}
-
-export interface MicroDramaRequest {
-  workflow?: "micro-drama";
-  script: string;                   // Plot outline or multi-character dialogue script (Required)
-  genre?: "thriller" | "romance" | "sci-fi" | "mystery" | "action" | "fantasy"; // Default: "thriller"
-  characters?: DramaCharacter[];    // Character cast specifications
-  episodesCount?: number;           // Number of mini-episodes (default: 1)
-  aspectRatio?: "9:16" | "16:9";    // Default: "9:16"
-  consistencyModel?: "flux-consistent" | "kling-character"; // Consistency pipeline (default: "flux-consistent")
-}
-```
-
-```json
-{
-  "workflow": "micro-drama",
-  "script": "Marcus: 'Did you think I wouldn't trace the transmission?' Sarah: 'I was hoping you would.'",
-  "genre": "thriller",
-  "characters": [
-    {
-      "name": "Marcus",
-      "description": "45yo cybernetic detective with grey hair and cybernetic left eye",
-      "voice": "onyx"
-    },
-    {
-      "name": "Sarah",
-      "description": "29yo biotech scientist with dark bob haircut and neon glasses",
-      "voice": "nova"
-    }
-  ],
-  "episodesCount": 1,
-  "aspectRatio": "9:16",
-  "consistencyModel": "flux-consistent"
-}
-```
-
-#### Validation & Error Handling
-- Validate `script` is present. Return `400` `{ error: "Drama script or outline is required" }`.
-- Validate `characters` array if provided.
-
-#### Response Schema
-- **Success (HTTP 200)**:
-  ```json
-  {
-    "success": true,
-    "jobId": "9c882104-e349-411a-82dc-304ab7199ecb",
-    "charactersCount": 2,
-    "message": "Micro-drama production pipeline started"
-  }
-  ```
-
-#### Database Payload (`render_jobs.logs`)
-```json
-{
-  "workflow": "micro-drama",
-  "genre": "thriller",
-  "characters": [...],
-  "scenes": [
-    {
-      "sceneId": "scene-1",
-      "speaker": "Marcus",
-      "line": "Did you think I wouldn't trace the transmission?",
-      "visualPrompt": "Marcus, 45yo cybernetic detective with grey hair..., speaking sternly in rainy alley",
-      "assetUrl": "https://image.pollinations.ai/prompt/...",
-      "voice": "onyx"
-    }
-  ]
-}
-```
-
----
-
-### 5.6 Route 6: Auto Pilot (`app/api/workflows/auto/route.ts`)
-
-#### Endpoint Summary
-- **HTTP Method**: `POST`
-- **Path**: `/api/workflows/auto`
-- **Engine Dependency**: `lib/engine/auto-pilot.ts` (`autoPilotEngine`)
-
-#### Request Schema (TypeScript & JSON)
-```ts
-export interface AutoPilotRequest {
-  workflow?: "auto";
-  pipelineName: string;             // Name for the automation schedule (Required)
-  niche: string;                    // Topic/niche focus (Required)
-  schedule?: "daily_8am" | "daily_6pm" | "twice_daily" | "weekly_monday"; // Default: "daily_8am"
-  sourceStrategy?: "trending-rss" | "trending-reddit" | "llm-ideation";    // Default: "trending-rss"
-  visualPipeline?: "footage" | "images" | "ai-videos";                    // Default: "footage"
-  autoPublish?: boolean;            // Automatically publish or save to library (Default: false)
-  targetPlatforms?: Array<"youtube" | "tiktok" | "instagram">;
-  voice?: string;                   // Default: "alloy"
-  status?: "active" | "paused";     // Initial state (Default: "active")
-}
-```
-
-```json
-{
-  "workflow": "auto",
-  "pipelineName": "Daily AI News Briefing",
-  "niche": "AI & Future Technology",
-  "schedule": "daily_8am",
-  "sourceStrategy": "trending-rss",
-  "visualPipeline": "footage",
-  "autoPublish": false,
-  "targetPlatforms": ["youtube", "tiktok"],
-  "voice": "alloy",
-  "status": "active"
-}
-```
-
-#### Validation & Error Handling
-- Validate `pipelineName` and `niche` are provided. Return `400` `{ error: "Pipeline name and niche are required" }`.
-
-#### Response Schema
-- **Success (HTTP 200)**:
-  ```json
-  {
-    "success": true,
-    "jobId": "48b61c92-3c21-4f9e-b98a-928df776e01a",
-    "pipelineId": "auto-pipe-1740809700",
-    "status": "active",
-    "message": "Auto Pilot pipeline configured and initial test run triggered"
-  }
-  ```
-
-#### Database Payload (`render_jobs.logs`)
-```json
-{
-  "workflow": "auto",
-  "pipelineId": "auto-pipe-1740809700",
-  "pipelineName": "Daily AI News Briefing",
-  "schedule": "daily_8am",
-  "status": "active",
-  "firstRun": {
-    "topic": "Latest Breakthroughs in Generative AI",
-    "script": "...",
-    "scenes": [...]
-  }
-}
-```
-
----
-
-## 6. Cost-Safe & Mocking Verification Protocol
-
-To satisfy project acceptance criteria:
-- Each engine orchestrator (`video-generator.ts`, `drama-orchestrator.ts`, `shorts-extractor.ts`, etc.) must inspect environment keys (`KLING_API_KEY`, `LUMA_API_KEY`, `FAL_API_KEY`, `OPENAI_API_KEY`) or Supabase `settings` table.
-- When premium keys are missing or invalid, the backend must seamlessly operate in **Dry-Run / Mock mode**:
-  1. Generate valid mock scene/clip structures with public placeholder assets (e.g. Google Big Buck Bunny / sample MP4s, Pollinations / Placeholder images).
-  2. Perform realistic latency simulation (e.g. 100ms - 500ms).
-  3. Ensure Supabase `render_jobs` records are inserted with `status: 'pending'`, then transitioned to `status: 'completed'` with structured JSON in `logs`.
-  4. Ensure HTTP 200 JSON with `{ success: true, jobId }` is returned to the client.
-
----
-
-## 7. Next Steps & Implementation Roadmap
-
-1. **Engine Orchestrators**:
-   - `lib/engine/video-generator.ts` (Kling / Luma AI synthetic video engine)
-   - `lib/engine/stories-orchestrator.ts` (Multi-part cliffhanger shorts engine)
-   - `lib/engine/bulk-planner.ts` (Batch content calendar generation engine)
-   - `lib/engine/shorts-extractor.ts` (Hook detection and slicing engine)
-   - `lib/engine/drama-orchestrator.ts` (Consistent character micro-drama engine)
-   - `lib/engine/auto-pilot.ts` (Autonomous sourcing and scheduling engine)
-2. **API Routes**:
-   - Create `app/api/workflows/ai-videos/route.ts`
-   - Create `app/api/workflows/stories/route.ts`
-   - Create `app/api/workflows/bulk-plan/route.ts`
-   - Create `app/api/workflows/extract-shorts/route.ts`
-   - Create `app/api/workflows/micro-drama/route.ts`
-   - Create `app/api/workflows/auto/route.ts`
-3. **UI Panel Upgrades**:
-   - Wire form submissions from `app/(app)/create/*` to their respective API routes with standard loading/error handling and redirect to `/dashboard?job=${jobId}`.
+The architecture of Clipped AI Studio is clean and modular. The blank states in Library and Planner are purely caused by the absence of structured completed records in `render_jobs` (with populated `logs.videos[0].video.thumbnail`) and `scheduled_posts`. By implementing `scripts/seed.ts` according to this report's specifications, both `/library` and `/planner` will immediately render realistic, visually engaging cards and calendar schedules.

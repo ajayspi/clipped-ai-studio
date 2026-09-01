@@ -1,143 +1,179 @@
-# Project: Clipped - AI Video Generation Workflows
+# Project: Clipped AI Studio — 'Create' Section & Video Workflows Enhancement
 
 ## Architecture
-Clipped is a Next.js 14 full-stack video creation platform with App Router, TypeScript, Tailwind CSS, Supabase database, and native `fetch` AI engine integrations.
 
-### Data Flow & Execution Model
-1. **Frontend**: User configures workflow in `/create/<workflow>` panel and clicks "Generate".
-2. **API Layer**: Route handler in `app/api/workflows/<workflow>/route.ts` parses & validates payload, generates a UUID `jobId`, and synchronously creates an initial record in Supabase `render_jobs` table with `status: 'pending'`, `progress: 0`.
-3. **Client Response**: Returns `{ success: true, jobId, message }` immediately with HTTP 200. Frontend redirects to `/dashboard?job=<jobId>`.
-4. **Background Execution**: Handler triggers async engine task in background (`setTimeout(..., 0)`).
-5. **Engine Layer**: `lib/engine/*` singletons execute workflow logic (script generation, prompt refinement, scene breakdown, AI generation calls, asset assembly). If API keys are missing, cost-safe dry-run mock fallbacks provide deterministic, functional outputs.
-6. **Status Update**: Engine updates Supabase `render_jobs` record with `status: 'completed'` (or `'failed'`), `progress: 100`, and structured metadata/logs.
+Clipped AI Studio is a Next.js (App Router), React 19, Tailwind CSS v4, Zustand, Supabase, Remotion, and multi-provider AI video generation platform.
+
+The system is organized into modular tiers:
+1. **Frontend Create Hub**:
+   - `app/(app)/create/page.tsx`: Dynamic workflow selection hub with real-time API configuration status indicators (🟢 Ready, 🟡 Fallback/Mock, 🔴 Unconfigured), cost tier badges ($, $$, $$$), settings direct links, and a top "One-Click Automatic Mission" prompt submission bar.
+   - `app/(app)/create/mission/[id]/page.tsx`: Dedicated Mission Progress view featuring 5-stage live step visualizer, streaming logs, live Remotion player preview, and a seamless "Manual / Edit in Wizard" toggle.
+   - `app/(app)/create/avatar/page.tsx`: Interactive avatar-to-video workflow studio (photo-driven avatars via LivePortrait / HeyGen / D-ID, voice selection, PiP / fullscreen layout).
+   - `app/(app)/create/whiteboard/page.tsx`: Whiteboard animation workflow studio (preset character archetypes: stickman, saint, old man, founder, doctor, custom Gemini character prompts, doodle style selection).
+2. **Backend Workflow Orchestration Engine**:
+   - `lib/engine/mission-orchestrator.ts`: Server-side auto-pilot engine chaining prompt -> script generation -> scene analysis -> asset generation -> TTS audio -> Remotion composition -> `render_jobs` persistence.
+   - `lib/engine/avatar-orchestrator.ts`: Talking-head video generation with portrait synthesis, audio synchronization, and fallback deterministic Remotion compositing.
+   - `lib/engine/whiteboard-orchestrator.ts`: Two-stage whiteboard generator:
+     - Stage 1: Google Gemini (`@google/genai` / REST) generates consistent 9-pose character reference sheets and monoline doodle line-art.
+     - Stage 2: Scene-by-scene storyboard assembly assigning specific character poses, progressive SVG sketch animations, and hand-drawn marker overlays.
+   - `lib/engine/types.ts`: Extended type definitions for all workflows, character reference sheets, whiteboard storyboard beats, and avatar configurations.
+3. **API & Settings Layer**:
+   - `app/api/settings/keys/route.ts`: Evaluates configured API keys across providers (`gemini`, `openai`, `fal`, `kling`, `luma`, `elevenlabs`, `pexels`, `pixabay`, `heygen`, `did`).
+   - `app/api/workflows/mission/route.ts`: Initiates one-click automatic video mission.
+   - `app/api/workflows/avatar/route.ts`: Initiates avatar talking-head video generation.
+   - `app/api/workflows/whiteboard/route.ts`: Initiates whiteboard animation generation with Gemini character reference generation.
+   - `app/api/workflows/whiteboard/character-sheet/route.ts`: Generates / previews Gemini 9-pose character reference sheets.
 
 ---
 
 ## Feature Inventory
-| # | Feature | Description | Milestone | Status |
+
+| # | Feature | Description | Milestone | Source |
 |---|---------|-------------|-----------|--------|
-| 1 | Workflow Type Definitions | Comprehensive TypeScript interfaces in `lib/engine/types.ts` for all 6 workflows | M1 | DONE |
-| 2 | Prompt Engineering Library | Reusable structured system prompts in `lib/engine/prompts.ts` | M1 | DONE |
-| 3 | AI Video Generator Engine | `lib/engine/video-generator.ts` interfacing with Kling AI, Luma Dream Machine, and Fal.ai + cost-safe dry-run fallback | M1 | DONE |
-| 4 | AI Videos API Route | `app/api/workflows/ai-videos/route.ts` with Supabase `pending` logging & background generation | M1 | DONE |
-| 5 | AI Videos UI Panel | `app/(app)/create/ai-videos/page.tsx` interactive creation form | M1 | DONE |
-| 6 | Stories Orchestrator Engine | `lib/engine/stories-orchestrator.ts` multi-part story generator with cliffhangers and visual prompts | M2 | DONE |
-| 7 | Stories API Route | `app/api/workflows/stories/route.ts` with Supabase `pending` logging | M2 | DONE |
-| 8 | Stories UI Panel | `app/(app)/create/stories/page.tsx` interactive multi-part story generator panel | M2 | DONE |
-| 9 | Bulk Content Planner Engine | `lib/engine/bulk-planner.ts` generating 30-day/multi-video calendar content batches with Supabase job queueing | M2 | DONE |
-| 10 | Bulk Plan API Route | `app/api/workflows/bulk-plan/route.ts` supporting batch generation | M2 | DONE |
-| 11 | Bulk Plan UI Panel | `app/(app)/create/bulk/page.tsx` calendar planner and batch creation panel | M2 | DONE |
-| 12 | Micro-Drama Orchestrator Engine | `lib/engine/drama-orchestrator.ts` multi-episode drama engine with consistent character visual anchors | M3 | DONE |
-| 13 | Micro-Drama API Route | `app/api/workflows/micro-drama/route.ts` character tracking & episode job creation | M3 | DONE |
-| 14 | Micro-Drama UI Panel | `app/(app)/create/drama/page.tsx` multi-character drama creation panel | M3 | DONE |
-| 15 | Shorts Extractor Engine | `lib/engine/shorts-extractor.ts` transcript hook detector & vertical video slicing | M3 | DONE |
-| 16 | Extract Shorts API Route | `app/api/workflows/extract-shorts/route.ts` video URL / transcript processing & clip extraction | M3 | DONE |
-| 17 | Extract Shorts UI Panel | `app/(app)/create/shorts/page.tsx` video URL / transcript upload & clip extraction panel | M3 | DONE |
-| 18 | Auto Pilot Engine | `lib/engine/auto-pilot.ts` hands-off automated video generation pipeline from trending RSS/niches | M4 | DONE |
-| 19 | Auto Pilot API Route | `app/api/workflows/auto/route.ts` automated schedule & recurring trigger logging | M4 | DONE |
-| 20 | Auto Pilot UI Panel | `app/(app)/create/auto/page.tsx` autopilot schedule configuration panel | M4 | DONE |
-| 21 | E2E Testing Suite (Tiers 1-4) | Comprehensive opaque-box test runner covering all 6 workflows with 100% pass | E2E-Track / M5 | DONE |
-| 22 | Adversarial Hardening (Tier 5) | White-box edge-case and stress test verification (25 tests) | M5 | DONE |
-| 23 | External Systems Integration | TTS (Google/Coqui/ElevenLabs + 6 Indian languages), Social Publishing (YouTube/IG/TikTok), Quotas, Audio Mixer | M6 | DONE |
-| 24 | Local Docker Environment | `Dockerfile`, `docker-compose.yml`, `.dockerignore`, `.env.docker`, `next.config.ts` | M7A | DONE |
-| 25 | Google Colab Notebook | `deployment/colab/clipped-studio.ipynb` (Jupyter Notebook v4 JSON) | M7B | DONE |
-| 26 | Oracle Cloud Setup Script | `deployment/oracle/setup.sh` (Oracle Linux / Ubuntu A100 bash setup script) | M7C | DONE |
-| 27 | Multi-Deployment Verification | Syntax validation, JSON schema check, bash linting, stress tests & forensic audit | M7D | DONE |
+| 1 | API Status Badges | Dynamic status dots (green, orange, red) per workflow card based on `/api/settings/keys` | M1 | ORIGINAL_REQUEST §R1 |
+| 2 | Cost Tier Indicators | Badges ($ for free/fallback, $$ for standard, $$$ for video models) per card | M1 | ORIGINAL_REQUEST §R1 |
+| 3 | Settings Modal & Direct Links | Gear icon on cards linking to `/settings` or opening provider settings modal | M1 | ORIGINAL_REQUEST §R1 |
+| 4 | Workflow Card Grid Expansion | Render 10 total workflow cards including Avatar to Video and Whiteboard Animation | M1 | ORIGINAL_REQUEST §R1, §R3 |
+| 5 | Automatic Mission Prompt Bar | Single-input prompt bar on `/create` page with instant Enter key submission | M2 | ORIGINAL_REQUEST §R2 |
+| 6 | Mission Orchestration API | `POST /api/workflows/mission` background pipeline chaining all steps automatically | M2 | ORIGINAL_REQUEST §R2 |
+| 7 | Dedicated Mission Progress View | `/create/mission/[id]` page with 5-stage progress visualizer and live logs | M2 | ORIGINAL_REQUEST §R2 |
+| 8 | Manual / Edit in Wizard Toggle | Button on Mission Progress to transfer state to `useWizardStore` and open wizard | M2 | ORIGINAL_REQUEST §R2 |
+| 9 | Gemini Character Reference Sheets | Gemini API prompt engine generating consistent 9-pose character reference sheets | M3 | ORIGINAL_REQUEST §R3 |
+| 10 | Whiteboard Animation Orchestrator | Backend pipeline linking Gemini character sheets to progressive sketch video rendering | M3 | ORIGINAL_REQUEST §R3 |
+| 11 | Whiteboard Studio UI & API | Dedicated `/create/whiteboard` page and `POST /api/workflows/whiteboard` endpoint | M3 | ORIGINAL_REQUEST §R3 |
+| 12 | Avatar to Video Orchestrator | Backend pipeline for photo/presenter talking heads with PiP & fullscreen compositing | M3 | ORIGINAL_REQUEST §R3 |
+| 13 | Avatar Studio UI & API | Dedicated `/create/avatar` page and `POST /api/workflows/avatar` endpoint | M3 | ORIGINAL_REQUEST §R3 |
+| 14 | Resilient Mock/Dry-Run Fallbacks | Multi-tier fallback cascades for all APIs when live keys are not configured | M1, M2, M3 | ORIGINAL_REQUEST |
+| 15 | Comprehensive E2E Testing Suite | 4-Tier requirement-driven test suite validating API status, mission mode & pipelines | M4 | ORIGINAL_REQUEST |
 
 ---
 
 ## Milestones
+
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| E2E | E2E Testing Track | Requirement-driven opaque-box test suite (Tiers 1-4) & runner publishing `TEST_READY.md` | None | DONE |
-| M1 | AI Video Generators & Types | `types.ts`, `prompts.ts`, `video-generator.ts`, `/api/workflows/ai-videos`, `/create/ai-videos` | None | DONE |
-| M2 | Stories & Bulk Plan Workflows | `stories-orchestrator.ts`, `bulk-planner.ts`, `/api/workflows/stories`, `/api/workflows/bulk-plan`, `/create/stories`, `/create/bulk` | M1 | DONE |
-| M3 | Micro-Drama & Shorts Extractor | `drama-orchestrator.ts`, `shorts-extractor.ts`, `/api/workflows/micro-drama`, `/api/workflows/extract-shorts`, `/create/drama`, `/create/shorts` | M1 | DONE |
-| M4 | Auto Pilot Pipeline & Bindings | `auto-pilot.ts`, `/api/workflows/auto`, `/create/auto` | M2, M3 | DONE |
-| M5 | 100% E2E Verification & Adversarial Hardening | Pass 100% E2E tests (Tiers 1-4), then Tier 5 adversarial stress verification (112 tests total) | E2E, M1, M2, M3, M4 | DONE |
-| M6 | External Systems & Tier 6 Tests | TTS Providers, Social Publishing, Quotas & Audio Mixer, Tier 6 Tests (132 tests total) | M5 | DONE |
-| M7 | Targeted Deployment Configurations | Local Docker (M7A), Google Colab (M7B), Oracle Cloud (M7C), Verification & Audit (M7D) | M6 | DONE |
+| M1 | API Status Indicators & Settings Links | Dynamic status dots, cost tier badges, settings links, 10 workflow cards in `/create` | none | PLANNED |
+| M2 | Automatic Mission Mode & Progress View | One-click prompt submission, `mission-orchestrator.ts`, `/create/mission/[id]` view, manual edit toggle | M1 | PLANNED |
+| M3 | Avatar & Whiteboard Pipelines with Gemini Character References | Gemini 9-pose character reference generator, `whiteboard-orchestrator.ts`, `avatar-orchestrator.ts`, UI pages and APIs | M1 | PLANNED |
+| M4 | E2E Verification & Adversarial Hardening | Full requirement test suite (Tiers 1-4) passing 100%, adversarial edge cases (Tier 5) | M1, M2, M3 | PLANNED |
 
 ---
 
 ## Interface Contracts
 
-### 1. AI Video Generator (`lib/engine/video-generator.ts`)
-- **Signature**: `videoGenerator.generateAIVideo(request: AIVideoGenerationRequest): Promise<AIVideoGenerationResponse>`
-- **Request**: `{ script: string; model?: 'kling-v1' | 'luma-dream' | 'fal-flux'; aspectRatio?: string; duration?: number; cameraMotion?: string; negativePrompt?: string; voice?: string; mock?: boolean }`
-- **Response**: `{ success: boolean; jobId: string; videoUrl: string; prompt: string; modelUsed: string; duration: number; metadata: Record<string, any> }`
+### 1. `/api/settings/keys` ↔ Frontend Workflow Cards
+- **Request**: `GET /api/settings/keys`
+- **Response**:
+```json
+{
+  "keys": {
+    "gemini": { "isConfigured": true, "isActive": true, "maskedValue": "AIza...1234", "updatedAt": "..." },
+    "openai": { "isConfigured": false, "isActive": false, "maskedValue": "", "updatedAt": null },
+    "elevenlabs": { "isConfigured": false, "isActive": false, "maskedValue": "", "updatedAt": null },
+    "pexels": { "isConfigured": true, "isActive": true, "maskedValue": "pk_...99", "updatedAt": "..." },
+    "fal": { "isConfigured": false, "isActive": false, "maskedValue": "", "updatedAt": null },
+    "heygen": { "isConfigured": false, "isActive": false, "maskedValue": "", "updatedAt": null }
+  }
+}
+```
+- **Workflow Status Evaluation**:
+  - `ready` (🟢): All primary required provider keys are configured and active.
+  - `warning` (🟡): Some primary keys missing but built-in zero-cost fallback/mock provider is available.
+  - `error` (🔴): Critical keys unconfigured and no fallback available.
 
-### 2. Stories Orchestrator (`lib/engine/stories-orchestrator.ts`)
-- **Signature**: `storiesOrchestrator.generateStorySeries(request: StorySeriesRequest): Promise<StorySeriesResponse>`
-- **Request**: `{ topic: string; storyType: string; partsCount: number; visualStyle: string; voice?: string; aspectRatio?: string; includeHooks?: boolean }`
-- **Response**: `{ success: boolean; seriesTitle: string; parts: Array<{ partNumber: number; title: string; script: string; hook: string; cliffhanger: string; scenes: Scene[] }>; metadata: Record<string, any> }`
+### 2. Automatic Mission Mode: `/api/workflows/mission`
+- **Request**: `POST /api/workflows/mission`
+```json
+{
+  "prompt": "The history of ancient Roman engineering",
+  "aspectRatio": "9:16",
+  "style": "cinematic",
+  "voice": "onyx"
+}
+```
+- **Response**:
+```json
+{
+  "success": true,
+  "jobId": "c8f2a100-34b2-4889-bb02-c9a184128f11",
+  "status": "processing",
+  "progressUrl": "/create/mission/c8f2a100-34b2-4889-bb02-c9a184128f11"
+}
+```
 
-### 3. Bulk Planner (`lib/engine/bulk-planner.ts`)
-- **Signature**: `bulkPlanner.generatePlan(request: BulkPlanRequest): Promise<BulkPlanResponse>`
-- **Request**: `{ niche: string; contentCount: number; cadence: string; visualStyle: string; voice?: string; platforms: string[]; aspectRatio?: string }`
-- **Response**: `{ success: boolean; planTitle: string; items: Array<{ day: number; title: string; hook: string; script: string; status: string }>; batchJobIds: string[] }`
+### 3. Gemini Character Reference Sheet Generation: `/api/workflows/whiteboard/character-sheet`
+- **Request**: `POST /api/workflows/whiteboard/character-sheet`
+```json
+{
+  "archetype": "stickman" | "saint" | "old man" | "founder" | "doctor" | "custom",
+  "customDescription": "A wise elder philosopher in flowing robes with a scroll",
+  "style": "monoline_marker"
+}
+```
+- **Response**:
+```json
+{
+  "characterId": "char_saint_9pose",
+  "archetype": "saint",
+  "sheetImageUrl": "/assets/character-sheets/saint_9pose.png",
+  "poses": {
+    "pose_1": { "name": "neutral", "description": "Standing calmly holding scroll", "bbox": [0, 0, 333, 333] },
+    "pose_2": { "name": "pointing", "description": "Pointing skyward with index finger", "bbox": [333, 0, 666, 333] },
+    "pose_3": { "name": "eureka", "description": "Holding a glowing concept", "bbox": [666, 0, 1000, 333] },
+    "pose_4": { "name": "explaining", "description": "Hands open in discourse", "bbox": [0, 333, 333, 666] },
+    "pose_5": { "name": "reading", "description": "Unfurling ancient parchment", "bbox": [333, 333, 666, 666] },
+    "pose_6": { "name": "confused", "description": "Pondering with hand on chin", "bbox": [666, 333, 1000, 666] },
+    "pose_7": { "name": "sitting", "description": "Sitting cross-legged meditating", "bbox": [0, 666, 333, 1000] },
+    "pose_8": { "name": "writing", "description": "Inscribing on tablet", "bbox": [333, 666, 666, 1000] },
+    "pose_9": { "name": "blessing", "description": "Raised hand of wisdom", "bbox": [666, 666, 1000, 1000] }
+  }
+}
+```
 
-### 4. Micro-Drama Orchestrator (`lib/engine/drama-orchestrator.ts`)
-- **Signature**: `dramaOrchestrator.generateDramaSeries(request: DramaSeriesRequest): Promise<DramaSeriesResponse>`
-- **Request**: `{ script?: string; genre: string; characters: Array<{ name: string; description: string; visualAnchor: string; voice?: string }>; episodesCount: number; aspectRatio?: string }`
-- **Response**: `{ success: boolean; dramaTitle: string; characters: Array<{ name: string; avatarUrl: string; visualAnchor: string }>; episodes: Array<{ episodeNumber: number; title: string; script: string; scenes: Scene[] }> }`
+### 4. Whiteboard Animation Workflow: `/api/workflows/whiteboard`
+- **Request**: `POST /api/workflows/whiteboard`
+```json
+{
+  "prompt": "3 laws of motion explained simply",
+  "characterArchetype": "stickman",
+  "markerColor": "#1E293B",
+  "aspectRatio": "16:9"
+}
+```
+- **Response**: `{ "success": true, "jobId": "...", "characterSheet": { ... }, "storyboard": [ ... ] }`
 
-### 5. Shorts Extractor (`lib/engine/shorts-extractor.ts`)
-- **Signature**: `shortsExtractor.extractShorts(request: ShortsExtractionRequest): Promise<ShortsExtractionResponse>`
-- **Request**: `{ sourceType: 'url' | 'transcript' | 'file'; videoUrl?: string; transcript?: string; clipCount?: number; strategy?: string; captionStyle?: string; aspectRatio?: string }`
-- **Response**: `{ success: boolean; originalDuration: number; clips: Array<{ clipId: string; title: string; hook: string; startTime: number; endTime: number; viralScore: number; reason: string }> }`
-
-### 6. Auto Pilot (`lib/engine/auto-pilot.ts`)
-- **Signature**: `autoPilot.executePipeline(config: AutoPilotConfig): Promise<AutoPilotResponse>`
-- **Request**: `{ pipelineName: string; niche: string; schedule: string; sourceStrategy: string; visualPipeline: string; autoPublish: boolean; targetPlatforms: string[]; voice?: string }`
-- **Response**: `{ success: boolean; pipelineId: string; nextRun: string; generatedJobId?: string; status: string }`
-
-### 7. API Routes Standard (`app/api/workflows/*`)
-- **Methods**: `POST`
-- **Response Shape (HTTP 200)**: `{ success: true, jobId: string, message: string, data?: any }`
-- **Response Shape (HTTP 400/500)**: `{ success: false, error: string }`
-- **Database Contract**: Immediate synchronous insertion of `{ id: jobId, status: 'pending', progress: 0, logs: JSON.stringify({ workflow, input }), started_at: new Date().toISOString() }` into Supabase `render_jobs` before running async background task.
+### 5. Avatar to Video Workflow: `/api/workflows/avatar`
+- **Request**: `POST /api/workflows/avatar`
+```json
+{
+  "script": "Welcome to Clipped AI. Here is your weekly update.",
+  "avatarType": "preset" | "custom_photo",
+  "avatarId": "sarah_presenter",
+  "customImageUrl": null,
+  "layout": "pip_bottom_right" | "fullscreen",
+  "voice": "nova"
+}
+```
+- **Response**: `{ "success": true, "jobId": "...", "status": "processing" }`
 
 ---
 
 ## Code Layout
-```
-lib/
-├── db.ts                          # Supabase client singleton
-└── engine/
-    ├── types.ts                   # Core data models & workflow types
-    ├── prompts.ts                 # Reusable AI prompt engineering templates
-    ├── orchestrator.ts            # VideoOrchestrator (stock footage)
-    ├── image-generator.ts         # ImageGenerator (Fal.ai Flux)
-    ├── scene-matcher.ts           # SceneMatcher (LLM script to scenes)
-    ├── video-sourcer.ts           # VideoSourcer (Pexels / Pixabay)
-    ├── tts.ts                     # Text to Speech engine
-    ├── video-generator.ts         # Kling / Luma / Fal AI video generator
-    ├── stories-orchestrator.ts    # Multi-part story series generator
-    ├── bulk-planner.ts            # 30-day content calendar planner
-    ├── drama-orchestrator.ts      # Multi-episode character-consistent drama
-    ├── shorts-extractor.ts        # Long-form video transcript slicing & hooks
-    └── auto-pilot.ts              # Autonomous pipeline runner
 
-app/
-├── (app)/
-│   └── create/
-│       ├── footage/page.tsx       # Stock footage workflow UI
-│       ├── images/page.tsx        # AI images workflow UI
-│       ├── ai-videos/page.tsx     # AI videos workflow UI
-│       ├── stories/page.tsx       # Multi-part stories UI
-│       ├── bulk/page.tsx          # Bulk content planner UI
-│       ├── shorts/page.tsx        # Extract shorts UI
-│       ├── drama/page.tsx         # Micro-drama UI
-│       └── auto/page.tsx          # Auto pilot UI
-└── api/
-    └── workflows/
-        ├── generate/route.ts      # Stock footage workflow endpoint
-        ├── images/route.ts        # AI images workflow endpoint
-        ├── ai-videos/route.ts     # AI videos workflow endpoint
-        ├── stories/route.ts       # Stories workflow endpoint
-        ├── bulk-plan/route.ts     # Bulk planner workflow endpoint
-        ├── extract-shorts/route.ts# Extract shorts workflow endpoint
-        ├── micro-drama/route.ts   # Micro-drama workflow endpoint
-        └── auto/route.ts          # Auto pilot workflow endpoint
-```
+- `app/(app)/create/page.tsx`: Create Hub with prompt bar, 10 workflow cards, status indicators, and settings shortcuts.
+- `app/(app)/create/components/WorkflowCard.tsx`: Individual workflow card with status pill, cost tier, settings icon, and dynamic key tooltips.
+- `app/(app)/create/components/MissionPromptBar.tsx`: One-click prompt input bar with fast auto-pilot submission.
+- `app/(app)/create/mission/[id]/page.tsx`: Mission Progress view with stepper visualizer, live logs, Remotion preview, and manual edit button.
+- `app/(app)/create/avatar/page.tsx`: Avatar to Video creation studio.
+- `app/(app)/create/whiteboard/page.tsx`: Whiteboard Animation creation studio with character reference selector.
+- `lib/engine/mission-orchestrator.ts`: Background job orchestrator for Automatic Mission Mode.
+- `lib/engine/avatar-orchestrator.ts`: Background job orchestrator for Avatar Talking Head videos.
+- `lib/engine/whiteboard-orchestrator.ts`: Background job orchestrator for Whiteboard Animation with Gemini character references.
+- `lib/ai/gemini-character-generator.ts`: Gemini character reference sheet generator & pose mapper.
+- `app/api/workflows/mission/route.ts`: Mission generation route.
+- `app/api/workflows/avatar/route.ts`: Avatar generation route.
+- `app/api/workflows/whiteboard/route.ts`: Whiteboard generation route.
+- `app/api/workflows/whiteboard/character-sheet/route.ts`: Gemini character reference generation route.
+- `tests/e2e/test-api-status.js`: Verification test for API status indicators and key resolution.
+- `tests/e2e/test-mission-mode.js`: Verification test for automatic mission mode execution and manual state handoff.
+- `tests/e2e/test-whiteboard-avatar-pipelines.js`: Verification test for Avatar and Whiteboard pipelines with Gemini character consistency.

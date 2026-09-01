@@ -1,36 +1,68 @@
 # Original User Request
 
-## Initial Request — 2026-09-01T05:03:05+05:30
+## Initial Request — 2026-09-01T15:27:30+05:30
 
-<USER_REQUEST>
-You are the SWE Orchestrator for the Clipped AI video platform.
+You are the Project Orchestrator for Clipped AI Studio dashboard UI enhancement and database seeding.
 
-Workspace Directory: `C:\Users\vigilare\.gemini\antigravity\scratch\clipped`
-Agent Working Directory: `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\orchestrator`
+Workspace directory: `C:\Users\vigilare\.gemini\antigravity\scratch\clipped`
+Agent Working directory: `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\orchestrator_ui_seed`
 Authoritative Request: `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\ORIGINAL_REQUEST.md`
 
 ## Task Overview
-This is a single self-contained fix; keep it small and focused. Finalizing the Clipped AI video platform by fixing background worker syntax errors and conducting a dry-run end-to-end video generation test.
+Enhance the Clipped AI Studio dashboard UI with a collapsible glassmorphism sidebar, vibrant color schemes, and placeholder images. Additionally, write a Supabase seeder script to populate the Library and Planner views with realistic mock data to remove their blank states.
 
-Integrity mode: demo
+Integrity mode: development
 
 ## Requirements
-### R1. Fix Background Workers
-Restore the stripped template literals (backticks) in `scripts/publish-worker.ts` and `scripts/render-worker.ts`. These were corrupted by PowerShell escaping, causing PM2 crash loops. Ensure they compile cleanly.
+### R1. Dashboard UI & Sidebar Redesign
+Update the main application layout to include a collapsible side navigation bar. The sidebar must feature glassmorphism styling (translucent, blurred background). Enhance the overall color scheme of the dashboard to be vibrant, colorful, and add icons wherever appropriate.
 
-### R2. E2E Verification
-Conduct a dry-run End-to-End test of the video generation pipeline. Verify that a video job correctly passes from the UI to Supabase, and is successfully picked up by the fixed `render-worker`.
+### R2. Dashboard Imagery
+Incorporate high-quality images into the dashboard to make it look like a real, active application. Sourcing options include generating them or using high-quality stock URLs / realistic placeholder assets.
+
+### R3. Supabase Data Seeding
+Write a database seeder script (e.g., `scripts/seed.ts` or `seed.js`) to insert realistic mock data into the Supabase database. The script must populate the `render_jobs` table (for the Library) and the relevant tables for the Planner so that both views display active content rather than blank states.
 
 ## Acceptance Criteria
-### Implementation Quality
-- [ ] Running `npx tsc --noEmit` on the scripts folder passes without syntax errors related to missing backticks or template literals.
-- [ ] The background workers can be started via PM2 and maintain a stable uptime without immediate crash loops.
+### UI Implementation
+- [ ] The side navigation bar successfully toggles between a collapsed (icon-only) and expanded state.
+- [ ] The side navigation bar implements CSS `backdrop-filter: blur()` or Tailwind `backdrop-blur` for the glassmorphism effect.
+- [ ] At least 5 new icons are added across the dashboard components.
 
-### E2E
-- [ ] A test video generation job inserted into `render_jobs` is demonstrably picked up by the `render-worker` in the logs.
+### Database Seeding & Verification
+- [ ] A dedicated seeder script (e.g., `seed.ts` or `seed.js`) exists in the repository.
+- [ ] Running the seeder script programmatically inserts at least 5 mock records into the Supabase database for both the Library and the Planner.
+- [ ] The `app/(app)/library/page.tsx` and Planner pages successfully fetch and render the mock data without displaying an empty state.
 
-## Coordination & Handoff
-- Update `progress.md` and `BRIEFING.md` in your working directory as milestones progress.
-- Run tests to establish correctness.
-- When implementation and verification are complete, notify the Sentinel (parent) via send_message with a complete summary and verification results.
-</USER_REQUEST>
+## Orchestrator Rules & Workflow
+- Maintain `progress.md` and `BRIEFING.md` in your working directory.
+- Decompose the work, dispatch specialists, track progress, review and test.
+- When all requirements are implemented and fully verified with tests passing, report completion back to the Sentinel (parent) via send_message with a complete summary and verification evidence.
+
+## Follow-up — 2026-09-01T17:09:53+05:30
+
+Enhance the 'create' section of the Clipped AI dashboard with API configuration status indicators and settings links. Implement an 'automatic mission' mode that generates end-to-end videos from a single prompt, and research/build pipelines for avatar-to-video and whiteboard animation with consistent Gemini-generated character references.
+
+Working directory: `C:\Users\vigilare\.gemini\antigravity\scratch\clipped`
+Integrity mode: development
+
+## Requirements
+
+### R1. API Status Indicators
+Add visual indicators (green, orange, red, $) to each workflow card in the `create` section, reflecting the configuration status of required APIs. Add a settings icon linking to the configuration page.
+
+### R2. Automatic Mission Mode
+Implement a "one-click" generation flow where typing a subject and hitting enter automatically initiates the full video generation pipeline. The user should immediately navigate to a dedicated "Mission Progress" view that shows the steps completing automatically, while still allowing a "manual/edit" toggle for granular control.
+
+### R3. Whiteboard & Avatar Pipelines
+Research and integrate two new workflows: "Avatar to Video" and "Whiteboard Animation". The team is free to research and decide the best external models/APIs to use for generating Avatars and Whiteboards. However, the whiteboard pipeline must use Google Gemini to generate consistent character reference sheets (e.g., stickman, saint, old man, etc.) that drive the video generation.
+
+## Acceptance Criteria
+
+### UI & UX Verification
+- [ ] Each workflow card dynamically displays a status dot (green, red, orange) based on the `/api/settings/keys` response.
+- [ ] Submitting a prompt in "Automatic" mode navigates the user to a Mission Progress view where the job automatically progresses without manual intervention.
+
+### Pipeline Verification
+- [ ] New UI cards for "Avatar" and "Whiteboard" are added to the create section.
+- [ ] Backend orchestrators for Whiteboard animation successfully use Gemini to generate character references before rendering.

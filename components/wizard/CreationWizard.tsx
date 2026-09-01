@@ -216,59 +216,59 @@ export function CreationWizard({ workflowType }: { workflowType: string }) {
     w.step === 1 ? { label: 'Re-break with AI', run: runBreakdown } : null
 
   return (
-    <div className="flex flex-col lg:flex-row flex-1 gap-4 lg:gap-6 w-full max-w-7xl mx-auto min-h-[calc(100vh-8rem)] h-auto lg:h-[calc(100vh-8rem)] pb-8 lg:pb-0">
-      {/* Sidebar Navigation */}
-      <aside className="w-full lg:w-64 flex flex-col gap-2 shrink-0 order-2 lg:order-1">
-        <div className="mb-4 hidden lg:block">
-          <button 
-            onClick={runAutoMode}
-            className="w-full flex items-center justify-center gap-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 text-sm font-medium shadow transition-colors"
-          >
-            <Sparkles className="w-4 h-4" />
-            Auto-Pilot Generator
-          </button>
-          <p className="text-xs text-muted-foreground mt-2 text-center">
-            Or manually configure each step below.
-          </p>
-        </div>
-        
-        <div className="flex flex-row lg:flex-col gap-2 overflow-x-auto pb-2 lg:pb-0 snap-x">
-          {STEPS.map((item, index) => {
-            const Icon = STEP_ICONS[index]
-            const isActive = index === w.step
-            const isCompleted = index <= w.furthestStep
-            
-            return (
-              <button
-                key={item.key}
-                type="button"
-                disabled={!isCompleted && !isActive}
-                onClick={() => w.goToStep(index)}
-                className={`flex items-start gap-3 p-3 text-left rounded-lg transition-colors border shrink-0 w-[200px] lg:w-full snap-start ${
-                  isActive 
-                    ? 'bg-primary/10 border-primary/30' 
-                    : isCompleted 
-                    ? 'hover:bg-muted border-transparent' 
-                    : 'opacity-50 cursor-not-allowed border-transparent'
-              }`}
-            >
-              <div className={`mt-0.5 rounded-full p-1.5 ${isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-                <Icon className="w-4 h-4" />
-              </div>
-              <div>
-                <div className={`text-sm font-semibold ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>
-                  {index + 1}. {item.name}
+    <div className="flex flex-col flex-1 gap-4 lg:gap-6 w-full max-w-[1600px] mx-auto min-h-[calc(100vh-8rem)] pb-8 lg:pb-0">
+      {/* Top Navigation Bar */}
+      <nav className="w-full bg-card border rounded-xl shadow-sm p-3 flex items-center justify-between overflow-x-auto shrink-0 z-20">
+         <div className="flex items-center gap-1 sm:gap-2 px-2">
+            {STEPS.map((item, index) => {
+              const Icon = STEP_ICONS[index]
+              const isActive = index === w.step
+              const isCompleted = index <= w.furthestStep
+              
+              return (
+                <div key={item.key} className="flex items-center">
+                  <button
+                    type="button"
+                    disabled={!isCompleted && !isActive}
+                    onClick={() => w.goToStep(index)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                      isActive 
+                        ? 'bg-primary text-primary-foreground shadow-sm' 
+                        : isCompleted 
+                        ? 'hover:bg-muted text-foreground' 
+                        : 'opacity-50 cursor-not-allowed text-muted-foreground'
+                    }`}
+                  >
+                    <div className={`rounded-full p-1 border ${isActive ? 'bg-primary-foreground/20 border-transparent' : isCompleted ? 'bg-background border-border' : 'bg-muted border-transparent'}`}>
+                      <Icon className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="hidden sm:inline-block">{index + 1}. {item.name}</span>
+                    <span className="sm:hidden">{index + 1}</span>
+                  </button>
+                  
+                  {index < STEPS.length - 1 && (
+                    <div className="w-4 sm:w-8 h-px mx-1 sm:mx-2 bg-border" />
+                  )}
                 </div>
-                <div className="text-xs text-muted-foreground line-clamp-1">{item.hint}</div>
-              </div>
-            </button>
-          )
-        })}
-        </div>
-      </aside>
+              )
+            })}
+         </div>
 
-      {/* Main Work Area */}
-      <main className="flex-1 flex flex-col bg-card border rounded-xl shadow-sm overflow-hidden relative">
+         <div className="flex items-center px-2 shrink-0 border-l ml-2 pl-4">
+            <button 
+              onClick={runAutoMode}
+              className="flex items-center gap-2 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 text-sm font-medium shadow transition-colors"
+            >
+              <Sparkles className="w-4 h-4" />
+              Auto-Pilot
+            </button>
+         </div>
+      </nav>
+
+      {/* Workspace & Preview Layout */}
+      <div className="flex flex-col lg:flex-row flex-1 gap-4 lg:gap-6 min-h-0 relative">
+        {/* Main Work Area */}
+        <main className="flex-1 flex flex-col bg-card border rounded-xl shadow-sm overflow-hidden relative overflow-y-auto">
         {w.autoMode && (
           <div className="absolute inset-x-0 top-0 bg-indigo-500/10 border-b border-indigo-500/20 px-4 py-2 flex items-center gap-2">
              <Sparkles className="w-4 h-4 text-indigo-500" />
@@ -398,6 +398,7 @@ export function CreationWizard({ workflowType }: { workflowType: string }) {
           )}
         </div>
       </aside>
+      </div>
     </div>
   )
 }

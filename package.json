@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "test": "node tests/e2e/standalone-runner.js",
     "test:e2e": "node tests/e2e/standalone-runner.js",
+    "seed": "tsx scripts/seed.ts",
     "worker": "tsx scripts/render-worker.ts",
     "worker:render": "tsx scripts/render-worker.ts",
     "worker:publish": "tsx scripts/publish-worker.ts",
