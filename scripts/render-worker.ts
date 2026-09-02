@@ -175,15 +175,21 @@ async function pollAndProcess() {
       bgmUrl: bgmUrl,
       watermarkUrl: watermarkUrl,
       subtitleStyle: {
-        y: params.subtitleY || params.input?.subtitleY || 78,
+        y: params.subtitleY ?? params.input?.subtitleY ?? 78,
         color: params.subtitleColor || params.input?.subtitleColor || '#ffffff',
-        size: params.subtitleSize || params.input?.subtitleSize || 5.2,
-        outlineWidth: 2.5,
-        outlineColor: '#000000',
-        isBox: Boolean(params.subtitleIsBox || params.input?.subtitleIsBox),
+        highlightColor: params.subtitleHighlightColor || params.input?.subtitleHighlightColor || '#facc15',
+        glow: Boolean(params.subtitleGlow ?? params.input?.subtitleGlow),
+        glowColor: params.subtitleGlowColor || params.input?.subtitleGlowColor || '#22d3ee',
+        size: params.subtitleSize ?? params.input?.subtitleSize ?? 5.2,
+        outlineWidth: params.subtitleOutlineWidth ?? params.input?.subtitleOutlineWidth ?? 2.5,
+        outlineColor: params.subtitleOutline || params.input?.subtitleOutline || '#000000',
+        isBox: Boolean(params.subtitleBox ?? params.subtitleIsBox ?? params.input?.subtitleBox ?? params.input?.subtitleIsBox),
         boxColor: params.subtitleBoxColor || params.input?.subtitleBoxColor || '#000000',
-        uppercase: Boolean(params.subtitleUppercase || params.input?.subtitleUppercase),
-        maxWidth: params.subtitleMaxWidth || params.input?.subtitleMaxWidth || 82
+        boxOpacity: params.subtitleBoxOpacity ?? params.input?.subtitleBoxOpacity ?? 70,
+        boxRadius: params.subtitleBoxRadius ?? params.input?.subtitleBoxRadius ?? 8,
+        letterSpacing: params.subtitleLetterSpacing ?? params.input?.subtitleLetterSpacing ?? 0,
+        uppercase: Boolean(params.subtitleUppercase ?? params.input?.subtitleUppercase),
+        maxWidth: params.subtitleMaxWidth ?? params.input?.subtitleMaxWidth ?? 82,
       }
     }
 

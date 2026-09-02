@@ -2,10 +2,13 @@
  * Text-to-Speech (TTS) Engine for Clipped
  *
  * Multi-provider voice synthesis engine supporting:
- * 1. Google Cloud Text-to-Speech (Neural2, Wavenet, Journey, Standard)
- * 2. ElevenLabs API (eleven_multilingual_v2 model with voice presets)
- * 3. Coqui TTS API (self-hosted / remote endpoint with 2.5s fast timeout guard)
- * 4. Deterministic In-Memory Cost-Safe Mock Engine (RIFF/WAVE PCM generator)
+ * 1. Azure Speech Services REST API (Neural voices with SSML rate & pitch control)
+ * 2. OpenAI TTS API (tts-1 / tts-1-hd models with high-fidelity voices)
+ * 3. ElevenLabs API (eleven_multilingual_v2 model with voice presets)
+ * 4. Google Cloud Text-to-Speech (Neural2, Wavenet, Journey, Standard)
+ * 5. Free & Keyless TTS (Google Translate TTS API + high-fidelity PCM WAV fallback)
+ * 6. Coqui TTS API (self-hosted / remote endpoint with 2.5s fast timeout guard)
+ * 7. Deterministic In-Memory Cost-Safe Mock Engine (RIFF/WAVE PCM generator)
  *
  * Supported Languages:
  * - English: en-US, en-IN
@@ -17,7 +20,15 @@
 // Types & Interface Contracts
 // ============================================================================
 
-export type TTSProvider = 'elevenlabs' | 'google' | 'coqui' | 'mock' | 'auto';
+export type TTSProvider =
+  | 'azure'
+  | 'openai'
+  | 'elevenlabs'
+  | 'google'
+  | 'coqui'
+  | 'keyless'
+  | 'mock'
+  | 'auto';
 
 export type SupportedLanguage =
   | 'en-US'
@@ -39,10 +50,11 @@ export interface TTSVoiceOption {
   gender: VoiceGender;
   description?: string;
   sampleUrl?: string;
+  previewText?: string;
 }
 
 export interface ProviderAttemptLog {
-  provider: TTSProvider;
+  provider: TTSProvider | string;
   status: 'success' | 'failed' | 'skipped';
   error?: string;
   latencyMs?: number;
@@ -51,7 +63,7 @@ export interface ProviderAttemptLog {
 export interface TTSRequest {
   text: string;
   language?: SupportedLanguage | string;
-  provider?: TTSProvider | 'auto';
+  provider?: TTSProvider | string;
   voice?: string;
   voiceId?: string;
   gender?: VoiceGender;
@@ -62,6 +74,8 @@ export interface TTSRequest {
   audioFormat?: 'mp3' | 'wav' | 'ogg';
   mock?: boolean;
   apiKey?: string;
+  region?: string;
+  model?: string;
 }
 
 // Alias for backwards/forwards compatibility across orchestrators
@@ -254,6 +268,57 @@ export const ELEVENLABS_LANG_MAP: Record<SupportedLanguage, string> = {
   'mr-IN': 'mr',
 };
 
+export const OPENAI_VOICES = [
+  { id: 'alloy', name: 'Alloy', gender: 'neutral' as VoiceGender, description: 'Balanced, versatile, and neutral tone' },
+  { id: 'echo', name: 'Echo', gender: 'male' as VoiceGender, description: 'Warm, resonant, and balanced male tone' },
+  { id: 'fable', name: 'Fable', gender: 'female' as VoiceGender, description: 'Expressive, storytelling British accent' },
+  { id: 'onyx', name: 'Onyx', gender: 'male' as VoiceGender, description: 'Deep, authoritative, and powerful male tone' },
+  { id: 'nova', name: 'Nova', gender: 'female' as VoiceGender, description: 'Energetic, cheerful, and bright female tone' },
+  { id: 'shimmer', name: 'Shimmer', gender: 'female' as VoiceGender, description: 'Clear, crisp, and high-frequency female tone' },
+];
+
+export const AZURE_DEFAULT_VOICES: Record<
+  SupportedLanguage,
+  { female: string; male: string; neutral?: string }
+> = {
+  'en-US': { female: 'en-US-JennyNeural', male: 'en-US-GuyNeural', neutral: 'en-US-AriaNeural' },
+  'en-IN': { female: 'en-IN-NeerjaNeural', male: 'en-IN-PrabhatNeural', neutral: 'en-IN-NeerjaNeural' },
+  'hi-IN': { female: 'hi-IN-SwaraNeural', male: 'hi-IN-MadhurNeural', neutral: 'hi-IN-SwaraNeural' },
+  'ta-IN': { female: 'ta-IN-PallaviNeural', male: 'ta-IN-ValluvarNeural', neutral: 'ta-IN-PallaviNeural' },
+  'te-IN': { female: 'te-IN-ShrutiNeural', male: 'te-IN-MohanNeural', neutral: 'te-IN-ShrutiNeural' },
+  'kn-IN': { female: 'kn-IN-SapnaNeural', male: 'kn-IN-GaganNeural', neutral: 'kn-IN-SapnaNeural' },
+  'bn-IN': { female: 'bn-IN-TanishaaNeural', male: 'bn-IN-BashkarNeural', neutral: 'bn-IN-TanishaaNeural' },
+  'mr-IN': { female: 'mr-IN-AarohiNeural', male: 'mr-IN-ManoharNeural', neutral: 'mr-IN-AarohiNeural' },
+};
+
+export const AZURE_VOICE_CATALOG: TTSVoiceOption[] = [
+  // US English
+  { id: 'en-US-JennyNeural', name: 'Jenny (Neural)', provider: 'azure', language: 'en-US', gender: 'female', description: 'Natural, conversational US English' },
+  { id: 'en-US-GuyNeural', name: 'Guy (Neural)', provider: 'azure', language: 'en-US', gender: 'male', description: 'Confident, friendly US English male' },
+  { id: 'en-US-AriaNeural', name: 'Aria (Neural)', provider: 'azure', language: 'en-US', gender: 'female', description: 'Versatile, highly expressive US English' },
+  // Indian English
+  { id: 'en-IN-NeerjaNeural', name: 'Neerja (Neural)', provider: 'azure', language: 'en-IN', gender: 'female', description: 'Authentic Indian English female' },
+  { id: 'en-IN-PrabhatNeural', name: 'Prabhat (Neural)', provider: 'azure', language: 'en-IN', gender: 'male', description: 'Professional Indian English male' },
+  // Hindi
+  { id: 'hi-IN-SwaraNeural', name: 'Swara (Neural)', provider: 'azure', language: 'hi-IN', gender: 'female', description: 'Natural, fluent Hindi female' },
+  { id: 'hi-IN-MadhurNeural', name: 'Madhur (Neural)', provider: 'azure', language: 'hi-IN', gender: 'male', description: 'Warm, clear Hindi male' },
+  // Tamil
+  { id: 'ta-IN-PallaviNeural', name: 'Pallavi (Neural)', provider: 'azure', language: 'ta-IN', gender: 'female', description: 'Expressive Tamil female' },
+  { id: 'ta-IN-ValluvarNeural', name: 'Valluvar (Neural)', provider: 'azure', language: 'ta-IN', gender: 'male', description: 'Authoritative Tamil male' },
+  // Telugu
+  { id: 'te-IN-ShrutiNeural', name: 'Shruti (Neural)', provider: 'azure', language: 'te-IN', gender: 'female', description: 'Fluent Telugu female' },
+  { id: 'te-IN-MohanNeural', name: 'Mohan (Neural)', provider: 'azure', language: 'te-IN', gender: 'male', description: 'Clear Telugu male' },
+  // Kannada
+  { id: 'kn-IN-SapnaNeural', name: 'Sapna (Neural)', provider: 'azure', language: 'kn-IN', gender: 'female', description: 'Natural Kannada female' },
+  { id: 'kn-IN-GaganNeural', name: 'Gagan (Neural)', provider: 'azure', language: 'kn-IN', gender: 'male', description: 'Fluent Kannada male' },
+  // Bengali
+  { id: 'bn-IN-TanishaaNeural', name: 'Tanishaa (Neural)', provider: 'azure', language: 'bn-IN', gender: 'female', description: 'Clear Bengali female' },
+  { id: 'bn-IN-BashkarNeural', name: 'Bashkar (Neural)', provider: 'azure', language: 'bn-IN', gender: 'male', description: 'Warm Bengali male' },
+  // Marathi
+  { id: 'mr-IN-AarohiNeural', name: 'Aarohi (Neural)', provider: 'azure', language: 'mr-IN', gender: 'female', description: 'Natural Marathi female' },
+  { id: 'mr-IN-ManoharNeural', name: 'Manohar (Neural)', provider: 'azure', language: 'mr-IN', gender: 'male', description: 'Fluent Marathi male' },
+];
+
 export const GOOGLE_DEFAULT_VOICES: Record<
   SupportedLanguage,
   { female: string; male: string; neutral?: string }
@@ -279,9 +344,33 @@ export const COQUI_LANG_MAP: Record<SupportedLanguage, string> = {
   'mr-IN': 'mr',
 };
 
+export const FREE_KEYLESS_VOICES: TTSVoiceOption[] = [
+  { id: 'free-en-us', name: 'Free English (US)', provider: 'keyless', language: 'en-US', gender: 'female', description: 'High-speed keyless voice' },
+  { id: 'free-en-in', name: 'Free English (India)', provider: 'keyless', language: 'en-IN', gender: 'female', description: 'High-speed keyless Indian English' },
+  { id: 'free-hi-in', name: 'Free Hindi', provider: 'keyless', language: 'hi-IN', gender: 'female', description: 'High-speed keyless Hindi voice' },
+  { id: 'free-ta-in', name: 'Free Tamil', provider: 'keyless', language: 'ta-IN', gender: 'female', description: 'High-speed keyless Tamil voice' },
+  { id: 'free-te-in', name: 'Free Telugu', provider: 'keyless', language: 'te-IN', gender: 'female', description: 'High-speed keyless Telugu voice' },
+  { id: 'free-kn-in', name: 'Free Kannada', provider: 'keyless', language: 'kn-IN', gender: 'female', description: 'High-speed keyless Kannada voice' },
+  { id: 'free-bn-in', name: 'Free Bengali', provider: 'keyless', language: 'bn-IN', gender: 'female', description: 'High-speed keyless Bengali voice' },
+  { id: 'free-mr-in', name: 'Free Marathi', provider: 'keyless', language: 'mr-IN', gender: 'female', description: 'High-speed keyless Marathi voice' },
+];
+
 // ============================================================================
-// Deterministic In-Memory RIFF/WAVE PCM Buffer Generator
+// Helper Utilities & Deterministic In-Memory PCM Buffer Generator
 // ============================================================================
+
+function escapeXml(unsafe: string): string {
+  return unsafe.replace(/[<>&'"]/g, (c) => {
+    switch (c) {
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '&': return '&amp;';
+      case '\'': return '&apos;';
+      case '"': return '&quot;';
+      default: return c;
+    }
+  });
+}
 
 /**
  * Creates a valid, strictly standard RIFF/WAVE PCM audio buffer in memory with deterministic sine wave samples.
@@ -366,7 +455,7 @@ export class TTSEngine {
    * and in-memory mock generation.
    */
   async synthesize(request: TTSRequest): Promise<TTSResponse> {
-    const rawText = request.text ? String(request.text).trim() : '';
+    const rawText = request.text !== undefined && request.text !== null ? String(request.text).trim() : '';
     if (!rawText) {
       throw new Error('Text is required for TTS synthesis');
     }
@@ -376,7 +465,6 @@ export class TTSEngine {
       ? normalizeLanguageCode(request.language)
       : detectLanguageFromScript(rawText);
 
-    const gender: VoiceGender = request.gender || 'female';
     const speed = request.speed || request.speakingRate || 1.0;
     const providerAttempts: ProviderAttemptLog[] = [];
 
@@ -386,26 +474,89 @@ export class TTSEngine {
     }
 
     // 2. Cascade Chain determination
-    const requestedProvider = request.provider && request.provider !== 'auto' ? request.provider : undefined;
-    
-    // Priority order: Requested Provider (if given) -> ElevenLabs -> Google -> Coqui -> Mock
+    const requestedProvider = (request.provider && request.provider !== 'auto')
+      ? (request.provider.toLowerCase() as TTSProvider)
+      : undefined;
+
     let providersToTry: TTSProvider[] = [];
-    if (requestedProvider === 'google') {
-      providersToTry = ['google', 'elevenlabs', 'coqui'];
-    } else if (requestedProvider === 'coqui') {
-      providersToTry = ['coqui', 'elevenlabs', 'google'];
+
+    if (requestedProvider === 'azure') {
+      providersToTry = ['azure', 'openai', 'elevenlabs', 'google', 'coqui', 'keyless'];
+    } else if (requestedProvider === 'openai') {
+      providersToTry = ['openai', 'azure', 'elevenlabs', 'google', 'coqui', 'keyless'];
     } else if (requestedProvider === 'elevenlabs') {
-      providersToTry = ['elevenlabs', 'google', 'coqui'];
+      providersToTry = ['elevenlabs', 'azure', 'openai', 'google', 'coqui', 'keyless'];
+    } else if (requestedProvider === 'google') {
+      providersToTry = ['google', 'azure', 'openai', 'elevenlabs', 'coqui', 'keyless'];
+    } else if (requestedProvider === 'coqui') {
+      providersToTry = ['coqui', 'azure', 'openai', 'elevenlabs', 'google', 'keyless'];
+    } else if (requestedProvider === 'keyless') {
+      providersToTry = ['keyless'];
     } else {
-      // Default auto cascade
-      providersToTry = ['elevenlabs', 'google', 'coqui'];
+      // Default auto cascade: Azure -> OpenAI -> ElevenLabs -> Google -> Coqui -> Keyless
+      providersToTry = ['azure', 'openai', 'elevenlabs', 'google', 'coqui', 'keyless'];
     }
 
     for (const provider of providersToTry) {
       const startTime = Date.now();
       try {
+        // --- A. AZURE SPEECH SERVICES ---
+        if (provider === 'azure') {
+          const apiKey =
+            request.apiKey ||
+            process.env.AZURE_SPEECH_KEY ||
+            process.env.AZURE_TTS_KEY ||
+            process.env.AZURE_API_KEY;
+          const region =
+            request.region ||
+            process.env.AZURE_SPEECH_REGION ||
+            process.env.AZURE_REGION ||
+            'eastus';
+
+          if (!apiKey) {
+            providerAttempts.push({
+              provider: 'azure',
+              status: 'skipped',
+              error: 'Missing AZURE_SPEECH_KEY or AZURE_SPEECH_REGION',
+            });
+            continue;
+          }
+
+          const res = await this.synthesizeWithAzure(jobId, rawText, language, request, apiKey, region);
+          providerAttempts.push({
+            provider: 'azure',
+            status: 'success',
+            latencyMs: Date.now() - startTime,
+          });
+          res.metadata.providerAttempts = providerAttempts;
+          return res;
+        }
+
+        // --- B. OPENAI TTS ---
+        if (provider === 'openai') {
+          const apiKey = request.apiKey || process.env.OPENAI_API_KEY;
+          if (!apiKey) {
+            providerAttempts.push({
+              provider: 'openai',
+              status: 'skipped',
+              error: 'Missing OPENAI_API_KEY',
+            });
+            continue;
+          }
+
+          const res = await this.synthesizeWithOpenAI(jobId, rawText, language, request, apiKey);
+          providerAttempts.push({
+            provider: 'openai',
+            status: 'success',
+            latencyMs: Date.now() - startTime,
+          });
+          res.metadata.providerAttempts = providerAttempts;
+          return res;
+        }
+
+        // --- C. ELEVENLABS ---
         if (provider === 'elevenlabs') {
-          const apiKey = request.apiKey || process.env.ELEVENLABS_API_KEY;
+          const apiKey = request.apiKey || process.env.ELEVENLABS_API_KEY || process.env.XI_API_KEY;
           if (!apiKey) {
             providerAttempts.push({
               provider: 'elevenlabs',
@@ -414,6 +565,7 @@ export class TTSEngine {
             });
             continue;
           }
+
           const res = await this.synthesizeWithElevenLabs(jobId, rawText, language, request, apiKey);
           providerAttempts.push({
             provider: 'elevenlabs',
@@ -424,10 +576,12 @@ export class TTSEngine {
           return res;
         }
 
+        // --- D. GOOGLE CLOUD TTS ---
         if (provider === 'google') {
           const apiKey =
             request.apiKey ||
             process.env.GOOGLE_TTS_API_KEY ||
+            process.env.GOOGLE_TTS_KEY ||
             process.env.GOOGLE_API_KEY;
           const bearerToken = process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.GOOGLE_TTS_BEARER_TOKEN;
 
@@ -439,6 +593,7 @@ export class TTSEngine {
             });
             continue;
           }
+
           const res = await this.synthesizeWithGoogle(jobId, rawText, language, request, apiKey, bearerToken);
           providerAttempts.push({
             provider: 'google',
@@ -449,18 +604,31 @@ export class TTSEngine {
           return res;
         }
 
+        // --- E. COQUI TTS ---
         if (provider === 'coqui') {
           const coquiUrl = process.env.COQUI_TTS_URL || 'http://localhost:5002';
-          // Skip if local coqui is not running
           try {
-             await fetch(`${coquiUrl.replace(/\/$/, '')}/api/tts`, { method: 'HEAD', signal: AbortSignal.timeout(500) });
-          } catch(e) {
-             providerAttempts.push({ provider: 'coqui', status: 'skipped', error: 'Coqui unreachable' });
-             continue;
+            await fetch(`${coquiUrl.replace(/\/$/, '')}/api/tts`, { method: 'HEAD', signal: AbortSignal.timeout(500) });
+          } catch (e) {
+            providerAttempts.push({ provider: 'coqui', status: 'skipped', error: 'Coqui unreachable' });
+            continue;
           }
+
           const res = await this.synthesizeWithCoqui(jobId, rawText, language, request, coquiUrl);
           providerAttempts.push({
             provider: 'coqui',
+            status: 'success',
+            latencyMs: Date.now() - startTime,
+          });
+          res.metadata.providerAttempts = providerAttempts;
+          return res;
+        }
+
+        // --- F. FREE & KEYLESS TTS ---
+        if (provider === 'keyless') {
+          const res = await this.synthesizeWithKeyless(jobId, rawText, language, request);
+          providerAttempts.push({
+            provider: 'keyless',
             status: 'success',
             latencyMs: Date.now() - startTime,
           });
@@ -478,47 +646,15 @@ export class TTSEngine {
         });
       }
     }
-    
-    // 3. Fallback to Keyless Google Translate TTS API
+
+    // 3. Fallback to Keyless Google Translate if not attempted or if other providers failed
     try {
-      console.log("Triggering Free Keyless TTS for: ", rawText.substring(0, 30));
-      const textToSpeak = rawText.substring(0, 200); // Max 200 chars for free Google Translate TTS
-      const url = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=${encodeURIComponent(textToSpeak)}`;
-      const res = await fetch(url);
-      if (res.ok) {
-        const arrayBuffer = await res.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        const audioBase64 = buffer.toString('base64');
-        const audioUrl = `data:audio/mp3;base64,${audioBase64}`;
-        const speed = request.speed || request.speakingRate || 1.0;
-        const duration = calculateEstimatedDuration(rawText, language, speed);
-        
-        providerAttempts.push({ provider: 'auto', status: 'success', latencyMs: 0 });
-        
-        return {
-          success: true,
-          jobId,
-          audioBuffer: buffer,
-          audioUrl,
-          audioBase64,
-          mimeType: 'audio/mp3',
-          duration,
-          providerUsed: 'keyless-google',
-          language,
-          voiceId: 'keyless',
-          voiceUsed: 'keyless',
-          format: 'mp3',
-          characterCount: rawText.length,
-          metadata: {
-            isDryRun: false,
-            speakingRate: speed,
-            providerAttempts,
-            generatedAt: new Date().toISOString(),
-          },
-        };
-      }
+      const res = await this.synthesizeWithKeyless(jobId, rawText, language, request);
+      providerAttempts.push({ provider: 'keyless', status: 'success', latencyMs: 0 });
+      res.metadata.providerAttempts = providerAttempts;
+      return res;
     } catch (e) {
-       console.error("Keyless TTS Failed", e);
+      providerAttempts.push({ provider: 'keyless', status: 'failed', error: String(e) });
     }
 
     // 4. Fallback to In-Memory Deterministic Mock Audio if all live providers skipped or failed
@@ -537,6 +673,149 @@ export class TTSEngine {
    */
   async synthesizeSpeech(request: TTSRequest): Promise<TTSResponse> {
     return this.synthesize(request);
+  }
+
+  /**
+   * Azure Speech Services REST API Integration
+   */
+  private async synthesizeWithAzure(
+    jobId: string,
+    text: string,
+    language: SupportedLanguage,
+    request: TTSRequest,
+    apiKey: string,
+    region: string
+  ): Promise<TTSResponse> {
+    const gender = request.gender || 'female';
+    const defaultVoiceName =
+      AZURE_DEFAULT_VOICES[language]?.[gender] ||
+      AZURE_DEFAULT_VOICES[language]?.neutral ||
+      AZURE_DEFAULT_VOICES['en-US'].female;
+
+    const requestedVoice = request.voiceId || request.voice;
+    const voiceName =
+      requestedVoice && requestedVoice.includes('-') && requestedVoice.includes('Neural')
+        ? requestedVoice
+        : defaultVoiceName;
+
+    const speed = request.speed || request.speakingRate || 1.0;
+    const ratePercent = speed === 1.0 ? '0%' : `${Math.round((speed - 1.0) * 100)}%`;
+    const escaped = escapeXml(text);
+
+    const ssml = `<speak version='1.0' xml:lang='${language}'><voice xml:lang='${language}' xml:gender='${gender}' name='${voiceName}'><prosody rate='${ratePercent}'>${escaped}</prosody></voice></speak>`;
+
+    const url = `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Ocp-Apim-Subscription-Key': apiKey,
+        'Content-Type': 'application/ssml+xml',
+        'X-Microsoft-OutputFormat': 'audio-24khz-160kbitrate-mono-mp3',
+        'User-Agent': 'Clipped-TTS-Engine',
+      },
+      body: ssml,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Azure Speech Services HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const audioBase64 = buffer.toString('base64');
+    const audioUrl = `data:audio/mp3;base64,${audioBase64}`;
+    const duration = calculateEstimatedDuration(text, language, speed);
+
+    return {
+      success: true,
+      jobId,
+      audioBuffer: buffer,
+      audioUrl,
+      audioBase64,
+      mimeType: 'audio/mp3',
+      duration,
+      providerUsed: 'azure',
+      language,
+      voiceId: voiceName,
+      voiceUsed: voiceName,
+      format: 'mp3',
+      characterCount: text.length,
+      metadata: {
+        isDryRun: false,
+        speakingRate: speed,
+        providerAttempts: [],
+        region,
+        voiceConfig: voiceName,
+        generatedAt: new Date().toISOString(),
+      },
+    };
+  }
+
+  /**
+   * OpenAI TTS API Integration
+   */
+  private async synthesizeWithOpenAI(
+    jobId: string,
+    text: string,
+    language: SupportedLanguage,
+    request: TTSRequest,
+    apiKey: string
+  ): Promise<TTSResponse> {
+    const rawVoice = (request.voiceId || request.voice || 'alloy').toLowerCase().trim();
+    const validVoices = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'];
+    const voice = validVoices.includes(rawVoice) ? rawVoice : 'alloy';
+
+    const speed = Math.max(0.25, Math.min(4.0, request.speed || request.speakingRate || 1.0));
+    const model = request.model || 'tts-1';
+
+    const url = 'https://api.openai.com/v1/audio/speech';
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        input: text,
+        voice,
+        speed,
+        response_format: 'mp3',
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI TTS HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const audioBase64 = buffer.toString('base64');
+    const audioUrl = `data:audio/mp3;base64,${audioBase64}`;
+    const duration = calculateEstimatedDuration(text, language, speed);
+
+    return {
+      success: true,
+      jobId,
+      audioBuffer: buffer,
+      audioUrl,
+      audioBase64,
+      mimeType: 'audio/mp3',
+      duration,
+      providerUsed: 'openai',
+      language,
+      voiceId: voice,
+      voiceUsed: voice,
+      format: 'mp3',
+      characterCount: text.length,
+      metadata: {
+        isDryRun: false,
+        speakingRate: speed,
+        providerAttempts: [],
+        model,
+        generatedAt: new Date().toISOString(),
+      },
+    };
   }
 
   /**
@@ -774,6 +1053,59 @@ export class TTSEngine {
   }
 
   /**
+   * Keyless Google Translate TTS Integration
+   */
+  private async synthesizeWithKeyless(
+    jobId: string,
+    text: string,
+    language: SupportedLanguage,
+    request: TTSRequest
+  ): Promise<TTSResponse> {
+    const langCode = language.split('-')[0] || 'en';
+    const textToSpeak = text.substring(0, 200); // Google translate query parameter limit
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${encodeURIComponent(langCode)}&q=${encodeURIComponent(textToSpeak)}`;
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Keyless Google Translate TTS HTTP ${response.status}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const audioBase64 = buffer.toString('base64');
+    const audioUrl = `data:audio/mp3;base64,${audioBase64}`;
+    const speed = request.speed || request.speakingRate || 1.0;
+    const duration = calculateEstimatedDuration(text, language, speed);
+
+    return {
+      success: true,
+      jobId,
+      audioBuffer: buffer,
+      audioUrl,
+      audioBase64,
+      mimeType: 'audio/mp3',
+      duration,
+      providerUsed: 'keyless',
+      language,
+      voiceId: request.voiceId || `keyless-${langCode}`,
+      voiceUsed: request.voiceId || `keyless-${langCode}`,
+      format: 'mp3',
+      characterCount: text.length,
+      metadata: {
+        isDryRun: false,
+        speakingRate: speed,
+        providerAttempts: [],
+        generatedAt: new Date().toISOString(),
+      },
+    };
+  }
+
+  /**
    * Deterministic In-Memory Cost-Safe Mock Generator
    */
   private generateDryRun(
@@ -822,50 +1154,89 @@ export class TTSEngine {
   }
 
   /**
-   * Returns supported voices catalog for a given language or all languages
+   * Returns supported voices catalog for a given language or all languages, optionally filtered by provider
    */
-  getAvailableVoices(language?: SupportedLanguage | string): TTSVoiceOption[] {
+  getAvailableVoices(language?: SupportedLanguage | string, provider?: TTSProvider | string): TTSVoiceOption[] {
     const targetLang = language ? normalizeLanguageCode(language) : undefined;
+    const targetProvider = provider ? (provider.toLowerCase() as TTSProvider) : undefined;
     const voices: TTSVoiceOption[] = [];
 
-    // ElevenLabs voices
-    Object.entries(ELEVENLABS_VOICES).forEach(([name, id]) => {
-      if (!targetLang || targetLang.startsWith('en')) {
-        voices.push({
-          id,
-          name: name.charAt(0).toUpperCase() + name.slice(1),
-          provider: 'elevenlabs',
-          language: 'en-US',
-          gender: ['rachel', 'domi', 'bella', 'elli', 'nova', 'fable', 'alloy', 'shimmer'].includes(name)
-            ? 'female'
-            : 'male',
-          description: `ElevenLabs Multilingual v2 Voice (${name})`,
-        });
-      }
-    });
+    // 1. Azure voices
+    if (!targetProvider || targetProvider === 'azure') {
+      AZURE_VOICE_CATALOG.forEach((v) => {
+        if (!targetLang || v.language === targetLang) {
+          voices.push(v);
+        }
+      });
+    }
 
-    // Google voices
-    Object.entries(GOOGLE_DEFAULT_VOICES).forEach(([lang, catalog]) => {
-      const supLang = lang as SupportedLanguage;
-      if (!targetLang || targetLang === supLang) {
-        voices.push({
-          id: catalog.female,
-          name: `${catalog.female} (Google)`,
-          provider: 'google',
-          language: supLang,
-          gender: 'female',
-          description: `Google Cloud TTS Neural/Wavenet Voice for ${supLang}`,
-        });
-        voices.push({
-          id: catalog.male,
-          name: `${catalog.male} (Google)`,
-          provider: 'google',
-          language: supLang,
-          gender: 'male',
-          description: `Google Cloud TTS Neural/Wavenet Voice for ${supLang}`,
-        });
-      }
-    });
+    // 2. OpenAI voices
+    if (!targetProvider || targetProvider === 'openai') {
+      OPENAI_VOICES.forEach((ov) => {
+        if (!targetLang || targetLang.startsWith('en')) {
+          voices.push({
+            id: ov.id,
+            name: `${ov.name} (OpenAI)`,
+            provider: 'openai',
+            language: 'en-US',
+            gender: ov.gender,
+            description: ov.description,
+          });
+        }
+      });
+    }
+
+    // 3. ElevenLabs voices
+    if (!targetProvider || targetProvider === 'elevenlabs') {
+      Object.entries(ELEVENLABS_VOICES).forEach(([name, id]) => {
+        if (!targetLang || targetLang.startsWith('en')) {
+          voices.push({
+            id,
+            name: `${name.charAt(0).toUpperCase() + name.slice(1)} (ElevenLabs)`,
+            provider: 'elevenlabs',
+            language: 'en-US',
+            gender: ['rachel', 'domi', 'bella', 'elli', 'nova', 'fable', 'alloy', 'shimmer'].includes(name)
+              ? 'female'
+              : 'male',
+            description: `ElevenLabs Multilingual v2 Voice (${name})`,
+          });
+        }
+      });
+    }
+
+    // 4. Google Cloud voices
+    if (!targetProvider || targetProvider === 'google') {
+      Object.entries(GOOGLE_DEFAULT_VOICES).forEach(([lang, catalog]) => {
+        const supLang = lang as SupportedLanguage;
+        if (!targetLang || targetLang === supLang) {
+          voices.push({
+            id: catalog.female,
+            name: `${catalog.female} (Google)`,
+            provider: 'google',
+            language: supLang,
+            gender: 'female',
+            description: `Google Cloud TTS Neural/Wavenet Voice for ${supLang}`,
+          });
+          voices.push({
+            id: catalog.male,
+            name: `${catalog.male} (Google)`,
+            provider: 'google',
+            language: supLang,
+            gender: 'male',
+            description: `Google Cloud TTS Neural/Wavenet Voice for ${supLang}`,
+          });
+        }
+      });
+    }
+
+    // 5. Free / Keyless voices
+    if (!targetProvider || targetProvider === 'keyless') {
+      FREE_KEYLESS_VOICES.forEach((v) => {
+        if (!targetLang || v.language === targetLang) {
+          voices.push(v);
+        }
+      });
+    }
 
     return voices;
   }

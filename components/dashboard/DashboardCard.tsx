@@ -11,13 +11,52 @@ import {
   Smartphone,
   Sparkles,
   Film,
-  TrendingUp,
+  Folder,
+  FolderPlus,
+  Zap,
+  MoreVertical,
 } from "lucide-react";
 import { PublishModal } from "./PublishModal";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
-export function DashboardCard({ video }: { video: any }) {
+export function DashboardCard({
+  video,
+  workspaces = [],
+  onMoveWorkspace,
+}: {
+  video: any;
+  workspaces?: Array<{ id: string; name: string; color?: string }>;
+  onMoveWorkspace?: (videoId: string, workspaceId: string) => void;
+}) {
   const [isPublishOpen, setIsPublishOpen] = useState(false);
+  const [publishTab, setPublishTab] = useState<"publish" | "export">("publish");
+  const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
+  const [moving, setMoving] = useState(false);
+
+  const currentWorkspace = workspaces.find((w) => w.id === video.workspace_id) || (video.workspace_name ? { name: video.workspace_name, color: '#8b5cf6' } : null);
+
+  async function handleMove(workspaceId: string) {
+    setMoving(true);
+    setShowWorkspaceMenu(false);
+    try {
+      if (onMoveWorkspace) {
+        onMoveWorkspace(video.video_id || video.id, workspaceId);
+      } else {
+        await fetch("/api/workspaces/move", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            videoIds: [video.video_id || video.id],
+            workspaceId,
+          }),
+        });
+      }
+    } catch (e) {
+      console.error("Failed to move video:", e);
+    } finally {
+      setMoving(false);
+    }
+  }
 
   return (
     <>
@@ -49,10 +88,18 @@ export function DashboardCard({ video }: { video: any }) {
               {video.workflowType || "AI Video"}
             </span>
 
-            <span className="px-2 py-0.5 bg-black/60 backdrop-blur-md rounded-md text-[10px] font-semibold text-white/90 border border-white/10 flex items-center gap-1">
-              <Smartphone className="w-3 h-3 text-cyan-400" />
-              9:16
-            </span>
+            <div className="flex items-center gap-1.5">
+              {currentWorkspace && (
+                <span className="px-2 py-0.5 bg-black/60 backdrop-blur-md rounded-md text-[10px] font-semibold text-violet-300 border border-violet-500/30 flex items-center gap-1">
+                  <Folder className="w-2.5 h-2.5 text-violet-400" />
+                  {currentWorkspace.name}
+                </span>
+              )}
+              <span className="px-2 py-0.5 bg-black/60 backdrop-blur-md rounded-md text-[10px] font-semibold text-white/90 border border-white/10 flex items-center gap-1">
+                <Smartphone className="w-3 h-3 text-cyan-400" />
+                9:16
+              </span>
+            </div>
           </div>
 
           {video.status === "pending" || video.status === "processing" ? (
@@ -66,8 +113,12 @@ export function DashboardCard({ video }: { video: any }) {
           ) : (
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
               <button
+                onClick={() => {
+                  setPublishTab("publish");
+                  setIsPublishOpen(true);
+                }}
                 className="h-11 w-11 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center hover:scale-110 transition-transform shadow-lg shadow-violet-600/40"
-                aria-label="Play Preview"
+                aria-label="Play & Publish Preview"
               >
                 <Play className="w-4 h-4 ml-0.5" fill="currentColor" />
               </button>
@@ -76,7 +127,7 @@ export function DashboardCard({ video }: { video: any }) {
         </div>
 
         {/* Metadata Area */}
-        <div className="p-4 flex flex-col flex-1">
+        <div className="p-4 flex flex-col flex-1 relative">
           <h3 className="font-semibold text-sm line-clamp-1 mb-1.5 text-foreground">{video.title}</h3>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>{video.created_at ? new Date(video.created_at).toLocaleDateString() : "Recent"}</span>
@@ -88,21 +139,75 @@ export function DashboardCard({ video }: { video: any }) {
 
           {/* Hover Quick Actions */}
           <div className="mt-3.5 pt-3 border-t border-border/40 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
-            <button className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground hover:text-violet-500 transition-colors">
-              <Download className="w-3.5 h-3.5" /> HD
-            </button>
             <button
-              onClick={() => setIsPublishOpen(true)}
+              onClick={() => {
+                setPublishTab("export");
+                setIsPublishOpen(true);
+              }}
+              className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground hover:text-emerald-500 transition-colors"
+              title="Download Presets"
+            >
+              <Download className="w-3.5 h-3.5" /> Export
+            </button>
+
+            <button
+              onClick={() => {
+                setPublishTab("publish");
+                setIsPublishOpen(true);
+              }}
               className="text-xs font-semibold flex items-center gap-1.5 text-violet-600 dark:text-violet-400 hover:text-violet-500 transition-colors"
             >
-              <Share2 className="w-3.5 h-3.5" /> Publish
+              <Zap className="w-3.5 h-3.5 fill-current" /> Publish
             </button>
-            <button
-              className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground hover:text-destructive transition-colors"
-              aria-label="Delete video"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
+
+            {/* Move to Workspace Context Trigger */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowWorkspaceMenu(!showWorkspaceMenu)}
+                className="text-xs font-medium flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors p-1 rounded hover:bg-muted"
+                title="Organize in Workspace"
+              >
+                <FolderPlus className="w-3.5 h-3.5" />
+              </button>
+
+              {/* Workspace Dropdown Menu */}
+              <AnimatePresence>
+                {showWorkspaceMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 5 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 5 }}
+                    className="absolute right-0 bottom-full mb-2 w-48 rounded-xl bg-popover border border-border shadow-xl p-1.5 z-30 text-xs"
+                  >
+                    <span className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                      Move to Workspace
+                    </span>
+                    <div className="space-y-0.5 mt-1 max-h-36 overflow-y-auto">
+                      <button
+                        type="button"
+                        onClick={() => handleMove("default")}
+                        className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-muted text-foreground flex items-center gap-2"
+                      >
+                        <Folder className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span>Default (All)</span>
+                      </button>
+                      {workspaces.map((ws) => (
+                        <button
+                          key={ws.id}
+                          type="button"
+                          onClick={() => handleMove(ws.id)}
+                          className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-muted text-foreground flex items-center gap-2 truncate"
+                        >
+                          <Folder className="w-3.5 h-3.5 text-violet-500" />
+                          <span className="truncate">{ws.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -112,6 +217,7 @@ export function DashboardCard({ video }: { video: any }) {
         onClose={() => setIsPublishOpen(false)}
         jobId={video.id}
         videoTitle={video.title}
+        defaultTab={publishTab}
       />
     </>
   );

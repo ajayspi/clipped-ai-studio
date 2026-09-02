@@ -1,68 +1,136 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
-import { YouTubePublisher } from '@/lib/publishing/youtube';
-import { TikTokPublisher } from '@/lib/publishing/tiktok';
-import { InstagramPublisher } from '@/lib/publishing/instagram';
+import { SocialPublisherManager, PublishRequest } from '@/lib/publishing';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
-    const { jobId, platforms, title, description } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const {
+      jobId,
+      videoId,
+      platforms = [],
+      title = 'My Awesome AI Video',
+      description = 'Generated using Clipped AI #shorts #ai',
+      isOneClick = false,
+      privacy = 'public',
+      scheduledAt,
+      isDryRun = true,
+    } = body;
 
-    if (!jobId || !platforms || platforms.length === 0) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    const targetPlatforms: string[] = Array.isArray(platforms) && platforms.length > 0
+      ? platforms
+      : (isOneClick ? ['youtube', 'tiktok', 'instagram'] : []);
+
+    if (!jobId && !videoId) {
+      return NextResponse.json({ error: 'Missing jobId or videoId parameter' }, { status: 400 });
     }
 
-    // 1. Fetch the job to get the video URL
-    const { data: job, error } = await supabase
-      .from('render_jobs')
-      .select('*')
-      .eq('id', jobId)
-      .single();
-
-    if (error || !job) {
-      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
-    }
-    
-    // In a real app, this would be the S3/GCS URL of the final rendered video.
-    // For now we mock it as the first sourced clip url just to test the API flow.
-    let videoUrl = "https://example.com/rendered-video.mp4";
-    try {
-      const logs = typeof job.logs === 'string' ? JSON.parse(job.logs) : job.logs;
-      const firstClip = logs?.videos?.[0]?.video || logs?.videos?.[0];
-      if (firstClip?.url) videoUrl = firstClip.url;
-    } catch {}
-
-    // 2. Publish to selected platforms
-    const results = [];
-    
-    // Using the modules built by the teamwork agents
-    if (platforms.includes('youtube')) {
-      const yt = new YouTubePublisher();
-      results.push(await yt.publishVideo(videoUrl, { title, description }));
-    }
-    
-    if (platforms.includes('tiktok')) {
-      const tk = new TikTokPublisher();
-      results.push(await tk.publishVideo(videoUrl, { title, description }));
-    }
-    
-    if (platforms.includes('instagram')) {
-      const ig = new InstagramPublisher();
-      results.push(await ig.publishVideo(videoUrl, { title, description }));
+    if (targetPlatforms.length === 0) {
+      return NextResponse.json({ error: 'Please select at least one platform to publish' }, { status: 400 });
     }
 
-    // Update job in Supabase to mark it as published
-    await supabase
-      .from('render_jobs')
-      .update({ 
-        published: true, 
-        published_platforms: platforms 
-      })
-      .eq('id', jobId);
+    // 1. Fetch the job or video to get video URL and details
+    let videoUrl = 'https://example.com/rendered-video.mp4';
+    let videoTitle = title;
+    let actualVideoId = videoId;
+    let actualJobId = jobId;
 
-    return NextResponse.json({ success: true, results });
+    if (jobId) {
+      const { data: job } = await supabase
+        .from('render_jobs')
+        .select('*')
+        .eq('id', jobId)
+        .single();
+
+      if (job) {
+        actualVideoId = actualVideoId || job.video_id;
+        try {
+          const logs = typeof job.logs === 'string' ? JSON.parse(job.logs) : job.logs;
+          if (logs?.finalVideoUrl) videoUrl = logs.finalVideoUrl;
+          else if (logs?.videos?.[0]?.video?.url) videoUrl = logs.videos[0].video.url;
+          else if (logs?.videos?.[0]?.url) videoUrl = logs.videos[0].url;
+
+          if (!title || title === 'My Awesome AI Video') {
+            if (logs?.subject) videoTitle = logs.subject;
+          }
+        } catch {}
+      }
+    }
+
+    const publisherManager = new SocialPublisherManager();
+    const results: Record<string, any> = {};
+
+    for (const platform of targetPlatforms) {
+      try {
+        const publishReq: PublishRequest = {
+          platform: platform as any,
+          videoId: actualVideoId,
+          videoUrl,
+          title: videoTitle,
+          description,
+          caption: description,
+          privacy: privacy as any,
+          scheduledAt,
+          isDryRun: isDryRun !== false,
+        };
+
+        const res = await publisherManager.publish(publishReq);
+
+        // Ensure shorts / reels format for display
+        let liveUrl = res.publishedUrl;
+        if (platform === 'youtube' && !liveUrl.includes('/shorts/')) {
+          const vid = res.platformVideoId || `mock_yt_${Date.now()}`;
+          liveUrl = `https://youtube.com/shorts/${vid}`;
+        } else if (platform === 'tiktok' && !liveUrl.includes('/video/')) {
+          const vid = res.platformVideoId || `mock_tt_${Date.now()}`;
+          liveUrl = `https://tiktok.com/@creator/video/${vid}`;
+        } else if (platform === 'instagram' && !liveUrl.includes('/reel/')) {
+          const vid = res.platformVideoId || `mock_ig_${Date.now()}`;
+          liveUrl = `https://instagram.com/reel/${vid}/`;
+        }
+
+        results[platform] = {
+          ...res,
+          publishedUrl: liveUrl,
+        };
+      } catch (err: any) {
+        results[platform] = {
+          success: false,
+          platform,
+          error: err.message,
+          status: 'failed',
+        };
+      }
+    }
+
+    // 3. Update Supabase render_jobs / published_videos
+    if (jobId) {
+      try {
+        await supabase
+          .from('render_jobs')
+          .update({
+            published: true,
+            published_platforms: targetPlatforms,
+          })
+          .eq('id', jobId);
+      } catch (dbErr) {
+        console.warn('[Publish API] Failed to update render_jobs in Supabase:', dbErr);
+      }
+    }
+
+    const successfulCount = Object.values(results).filter((r: any) => r.success).length;
+
+    return NextResponse.json({
+      success: successfulCount > 0,
+      totalPlatforms: targetPlatforms.length,
+      successfulPlatforms: successfulCount,
+      results,
+      publishedAt: new Date().toISOString(),
+    });
   } catch (error: any) {
-    console.error('Publish error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[Publish API Error]:', error);
+    return NextResponse.json({ error: error.message || 'Publishing failed' }, { status: 500 });
   }
 }

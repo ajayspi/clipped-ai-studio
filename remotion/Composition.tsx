@@ -9,25 +9,42 @@ export interface BeatProp {
   audioUrl?: string
 }
 
+export interface WatermarkConfig {
+  url?: string;
+  position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center';
+  opacity?: number;
+  scale?: number;
+  margin?: number;
+  handle?: string;
+  showHandleBadge?: boolean;
+}
+
 export interface MainCompositionProps {
   beats: BeatProp[]
   burnSubtitles: boolean
-  subtitleStyle: {
-    y: number
-    color: string
-    size: number
-    outlineWidth: number
-    outlineColor: string
-    isBox: boolean
-    boxColor: string
-    uppercase: boolean
-    maxWidth: number
+  subtitleStyle?: {
+    y?: number
+    color?: string
+    highlightColor?: string
+    glow?: boolean
+    glowColor?: string
+    size?: number
+    outlineWidth?: number
+    outlineColor?: string
+    isBox?: boolean
+    boxColor?: string
+    boxOpacity?: number
+    boxRadius?: number
+    letterSpacing?: number
+    uppercase?: boolean
+    maxWidth?: number
   }
   bgmUrl?: string
   watermarkUrl?: string
+  watermarkConfig?: WatermarkConfig
 }
 
-// Decoupled subtitle overlay with Hormozi-style word-by-word pop animations
+// Decoupled subtitle overlay with Hormozi-style word-by-word pop animations and neon/glow effects
 const SubtitleOverlay: React.FC<{ text?: string, styleConfig?: Partial<MainCompositionProps['subtitleStyle']>, durationInFrames: number }> = ({ text, styleConfig, durationInFrames }) => {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
@@ -40,11 +57,37 @@ const SubtitleOverlay: React.FC<{ text?: string, styleConfig?: Partial<MainCompo
   const maxWidth = styleConfig?.maxWidth ?? 82
   const isBox = Boolean(styleConfig?.isBox)
   const boxColor = styleConfig?.boxColor || '#000000'
+  const rawBoxOpacity = styleConfig?.boxOpacity !== undefined ? styleConfig.boxOpacity : (isBox ? 70 : 0)
+  const boxOpacity = rawBoxOpacity > 1 ? rawBoxOpacity / 100 : rawBoxOpacity
+  const boxRadius = styleConfig?.boxRadius ?? 8
   const textColor = styleConfig?.color || '#ffffff'
+  const highlightColor = styleConfig?.highlightColor || '#facc15'
   const size = styleConfig?.size ?? 5.2
   const outlineWidth = styleConfig?.outlineWidth ?? 2.5
   const outlineColor = styleConfig?.outlineColor || '#000000'
+  const glow = Boolean(styleConfig?.glow)
+  const glowColor = styleConfig?.glowColor || highlightColor || '#22d3ee'
   const uppercase = Boolean(styleConfig?.uppercase)
+  const letterSpacing = styleConfig?.letterSpacing ?? (uppercase ? 0.5 : 0)
+
+  // Convert hex boxColor to rgba if needed
+  const getBoxBackground = () => {
+    if (!isBox) return 'transparent'
+    if (boxColor.startsWith('#') && (boxColor.length === 7 || boxColor.length === 4)) {
+      let r = 0, g = 0, b = 0
+      if (boxColor.length === 7) {
+        r = parseInt(boxColor.slice(1, 3), 16)
+        g = parseInt(boxColor.slice(3, 5), 16)
+        b = parseInt(boxColor.slice(5, 7), 16)
+      } else {
+        r = parseInt(boxColor[1] + boxColor[1], 16)
+        g = parseInt(boxColor[2] + boxColor[2], 16)
+        b = parseInt(boxColor[3] + boxColor[3], 16)
+      }
+      return `rgba(${r}, ${g}, ${b}, ${boxOpacity})`
+    }
+    return boxColor
+  }
 
   return (
     <div
@@ -55,7 +98,9 @@ const SubtitleOverlay: React.FC<{ text?: string, styleConfig?: Partial<MainCompo
         right: 0,
         display: 'flex',
         justifyContent: 'center',
-        fontFamily: 'sans-serif',
+        fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        zIndex: 50,
+        pointerEvents: 'none',
       }}
     >
       <div 
@@ -63,11 +108,16 @@ const SubtitleOverlay: React.FC<{ text?: string, styleConfig?: Partial<MainCompo
           display: 'flex',
           flexWrap: 'wrap',
           justifyContent: 'center',
-          gap: '8px',
+          alignItems: 'center',
+          gap: '8px 12px',
           maxWidth: `${maxWidth}%`,
-          backgroundColor: isBox ? boxColor : 'transparent',
-          padding: isBox ? '10px 20px' : '0',
-          borderRadius: isBox ? '8px' : '0',
+          backgroundColor: getBoxBackground(),
+          backdropFilter: isBox ? 'blur(12px)' : 'none',
+          WebkitBackdropFilter: isBox ? 'blur(12px)' : 'none',
+          border: isBox ? '1px solid rgba(255, 255, 255, 0.15)' : 'none',
+          padding: isBox ? '12px 24px' : '0',
+          borderRadius: `${boxRadius}px`,
+          boxShadow: isBox ? '0 8px 32px rgba(0, 0, 0, 0.4)' : 'none',
         }}
       >
         {words.map((word, i) => {
@@ -76,26 +126,38 @@ const SubtitleOverlay: React.FC<{ text?: string, styleConfig?: Partial<MainCompo
           const scale = spring({
             fps,
             frame: frame - wordStartFrame,
-            config: { damping: 12, stiffness: 200, mass: 0.5 },
+            config: { damping: 12, stiffness: 220, mass: 0.4 },
           });
           
-          // Color highlight: current active word gets primary color, others get secondary/white
+          // Color highlight: current active word gets highlightColor
           const isActive = frame >= wordStartFrame && frame < (i + 1) * framesPerWord;
           
           // Hidden before start frame
           if (frame < wordStartFrame) return <span key={i} style={{ opacity: 0 }}>{word}</span>;
           
+          // Dynamic text shadow with outline and neon glow support
+          let textShadow = 'none'
+          if (glow && isActive) {
+            textShadow = `0 0 10px ${glowColor}, 0 0 20px ${glowColor}, 0 0 35px ${glowColor}, 0 0 ${outlineWidth}px ${outlineColor}`
+          } else if (outlineWidth > 0) {
+            textShadow = `0 0 ${outlineWidth}px ${outlineColor}, 0 0 ${outlineWidth}px ${outlineColor}, 0 2px 8px rgba(0,0,0,0.8)`
+          } else {
+            textShadow = '0 2px 8px rgba(0,0,0,0.6)'
+          }
+
           return (
             <span
               key={i}
               style={{
                 display: 'inline-block',
                 transform: `scale(${isActive ? scale : 1})`,
-                color: isActive ? '#facc15' : textColor, // Yellow highlight for active word
+                color: isActive ? highlightColor : textColor,
                 fontSize: `${size}vw`,
                 fontWeight: '900',
-                textShadow: `0 0 ${outlineWidth}px ${outlineColor}, 0 0 ${outlineWidth}px ${outlineColor}, 0 0 ${outlineWidth + 2}px rgba(0,0,0,0.5)`,
+                letterSpacing: `${letterSpacing}px`,
+                textShadow: textShadow,
                 textTransform: uppercase ? 'uppercase' : 'none',
+                filter: isActive && glow ? `drop-shadow(0 0 8px ${glowColor})` : 'none',
               }}
             >
               {word}
@@ -106,6 +168,76 @@ const SubtitleOverlay: React.FC<{ text?: string, styleConfig?: Partial<MainCompo
     </div>
   )
 }
+
+// Watermark overlay component supporting 5 anchor positions, scale, opacity, and handle pill badge
+export const WatermarkOverlay: React.FC<{ config?: WatermarkConfig; defaultUrl?: string }> = ({ config, defaultUrl }) => {
+  const url = config?.url || defaultUrl;
+  if (!url) return null;
+
+  const position = config?.position || 'top-right';
+  const opacity = config?.opacity ?? 0.85;
+  const scale = config?.scale ?? 1.0;
+  const margin = config?.margin ?? 32;
+
+  const positionStyles: Record<string, React.CSSProperties> = {
+    'top-left': { top: `${margin}px`, left: `${margin}px` },
+    'top-right': { top: `${margin}px`, right: `${margin}px` },
+    'bottom-left': { bottom: `${margin + 60}px`, left: `${margin}px` }, // Offset above subtitle area
+    'bottom-right': { bottom: `${margin + 60}px`, right: `${margin}px` },
+    'center': { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' },
+  };
+
+  const isLeft = position.includes('left');
+  const isCenter = position === 'center';
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        zIndex: 1000,
+        opacity,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: isLeft ? 'flex-start' : (isCenter ? 'center' : 'flex-end'),
+        gap: '6px',
+        pointerEvents: 'none',
+        ...positionStyles[position],
+      }}
+    >
+      <img
+        src={url}
+        style={{
+          width: `${Math.round(120 * scale)}px`,
+          height: 'auto',
+          borderRadius: '10px',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+          objectFit: 'contain',
+        }}
+        alt="Brand Watermark"
+      />
+      {config?.handle && (
+        <span
+          style={{
+            fontSize: `${Math.max(10, Math.round(12 * scale))}px`,
+            fontWeight: 800,
+            color: '#ffffff',
+            backgroundColor: 'rgba(0,0,0,0.65)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            padding: '2px 8px',
+            borderRadius: '6px',
+            letterSpacing: '0.5px',
+            fontFamily: 'Inter, system-ui, sans-serif',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+          }}
+        >
+          {config.handle.startsWith('@') ? config.handle : `@${config.handle}`}
+        </span>
+      )}
+    </div>
+  );
+};
 
 // Pure React Component independent of Next.js / Zustand
 export const MainComposition: React.FC<MainCompositionProps> = (props) => {
@@ -142,11 +274,9 @@ export const MainComposition: React.FC<MainCompositionProps> = (props) => {
       {/* Background Music Track */}
       {props.bgmUrl && <Audio src={props.bgmUrl} volume={0.15} />}
       
-      {/* Floating Watermark / Brand Logo */}
-      {props.watermarkUrl && (
-        <div style={{ position: 'absolute', top: '40px', right: '40px', zIndex: 1000, opacity: 0.8 }}>
-          <img src={props.watermarkUrl} style={{ width: '120px', height: 'auto', borderRadius: '12px' }} alt="Brand Watermark" />
-        </div>
+      {/* Floating Watermark / Brand Logo & Handle */}
+      {(props.watermarkConfig?.url || props.watermarkUrl) && (
+        <WatermarkOverlay config={props.watermarkConfig} defaultUrl={props.watermarkUrl} />
       )}
     </AbsoluteFill>
   )

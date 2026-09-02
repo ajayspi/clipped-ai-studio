@@ -23,6 +23,14 @@ const defaultProps: MainCompositionProps = {
     boxColor: "#000000",
     uppercase: false,
     maxWidth: 82
+  },
+  watermarkConfig: {
+    url: undefined,
+    position: 'top-right',
+    opacity: 0.85,
+    scale: 1.0,
+    margin: 32,
+    handle: '@ClippedStudio',
   }
 };
 

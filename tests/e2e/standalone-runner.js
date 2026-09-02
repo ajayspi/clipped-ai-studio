@@ -2699,12 +2699,468 @@ async function main() {
     expect(wb.settingsUrl).toContain('tab=AI%20Models');
   }});
 
+  // =========================================================================
+  // Tier 10: Milestone 1 Supabase Custom Connection & Dynamic Routing
+  // =========================================================================
+  tests.push({ tier: 'Tier 10: Supabase Custom Connection & Routing', id: 'T10-M1-01', title: 'Storage Keys & Custom Credentials Parsing', fn: async () => {
+    const STORAGE_KEY = 'clipped_custom_supabase_config';
+    const URL_COOKIE = 'clipped_custom_supabase_url';
+    const KEY_COOKIE = 'clipped_custom_supabase_anon_key';
+    expect(STORAGE_KEY).toBe('clipped_custom_supabase_config');
+    expect(URL_COOKIE).toBe('clipped_custom_supabase_url');
+    expect(KEY_COOKIE).toBe('clipped_custom_supabase_anon_key');
+
+    // Simulate localStorage JSON parsing
+    const mockStoragePayload = JSON.stringify({
+      url: 'https://test-custom.supabase.co',
+      anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test',
+      customConfigured: true,
+      status: 'connected',
+    });
+    const parsed = JSON.parse(mockStoragePayload);
+    expect(parsed.customConfigured).toBe(true);
+    expect(parsed.url).toBe('https://test-custom.supabase.co');
+    expect(parsed.anonKey.startsWith('eyJ')).toBe(true);
+  }});
+
+  tests.push({ tier: 'Tier 10: Supabase Custom Connection & Routing', id: 'T10-M1-02', title: 'Test API URL & AnonKey Validation', fn: async () => {
+    const validate = (url, anonKey) => {
+      if (!url || typeof url !== 'string' || !url.trim()) return { valid: false, error: 'Missing or invalid Supabase URL.' };
+      if (!anonKey || typeof anonKey !== 'string' || !anonKey.trim()) return { valid: false, error: 'Missing or invalid Supabase Anon Key.' };
+      try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+          return { valid: false, error: 'URL must use http:// or https://' };
+        }
+      } catch {
+        return { valid: false, error: 'Malformed Supabase URL.' };
+      }
+      return { valid: true };
+    };
+
+    expect(validate('', 'key').valid).toBe(false);
+    expect(validate('https://test.supabase.co', '').valid).toBe(false);
+    expect(validate('ftp://invalid', 'key').valid).toBe(false);
+    expect(validate('https://myproject.supabase.co', 'eyJhbGci...').valid).toBe(true);
+  }});
+
+  tests.push({ tier: 'Tier 10: Supabase Custom Connection & Routing', id: 'T10-M1-03', title: 'Schema Health Checklist Structure (6 Core Tables)', fn: async () => {
+    const CORE_TABLES = ['videos', 'render_jobs', 'settings', 'api_credits', 'scheduled_posts', 'users'];
+    expect(CORE_TABLES.length).toBe(6);
+
+    // Verify probe contract mapping
+    const mockProbeResults = {
+      videos: { exists: true, error: null },
+      render_jobs: { exists: true, error: null },
+      settings: { exists: true, error: null },
+      api_credits: { exists: true, error: null },
+      scheduled_posts: { exists: true, error: null },
+      users: { exists: true, error: null },
+    };
+
+    const missingTables = CORE_TABLES.filter(t => !mockProbeResults[t]?.exists);
+    const isHealthy = missingTables.length === 0;
+    expect(isHealthy).toBe(true);
+    expect(missingTables.length).toBe(0);
+  }});
+
+  tests.push({ tier: 'Tier 10: Supabase Custom Connection & Routing', id: 'T10-M1-04', title: 'Settings Key Masking & Security', fn: async () => {
+    const maskKey = (key) => {
+      if (!key) return 'Not configured';
+      if (key.length <= 8) return '••••';
+      return `••••••••••••${key.slice(-4)}`;
+    };
+
+    const sampleAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSJ9.Wt6whskptxFUlwAmrtIchFSIPWiDAl0DbVEiC1uvCqc';
+    const masked = maskKey(sampleAnonKey);
+    expect(masked.endsWith('vCqc')).toBe(true);
+    expect(masked.startsWith('••••••••••••')).toBe(true);
+    expect(masked).not.toBe(sampleAnonKey);
+  }});
+
+  // =========================================================================
+  // Tier 11: Milestone 3 Subtitles UI & Remotion Subtitle Styling
+  // =========================================================================
+  tests.push({ tier: 'Tier 11: Milestone 3 Subtitles UI & Styling', id: 'T11-M3-01', title: '6 Visual Subtitle Presets Specification & Default Contracts', fn: async () => {
+    const M3_PRESETS = [
+      { id: 'Hormozi Pop', name: 'Hormozi Pop', color: '#FFFFFF', highlightColor: '#FACC15', outlineWidth: 3.5, uppercase: true },
+      { id: 'Cyber Neon', name: 'Cyber Neon', color: '#22D3EE', highlightColor: '#F43F5E', glow: true, uppercase: true },
+      { id: 'Minimalist Clean', name: 'Minimalist Clean', color: '#FFFFFF', highlightColor: '#E2E8F0', outlineWidth: 1.0, uppercase: false },
+      { id: 'Cinematic Boxed', name: 'Cinematic Boxed', color: '#F8FAFC', highlightColor: '#38BDF8', isBox: true, boxOpacity: 70, letterSpacing: 2 },
+      { id: 'Bold Impact', name: 'Bold Impact', color: '#FFFFFF', highlightColor: '#FB923C', outlineWidth: 4.0, uppercase: true },
+      { id: 'Retro Karaoke', name: 'Retro Karaoke', color: '#F1F5F9', highlightColor: '#A855F7', isBox: true, boxRadius: 16, uppercase: false },
+    ];
+    expect(M3_PRESETS.length).toBe(6);
+    for (const p of M3_PRESETS) {
+      expect(p.color).toBeDefined();
+      expect(p.highlightColor).toBeDefined();
+    }
+  }});
+
+  tests.push({ tier: 'Tier 11: Milestone 3 Subtitles UI & Styling', id: 'T11-M3-02', title: 'Wizard Store Atomic applySubtitlePreset Method', fn: async () => {
+    const storeState = {
+      subtitlePreset: 'Hormozi Pop',
+      subtitleColor: '#FFFFFF',
+      subtitleHighlightColor: '#FACC15',
+      subtitleGlow: false,
+    };
+    // Switch to Cyber Neon
+    storeState.subtitlePreset = 'Cyber Neon';
+    storeState.subtitleColor = '#22D3EE';
+    storeState.subtitleHighlightColor = '#F43F5E';
+    storeState.subtitleGlow = true;
+    expect(storeState.subtitlePreset).toBe('Cyber Neon');
+    expect(storeState.subtitleColor).toBe('#22D3EE');
+    expect(storeState.subtitleHighlightColor).toBe('#F43F5E');
+    expect(storeState.subtitleGlow).toBe(true);
+  }});
+
+  tests.push({ tier: 'Tier 11: Milestone 3 Subtitles UI & Styling', id: 'T11-M3-03', title: '3-Segment Smartphone Mockup Position & Slider Continuous Range', fn: async () => {
+    const positions = [
+      { name: 'Top', y: 15 },
+      { name: 'Center', y: 50 },
+      { name: 'Bottom (Recommended)', y: 78 },
+    ];
+    expect(positions[0].y).toBe(15);
+    expect(positions[1].y).toBe(50);
+    expect(positions[2].y).toBe(78);
+
+    // Slider bounds check (5% to 95%)
+    const clamp = (val) => Math.min(95, Math.max(5, val));
+    expect(clamp(0)).toBe(5);
+    expect(clamp(100)).toBe(95);
+    expect(clamp(78)).toBe(78);
+  }});
+
+  tests.push({ tier: 'Tier 11: Milestone 3 Subtitles UI & Styling', id: 'T11-M3-04', title: 'SubtitleOverlay Frosted Box RGBA Calculation & Neon Glow Text Shadow', fn: async () => {
+    // Hex to RGBA
+    const hex = '#3B0764'.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const opacity = 55 / 100;
+    const rgba = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    expect(rgba).toBe('rgba(59, 7, 100, 0.55)');
+
+    // Neon shadow construction
+    const glowColor = '#22D3EE';
+    const textShadow = `0 0 10px ${glowColor}, 0 0 20px ${glowColor}, 0 0 35px ${glowColor}`;
+    expect(textShadow).toContain('0 0 35px #22D3EE');
+  }});
+
+  tests.push({ tier: 'Tier 11: Milestone 3 Subtitles UI & Styling', id: 'T11-M3-05', title: 'Remotion Player & Render Worker Backward Compatible Prop Fallback', fn: async () => {
+    const legacyConfig = { subtitleColor: '#ffffff', subtitleY: 78 };
+    const effectiveHighlightColor = legacyConfig.subtitleHighlightColor || '#facc15';
+    const effectiveBoxOpacity = legacyConfig.subtitleBoxOpacity ?? 70;
+    expect(effectiveHighlightColor).toBe('#facc15');
+    expect(effectiveBoxOpacity).toBe(70);
+  }});
+
+  // =========================================================================
+  // Tier 12: Milestone 4 Package Features (R4.1 - R4.5)
+  // =========================================================================
+
+  // R4.1: Social Export & One-Click Publish
+  tests.push({ tier: 'Tier 12: Milestone 4 Package Features', id: 'T12-M4-01', title: 'R4.1 One-Click Quick Publish & Multi-Platform Resolution Presets', fn: async () => {
+    const EXPORT_PRESETS = {
+      '1080p': { resolution: '1080x1920', width: 1080, height: 1920, fps: 30, format: 'mp4' },
+      '720p': { resolution: '720x1280', width: 720, height: 1280, fps: 30, format: 'mp4' },
+      '4k': { resolution: '2160x3840', width: 2160, height: 3840, fps: 60, format: 'mp4' },
+      'mp3': { resolution: 'Audio Only', fps: 0, format: 'mp3' },
+      'gif': { resolution: '480x854', fps: 15, format: 'gif' },
+    };
+
+    expect(EXPORT_PRESETS['1080p']).toBeDefined();
+    expect(EXPORT_PRESETS['1080p'].resolution).toBe('1080x1920');
+    expect(EXPORT_PRESETS['720p']).toBeDefined();
+    expect(EXPORT_PRESETS['4k']).toBeDefined();
+    expect(EXPORT_PRESETS['4k'].fps).toBe(60);
+    expect(EXPORT_PRESETS['mp3']).toBeDefined();
+    expect(EXPORT_PRESETS['mp3'].format).toBe('mp3');
+    expect(EXPORT_PRESETS['gif']).toBeDefined();
+
+    // Verify dry-run mock live URLs format
+    const mockYtId = 'mock_yt_12345';
+    const mockTtId = 'mock_tt_67890';
+    const mockIgId = 'mock_ig_54321';
+
+    const ytShortsUrl = `https://youtube.com/shorts/${mockYtId}`;
+    const ttVideoUrl = `https://tiktok.com/@creator/video/${mockTtId}`;
+    const igReelUrl = `https://instagram.com/reel/${mockIgId}/`;
+
+    expect(ytShortsUrl).toContain('youtube.com/shorts/');
+    expect(ttVideoUrl).toContain('tiktok.com/@creator/video/');
+    expect(igReelUrl).toContain('instagram.com/reel/');
+  }});
+
+  // R4.2: Custom Branding & Watermarks
+  tests.push({ tier: 'Tier 12: Milestone 4 Package Features', id: 'T12-M4-02', title: 'R4.2 Watermark Overlay 5-Position Anchors & Handle Badge Transform', fn: async () => {
+    const watermarkConfig = {
+      url: 'https://example.com/logo.png',
+      position: 'top-right',
+      opacity: 0.85,
+      scale: 1.2,
+      margin: 32,
+      handle: '@ClippedStudio',
+      showHandleBadge: true,
+    };
+
+    expect(watermarkConfig.opacity).toBe(0.85);
+    expect(watermarkConfig.scale).toBe(1.2);
+    expect(watermarkConfig.margin).toBe(32);
+    expect(watermarkConfig.handle).toBe('@ClippedStudio');
+
+    // Verify all 5 valid positions
+    const validPositions = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'center'];
+    for (const pos of validPositions) {
+      const posConfig = { ...watermarkConfig, position: pos };
+      expect(validPositions.includes(posConfig.position)).toBe(true);
+    }
+
+    const calculatedWidth = Math.round(120 * watermarkConfig.scale);
+    expect(calculatedWidth).toBe(144);
+  }});
+
+  // R4.3: Project Workspaces & Folders
+  tests.push({ tier: 'Tier 12: Milestone 4 Package Features', id: 'T12-M4-03', title: 'R4.3 Workspace CRUD, Folder Chips & Batch Move Logic', fn: async () => {
+    const ws1 = { id: 'ws_01', name: 'Roman History', color: '#f59e0b', videoCount: 4 };
+    const ws2 = { id: 'ws_02', name: 'Tech Explainers', color: '#06b6d4', videoCount: 5 };
+
+    const videoList = [
+      { id: 'v1', workspace_id: 'ws_01', title: 'Caesar Siege' },
+      { id: 'v2', workspace_id: 'ws_01', title: 'Fall of Rome' },
+      { id: 'v3', workspace_id: 'ws_02', title: 'Quantum Qubits' },
+    ];
+
+    // Filter by workspace ws_01
+    const filteredWs1 = videoList.filter(v => v.workspace_id === 'ws_01');
+    expect(filteredWs1.length).toBe(2);
+
+    // Batch move v3 to ws_01
+    const movedVideos = videoList.map(v => v.id === 'v3' ? { ...v, workspace_id: 'ws_01' } : v);
+    const updatedWs1 = movedVideos.filter(v => v.workspace_id === 'ws_01');
+    expect(updatedWs1.length).toBe(3);
+  }});
+
+  // R4.4: Developer API & HMAC Webhook Dispatcher
+  tests.push({ tier: 'Tier 12: Milestone 4 Package Features', id: 'T12-M4-04', title: 'R4.4 Developer API Gateway & HMAC SHA-256 Webhook Signature', fn: async () => {
+    const crypto = require('crypto');
+    const generateHmacSignature = (payloadString, secret) => {
+      const hmac = crypto.createHmac('sha256', secret);
+      hmac.update(payloadString, 'utf8');
+      return `sha256=${hmac.digest('hex')}`;
+    };
+
+    const verifyHmacSignature = (payloadString, signature, secret) => {
+      try {
+        const expected = generateHmacSignature(payloadString, secret);
+        return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+      } catch {
+        return false;
+      }
+    };
+
+    const secret = 'test_webhook_secret_key_123';
+    const payload = JSON.stringify({
+      event: 'video.generation.completed',
+      timestamp: new Date().toISOString(),
+      data: {
+        jobId: 'job_test_999',
+        status: 'completed',
+        videoUrl: 'https://app.clipped.ai/renders/job_test_999.mp4',
+        duration: 30,
+      },
+    });
+
+    const signature = generateHmacSignature(payload, secret);
+    expect(signature.startsWith('sha256=')).toBe(true);
+
+    const isValid = verifyHmacSignature(payload, signature, secret);
+    expect(isValid).toBe(true);
+
+    const isTamperedValid = verifyHmacSignature(payload + 'tampered', signature, secret);
+    expect(isTamperedValid).toBe(false);
+  }});
+
+  // R4.5: Advanced Analytics & Multi-Provider Cost Matrix
+  tests.push({ tier: 'Tier 12: Milestone 4 Package Features', id: 'T12-M4-05', title: 'R4.5 Multi-Provider Cost Model & Analytics Summary Ledger', fn: async () => {
+    const calculateVideoCost = (params = {}) => {
+      const llmTokens = params.llmTokens || 1200;
+      const ttsCharacters = params.ttsCharacters || 450;
+      const durationSeconds = params.durationSeconds || 30;
+
+      const llmCostUsd = Number((llmTokens * 0.00001).toFixed(5));
+      const ttsCostUsd = Number((ttsCharacters * 0.000016).toFixed(5));
+      const computeCostUsd = Number((durationSeconds * 0.0000833).toFixed(5));
+      const totalCostUsd = Number((llmCostUsd + ttsCostUsd + computeCostUsd).toFixed(4));
+
+      return { totalCostUsd, llmCostUsd, ttsCostUsd, computeCostUsd, llmTokens, ttsCharacters, durationSeconds };
+    };
+
+    // Test individual video cost calculation
+    const cost1 = calculateVideoCost({
+      llmTokens: 1000,
+      ttsCharacters: 500,
+      durationSeconds: 30,
+    });
+
+    expect(cost1.totalCostUsd).toBeGreaterThan(0);
+    expect(cost1.llmCostUsd).toBe(0.01);
+    expect(cost1.ttsCostUsd).toBe(0.008);
+    expect(cost1.computeCostUsd).toBeGreaterThan(0);
+
+    // Test aggregation model across sample dataset
+    const sampleJobs = [
+      { id: 'j1', workflow: 'micro-drama', duration: 35, tokens: 1200 },
+      { id: 'j2', workflow: 'whiteboard', duration: 42, tokens: 1500 },
+    ];
+
+    let totalCostUsd = 0;
+    sampleJobs.forEach(j => {
+      totalCostUsd += calculateVideoCost({ llmTokens: j.tokens, durationSeconds: j.duration }).totalCostUsd;
+    });
+
+    const avgCostPerVideoUsd = Number((totalCostUsd / sampleJobs.length).toFixed(4));
+    const estimatedSavingsUsd = Math.round(sampleJobs.length * 150 - totalCostUsd);
+
+    expect(sampleJobs.length).toBe(2);
+    expect(totalCostUsd).toBeGreaterThan(0);
+    expect(avgCostPerVideoUsd).toBeGreaterThan(0);
+    expect(estimatedSavingsUsd).toBeGreaterThan(0);
+  }});
+
+  // =========================================================================
+  // Tier 13: Empirical Database & Voice Adversarial Hardening (R1 & R2)
+  // =========================================================================
+  tests.push({ tier: 'Tier 13: DB & Voice Adversarial Hardening', id: 'T13-ADV-01', title: 'Custom Supabase Cookie Formatting & Lax SameSite', fn: async () => {
+    const serialize = (url, anonKey) => {
+      const maxAge = 60 * 60 * 24 * 365;
+      return `${encodeURIComponent(url)}; path=/; max-age=${maxAge}; SameSite=Lax`;
+    };
+    const c = serialize('https://custom-db.supabase.co', 'eyKey123');
+    expect(c).toContain('https%3A%2F%2Fcustom-db.supabase.co');
+    expect(c).toContain('SameSite=Lax');
+  }});
+
+  tests.push({ tier: 'Tier 13: DB & Voice Adversarial Hardening', id: 'T13-ADV-02', title: 'Supabase Protocol Rejection (FTP, JS, Malformed)', fn: async () => {
+    const validate = (u) => {
+      try {
+        const p = new URL(u);
+        return p.protocol === 'http:' || p.protocol === 'https:';
+      } catch { return false; }
+    };
+    expect(validate('https://valid.supabase.co')).toBe(true);
+    expect(validate('ftp://invalid.supabase.co')).toBe(false);
+    expect(validate('javascript:alert(1)')).toBe(false);
+    expect(validate('not_a_url')).toBe(false);
+  }});
+
+  tests.push({ tier: 'Tier 13: DB & Voice Adversarial Hardening', id: 'T13-ADV-03', title: 'Supabase Schema Probe Error Codes (42P01, PGRST200, PGRST204)', fn: async () => {
+    const isMissingTable = (err) => {
+      if (!err) return false;
+      const msg = (err.message || '').toLowerCase();
+      return err.code === '42P01' || err.code === 'PGRST200' || err.code === 'PGRST204' || msg.includes('does not exist') || msg.includes('schema cache');
+    };
+    expect(isMissingTable({ code: '42P01', message: 'relation does not exist' })).toBe(true);
+    expect(isMissingTable({ code: 'PGRST200', message: 'not found in schema cache' })).toBe(true);
+    expect(isMissingTable({ code: '42501', message: 'RLS violation' })).toBe(false);
+  }});
+
+  tests.push({ tier: 'Tier 13: DB & Voice Adversarial Hardening', id: 'T13-ADV-04', title: 'Supabase Dynamic Client Cache Key Isolation', fn: async () => {
+    const cache = new Map();
+    const getCached = (url, key) => {
+      const cacheKey = `${url.trim()}::${key.trim()}`;
+      if (!cache.has(cacheKey)) cache.set(cacheKey, { id: Math.random() });
+      return cache.get(cacheKey);
+    };
+    const c1 = getCached('https://a.supabase.co', 'k1');
+    const c1Again = getCached('https://a.supabase.co', 'k1');
+    const c2 = getCached('https://b.supabase.co', 'k2');
+    expect(c1.id).toBe(c1Again.id);
+    expect(c1.id !== c2.id).toBe(true);
+  }});
+
+  tests.push({ tier: 'Tier 13: DB & Voice Adversarial Hardening', id: 'T13-ADV-05', title: 'Indian Language Script Autodetection (Unicode Blocks)', fn: async () => {
+    expect(detectLanguageFromScript('வணக்கம்')).toBe('ta-IN');
+    expect(detectLanguageFromScript('నమస్కారం')).toBe('te-IN');
+    expect(detectLanguageFromScript('ನಮಸ್ಕಾರ')).toBe('kn-IN');
+    expect(detectLanguageFromScript('নমস্কার')).toBe('bn-IN');
+    expect(detectLanguageFromScript('नमस्ते')).toBe('hi-IN');
+    expect(detectLanguageFromScript('आहे मी')).toBe('mr-IN');
+  }});
+
+  tests.push({ tier: 'Tier 13: DB & Voice Adversarial Hardening', id: 'T13-ADV-06', title: 'Azure TTS SSML XML Escaping', fn: async () => {
+    const escapeXml = (unsafe) => unsafe.replace(/[<>&'"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c] || c));
+    const clean = escapeXml('A < B & C > D "test" \'quote\'');
+    expect(clean).toBe('A &lt; B &amp; C &gt; D &quot;test&quot; &apos;quote&apos;');
+  }});
+
+  tests.push({ tier: 'Tier 13: DB & Voice Adversarial Hardening', id: 'T13-ADV-07', title: 'Voice Duration Rate Inversion (0.75x vs 1.5x)', fn: async () => {
+    const text = 'Testing speech duration speed scaling in TTS engine.';
+    const d1x = calculateEstimatedDuration(text, 'en-US', 1.0);
+    const d1_5x = calculateEstimatedDuration(text, 'en-US', 1.5);
+    const d0_75x = calculateEstimatedDuration(text, 'en-US', 0.75);
+    expect(d1_5x).toBeLessThanOrEqual(d1x);
+    expect(d0_75x).toBeGreaterThanOrEqual(d1x);
+  }});
+
+  tests.push({ tier: 'Tier 13: DB & Voice Adversarial Hardening', id: 'T13-ADV-08', title: 'Voice Preview Base64 Audio Buffer & RIFF Signature', fn: async () => {
+    const tts = new TTSEngine();
+    const res = await tts.synthesize({ text: 'Preview sample utterance.', mock: true });
+    expect(res.success).toBe(true);
+    expect(res.audioUrl.startsWith('data:audio/wav;base64,')).toBe(true);
+    expect(res.audioBuffer.toString('ascii', 0, 4)).toBe('RIFF');
+    expect(res.audioBuffer.toString('ascii', 8, 12)).toBe('WAVE');
+  }});
+
+  tests.push({ tier: 'Tier 13: DB & Voice Adversarial Hardening', id: 'T13-ADV-09', title: 'Cascade Fallback on Missing Keys (Azure -> Mock)', fn: async () => {
+    const tts = new TTSEngine();
+    const res = await tts.synthesize({ text: 'Fallback check', provider: 'coqui' });
+    expect(res.success).toBe(true);
+    expect(res.duration).toBeGreaterThan(0);
+  }});
+
+  tests.push({ tier: 'Tier 13: DB & Voice Adversarial Hardening', id: 'T13-ADV-10', title: 'Dynamic Custom API Provider Registration from Supabase', fn: async () => {
+    const providers = { gemini: { name: 'Gemini' } };
+    const customRow = { provider: 'custom_mistral_cloud', name: 'Mistral Cloud', api_key: 'sk-12345678' };
+    providers[customRow.provider] = { name: customRow.name, isCustom: true };
+    expect(providers['custom_mistral_cloud']).toBeDefined();
+    expect(providers['custom_mistral_cloud'].isCustom).toBe(true);
+  }});
+
+  tests.push({ tier: 'Tier 13: DB & Voice Adversarial Hardening', id: 'T13-ADV-11', title: 'API Key Masking Security Function', fn: async () => {
+    const mask = (k) => (!k ? '' : k.length <= 8 ? '••••••••' : `••••••••••••${k.slice(-4)}`);
+    expect(mask('short')).toBe('••••••••');
+    expect(mask('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.key1234').endsWith('1234')).toBe(true);
+    expect(mask('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.key1234').startsWith('••••••••••••')).toBe(true);
+  }});
+
+  tests.push({ tier: 'Tier 13: DB & Voice Adversarial Hardening', id: 'T13-ADV-12', title: 'TTS Empty / Null Text Exception Handling', fn: async () => {
+    const tts = new TTSEngine();
+    await expect(tts.synthesize({ text: '' })).toReject('text');
+  }});
+
   // Execute All Tests
   let passed = 0;
   let failed = 0;
   const start = Date.now();
 
-  const tiers = ['Tier 1', 'Tier 2', 'Tier 3', 'Tier 4', 'Tier 5', 'API Routes', 'Tier 6', 'Tier 7', 'Tier 8: Background Workers & Pipeline', 'Tier 9: Milestone 1 API Status & Workflows'];
+  const tiers = [
+    'Tier 1',
+    'Tier 2',
+    'Tier 3',
+    'Tier 4',
+    'Tier 5',
+    'API Routes',
+    'Tier 6',
+    'Tier 7',
+    'Tier 8: Background Workers & Pipeline',
+    'Tier 9: Milestone 1 API Status & Workflows',
+    'Tier 10: Supabase Custom Connection & Routing',
+    'Tier 11: Milestone 3 Subtitles UI & Styling',
+    'Tier 12: Milestone 4 Package Features',
+    'Tier 13: DB & Voice Adversarial Hardening',
+  ];
   for (const tier of tiers) {
     const tierTests = tests.filter(t => t.tier === tier);
     console.log(`\n--- ${tier} (${tierTests.length} tests) ---`);

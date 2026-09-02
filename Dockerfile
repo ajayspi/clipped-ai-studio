@@ -1,7 +1,7 @@
 # ==============================================================================
-# Base Stage: Node.js 22 on Alpine Linux with FFmpeg & native toolchains
+# Base Stage: Node.js 20 on Alpine Linux with FFmpeg & native toolchains
 # ==============================================================================
-FROM node:22-alpine AS base
+FROM node:20-alpine AS base
 
 # Install system dependencies (libc6-compat for SWC/turbopack, ffmpeg for audio/video engine, procps, tzdata)
 RUN apk add --no-cache \
@@ -24,7 +24,7 @@ FROM base AS deps
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --ignore-scripts
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # ==============================================================================
 # Builder Stage: Compile Next.js with Standalone Output

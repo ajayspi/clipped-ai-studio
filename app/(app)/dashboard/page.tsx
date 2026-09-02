@@ -1,6 +1,5 @@
-import { Video, Zap, Eye, Clock, Download, Share2, Trash2, Loader2, Play } from "lucide-react"
+import { Video, Zap, Eye, Clock, Download, Share2, Trash2, Loader2, Play, Sparkles, Folder } from "lucide-react"
 import { supabase } from "@/lib/db"
-
 import { DashboardCard } from "@/components/dashboard/DashboardCard"
 
 export const dynamic = 'force-dynamic'
@@ -13,6 +12,18 @@ export default async function DashboardPage() {
     .order('created_at', { ascending: false })
     .limit(20)
 
+  // Fetch workspaces for folder labels
+  const { data: dbWorkspaces } = await supabase
+    .from('workspaces')
+    .select('*')
+    .order('created_at', { ascending: true })
+
+  const workspaces = (dbWorkspaces || []).map((w: any) => ({
+    id: w.id,
+    name: w.name,
+    color: w.color || '#8b5cf6',
+  }));
+
   // Parse jobs to extract thumbnail and video data
   const videos = (jobs || []).map(job => {
     let parsed: any = {}
@@ -20,7 +31,6 @@ export default async function DashboardPage() {
       parsed = typeof job.logs === 'string' ? JSON.parse(job.logs) : job.logs
     } catch {}
     
-    // Attempt to find a thumbnail from the generated videos or sourced clips
     const firstClip = parsed?.videos?.[0]?.video || parsed?.videos?.[0]
     const thumbnail = firstClip?.thumbnail || firstClip?.previewUrl || null
     
@@ -38,10 +48,29 @@ export default async function DashboardPage() {
     <div className="flex flex-1 flex-col gap-6 p-6 max-w-[1600px] mx-auto w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Video Library</h1>
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+            <Sparkles className="w-7 h-7 text-primary" />
+            Studio Dashboard
+          </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage, view, and share your rendered AI videos.
+            Manage, view, and publish your rendered short-form videos.
           </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <a
+            href="/library"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border bg-background hover:bg-muted font-medium text-xs transition-colors shadow-sm"
+          >
+            <Folder className="w-4 h-4 text-violet-500" />
+            View Workspaces
+          </a>
+          <a
+            href="/create/footage"
+            className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow hover:bg-primary/90 transition-colors"
+          >
+            Create New Video
+          </a>
         </div>
       </div>
 
@@ -61,7 +90,7 @@ export default async function DashboardPage() {
       ) : (
         <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
           {videos.map((video) => (
-            <DashboardCard key={video.id} video={video} />
+            <DashboardCard key={video.id} video={video} workspaces={workspaces} />
           ))}
         </div>
       )}

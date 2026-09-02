@@ -66,3 +66,43 @@ Research and integrate two new workflows: "Avatar to Video" and "Whiteboard Anim
 ### Pipeline Verification
 - [ ] New UI cards for "Avatar" and "Whiteboard" are added to the create section.
 - [ ] Backend orchestrators for Whiteboard animation successfully use Gemini to generate character references before rendering.
+
+## Follow-up — 2026-09-03T04:20:08+05:30
+
+Finalizing the "Clipped" AI video generation platform into a complete, packaged product by adding custom database connections, expanding voice integrations with previews, modernizing the subtitles UI, and adding 5 major new features (Social Export, Branding, Workspaces, Webhooks, Analytics).
+
+Working directory: `C:\Users\vigilare\.gemini\antigravity\scratch\clipped`
+Integrity mode: benchmark
+
+## Requirements
+
+### R1. Custom Supabase Connection UI
+Add a settings panel allowing users to input their own `NEXT_PUBLIC_SUPABASE_URL` and `ANON_KEY`. The app must dynamically route database queries to this user-provided instance.
+
+### R2. Voice API Expansion & Previews
+Integrate Azure TTS and additional free/keyless voice APIs. Add a "Play/Pause" preview button next to each voice model in the settings UI.
+
+### R3. Modernize Subtitles UI
+Redesign the subtitles configuration section to be highly modern, matching the glassmorphism and vibrant styling of the rest of the application.
+
+### R4. Complete Package Features
+Implement the following premium features:
+1. One-Click Export & Publish (Direct to YouTube Shorts/TikTok).
+2. Custom Branding & Watermarks (Overlay logos on generated videos).
+3. Project Workspaces (Organize videos into folders/campaigns).
+4. Developer API & Webhooks (Allow triggering generation via API).
+5. Advanced Analytics (Track API usage and cost estimations).
+
+## Acceptance Criteria
+
+### Verification (Programmatic & UI)
+- [ ] **R1**: Changing the Supabase credentials in the UI successfully updates the local storage/context, and a test query to the new database succeeds.
+- [ ] **R2**: Clicking the "Play" button next to a voice model successfully triggers an audio playback of a sample text.
+- [ ] **R3**: The Subtitles UI renders without console errors and features visual depth (e.g., shadows, blur).
+- [ ] **R4**: The analytics dashboard successfully calculates and displays a mock API cost based on generated videos.
+
+## Follow-up — 2026-09-03T04:26:12+05:30
+
+Dynamic API Key Management & Custom API Integrations:
+1. Dynamically render API key input fields in the Settings UI for ANY provider found in the Supabase `settings` table (including Grok, Groq, Suno, Cerebras, Mistral, GitHub Models, DeepSeek, Azure, etc.) rather than strictly hardcoding the UI list.
+2. Provide a generic "Add Custom API Integration" button and modal/form in the Settings UI allowing users to define custom provider names, paste API keys / base URLs, and connect custom or local keyless endpoints.

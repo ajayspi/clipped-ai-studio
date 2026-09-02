@@ -51,14 +51,29 @@ export function LivePlayer() {
           subtitleStyle: {
             y: w.subtitleY,
             color: w.subtitleColor,
+            highlightColor: w.subtitleHighlightColor,
+            glow: w.subtitleGlow,
+            glowColor: w.subtitleGlowColor,
             size: w.subtitleSize,
             outlineWidth: w.subtitleOutlineWidth,
             outlineColor: w.subtitleOutline,
             isBox: w.subtitleBox,
             boxColor: w.subtitleBoxColor,
+            boxOpacity: w.subtitleBoxOpacity,
+            boxRadius: w.subtitleBoxRadius,
+            letterSpacing: w.subtitleLetterSpacing,
             uppercase: w.subtitleUppercase,
-            maxWidth: w.subtitleMaxWidth
-          }
+            maxWidth: w.subtitleMaxWidth,
+          },
+          watermarkUrl: w.watermarkUrl || undefined,
+          watermarkConfig: w.watermarkUrl ? {
+            url: w.watermarkUrl,
+            position: w.watermarkPosition,
+            opacity: w.watermarkOpacity,
+            scale: w.watermarkScale,
+            margin: w.watermarkMargin,
+            handle: w.showWatermarkHandle ? w.watermarkHandle : undefined,
+          } : undefined,
         }}
         style={{
           width: '100%',

@@ -18,6 +18,8 @@ import { registerApiRouteTests } from './api-routes.test';
 import { registerTier6Tests } from './tier6-integration.test';
 import { registerM6StressTests } from './stress-m6-quotas-publishing.test';
 import { registerWorkersE2ETests } from './tier7-workers-e2e.test';
+import { registerMilestone1SupabaseTests } from './m1-supabase-custom-connection.test';
+import { registerMilestone2VoiceTests } from './m2-voice-engine-settings.test';
 
 export async function runAllTests() {
   console.log('\n' + '='.repeat(80));
@@ -25,6 +27,8 @@ export async function runAllTests() {
   console.log('='.repeat(80) + '\n');
 
   // Register all tiers
+  await registerMilestone1SupabaseTests();
+  await registerMilestone2VoiceTests();
   await registerTier1Tests();
   await registerTier2Tests();
   await registerTier3Tests();

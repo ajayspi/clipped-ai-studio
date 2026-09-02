@@ -139,20 +139,6 @@ export default function LibraryPage() {
     }
   }
 
-
-          workspace_id: "ws_history",
-          workspace_name: "Roman History Series",
-          title: "Julius Caesar's Secret Battle Tactic",
-          thumbnail: "/images/workflows/stories_cover.jpg",
-          created_at: new Date(Date.now() - 72 * 3600 * 1000).toISOString(),
-          status: "completed",
-          clipCount: 4,
-          workflowType: "Stories",
-        },
-        {
-          id: "vid_tch_06",
-          video_id: "vid_tch_06",
-
   async function handleCreateFolder(e: React.FormEvent) {
 
     e.preventDefault();
