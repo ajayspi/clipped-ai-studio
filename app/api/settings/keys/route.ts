@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/db';
+import { supabase, supabaseAdmin } from '@/lib/db';
 
 export const PROVIDER_ENV_MAP: Record<string, { envVars: string[]; category: string }> = {
   gemini: { envVars: ['GEMINI_API_KEY', 'GOOGLE_API_KEY', 'GOOGLE_AI_KEY'], category: 'AI Models' },
@@ -58,7 +58,7 @@ export async function GET() {
 
   // 2. Query Supabase database and merge/override
   try {
-    const { data: dbKeys, error } = await supabase
+    const { data: dbKeys, error } = await supabaseAdmin
       .from('settings')
       .select('provider, api_key, is_active, updated_at');
 
@@ -99,7 +99,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Provider is required' }, { status: 400 });
     }
 
-    const { data: existing } = await supabase
+    const { data: existing } = await supabaseAdmin
       .from('settings')
       .select('id')
       .eq('provider', provider)
@@ -113,7 +113,7 @@ export async function POST(req: Request) {
       if (apiKey !== undefined && apiKey !== '') updateData.api_key = apiKey;
       if (isActive !== undefined) updateData.is_active = isActive;
       
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('settings')
         .update(updateData)
         .eq('id', existing.id)
@@ -124,7 +124,7 @@ export async function POST(req: Request) {
       result = data;
     } else {
       // Insert
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('settings')
         .insert({
           provider,
