@@ -32,7 +32,6 @@ const navItems: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Create AI Video", href: "/create", icon: Wand2, badge: "AI", badgeColor: "from-violet-500 to-fuchsia-500" },
   { name: "Library", href: "/library", icon: Library },
-  { name: "Analytics", href: "/analytics", icon: BarChart3, badge: "PRO", badgeColor: "from-emerald-500 to-teal-500" },
   { name: "Planner", href: "/planner", icon: CalendarDays },
   { name: "Settings", href: "/settings", icon: Settings },
 ]
