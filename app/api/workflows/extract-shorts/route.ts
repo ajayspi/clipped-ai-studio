@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/db";
+import { supabaseAdmin as supabase } from "@/lib/db";
 import { shortsExtractor } from "@/lib/engine/shorts-extractor";
 import { AspectRatio } from "@/lib/engine/types";
 

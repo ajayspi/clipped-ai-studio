@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { whiteboardOrchestrator } from '@/lib/engine/whiteboard-orchestrator';
-import { supabase } from '@/lib/db';
+import { supabaseAdmin as supabase } from '@/lib/db';
 
 export async function POST(req: Request) {
   try {

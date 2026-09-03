@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/db";
+import { supabaseAdmin as supabase } from "@/lib/db";
 import { videoGenerator } from "@/lib/engine/video-generator";
 import { AIVideoModel, AspectRatio, CameraMotion } from "@/lib/engine/types";
 

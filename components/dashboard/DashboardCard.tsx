@@ -32,6 +32,7 @@ export function DashboardCard({
   const [publishTab, setPublishTab] = useState<"publish" | "export">("publish");
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
   const [moving, setMoving] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const currentWorkspace = workspaces.find((w) => w.id === video.workspace_id) || (video.workspace_name ? { name: video.workspace_name, color: '#8b5cf6' } : null);
 
@@ -68,8 +69,19 @@ export function DashboardCard({
         className="break-inside-avoid relative group rounded-2xl border border-border/40 bg-card/80 dark:bg-zinc-900/80 backdrop-blur-xl shadow-sm overflow-hidden flex flex-col transition-all hover:shadow-xl hover:border-violet-500/30"
       >
         {/* Thumbnail Area */}
-        <div className="relative aspect-[9/16] bg-zinc-950 w-full overflow-hidden">
-          {video.thumbnail ? (
+        <div 
+          className="relative aspect-[9/16] bg-zinc-950 w-full overflow-hidden"
+          onMouseLeave={() => setIsPlaying(false)}
+        >
+          {isPlaying && video.output_url ? (
+            <video
+              src={video.output_url}
+              autoPlay
+              controls
+              className="w-full h-full object-cover z-20 absolute inset-0"
+              onEnded={() => setIsPlaying(false)}
+            />
+          ) : video.thumbnail ? (
             <img
               src={video.thumbnail}
               alt={video.title}
@@ -82,48 +94,55 @@ export function DashboardCard({
           )}
 
           {/* Status & Format Overlay Badges */}
-          <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
-            <span className="px-2.5 py-1 bg-black/70 dark:bg-black/85 backdrop-blur-md rounded-lg text-[10px] font-bold text-white uppercase tracking-wider border border-white/10 flex items-center gap-1 shadow-md">
-              <Sparkles className="w-2.5 h-2.5 text-violet-400" />
-              {video.workflowType || "AI Video"}
-            </span>
-
-            <div className="flex items-center gap-1.5">
-              {currentWorkspace && (
-                <span className="px-2 py-0.5 bg-black/60 backdrop-blur-md rounded-md text-[10px] font-semibold text-violet-300 border border-violet-500/30 flex items-center gap-1">
-                  <Folder className="w-2.5 h-2.5 text-violet-400" />
-                  {currentWorkspace.name}
-                </span>
-              )}
-              <span className="px-2 py-0.5 bg-black/60 backdrop-blur-md rounded-md text-[10px] font-semibold text-white/90 border border-white/10 flex items-center gap-1">
-                <Smartphone className="w-3 h-3 text-cyan-400" />
-                9:16
+          {!isPlaying && (
+            <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none z-10">
+              <span className="px-2.5 py-1 bg-black/70 dark:bg-black/85 backdrop-blur-md rounded-lg text-[10px] font-bold text-white uppercase tracking-wider border border-white/10 flex items-center gap-1 shadow-md">
+                <Sparkles className="w-2.5 h-2.5 text-violet-400" />
+                {video.workflowType || video.workflow_type || "AI Video"}
               </span>
+
+              <div className="flex items-center gap-1.5">
+                {currentWorkspace && (
+                  <span className="px-2 py-0.5 bg-black/60 backdrop-blur-md rounded-md text-[10px] font-semibold text-violet-300 border border-violet-500/30 flex items-center gap-1">
+                    <Folder className="w-2.5 h-2.5 text-violet-400" />
+                    {currentWorkspace.name}
+                  </span>
+                )}
+                <span className="px-2 py-0.5 bg-black/60 backdrop-blur-md rounded-md text-[10px] font-semibold text-white/90 border border-white/10 flex items-center gap-1">
+                  <Smartphone className="w-3 h-3 text-cyan-400" />
+                  9:16
+                </span>
+              </div>
             </div>
-          </div>
+          )}
 
           {video.status === "pending" || video.status === "processing" ? (
-            <div className="absolute inset-0 bg-black/65 backdrop-blur-xs flex flex-col items-center justify-center text-white p-6">
+            <div className="absolute inset-0 bg-black/65 backdrop-blur-xs flex flex-col items-center justify-center text-white p-6 z-10">
               <Loader2 className="w-8 h-8 animate-spin mb-4 text-violet-500" />
               <div className="w-full h-1.5 bg-white/20 rounded-full overflow-hidden mb-2">
                 <div className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 w-[60%] animate-pulse" />
               </div>
               <p className="text-xs font-medium text-center text-zinc-300">Rendering AI video...</p>
             </div>
-          ) : (
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
+          ) : !isPlaying ? (
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3 z-10">
               <button
-                onClick={() => {
-                  setPublishTab("publish");
-                  setIsPublishOpen(true);
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (video.output_url) {
+                    setIsPlaying(true);
+                  } else {
+                    setPublishTab("publish");
+                    setIsPublishOpen(true);
+                  }
                 }}
                 className="h-11 w-11 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center hover:scale-110 transition-transform shadow-lg shadow-violet-600/40"
-                aria-label="Play & Publish Preview"
+                aria-label="Play Video"
               >
                 <Play className="w-4 h-4 ml-0.5" fill="currentColor" />
               </button>
             </div>
-          )}
+          ) : null}
         </div>
 
         {/* Metadata Area */}

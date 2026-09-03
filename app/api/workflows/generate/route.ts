@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { videoOrchestrator } from "@/lib/engine/orchestrator"
-import { supabase } from "@/lib/db"
+import { supabaseAdmin as supabase } from "@/lib/db"
 
 export async function POST(req: Request) {
   try {

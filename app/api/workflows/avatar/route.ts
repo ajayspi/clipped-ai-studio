@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { avatarOrchestrator } from '@/lib/engine/avatar-orchestrator';
-import { supabase } from '@/lib/db';
+import { supabaseAdmin as supabase } from '@/lib/db';
 
 export async function POST(req: Request) {
   try {

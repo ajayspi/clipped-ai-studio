@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { supabase } from "@/lib/db"
+import { supabaseAdmin as supabase } from "@/lib/db"
 import { sceneMatcher } from "@/lib/engine/scene-matcher"
 import { imageGenerator } from "@/lib/engine/image-generator"
 

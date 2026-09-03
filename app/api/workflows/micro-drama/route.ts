@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/db";
+import { supabaseAdmin as supabase } from "@/lib/db";
 import { dramaOrchestrator } from "@/lib/engine/drama-orchestrator";
 import { AspectRatio, DramaCharacter } from "@/lib/engine/types";
 

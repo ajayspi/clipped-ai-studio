@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/db";
+import { supabaseAdmin as supabase } from "@/lib/db";
 import { autoPilot } from "@/lib/engine/auto-pilot";
 import { AspectRatio } from "@/lib/engine/types";
 
