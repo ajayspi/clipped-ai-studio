@@ -11,7 +11,7 @@ export async function getApiKey(provider: string, envVarName?: string): Promise<
       .from('settings')
       .select('api_key')
       .eq('provider', provider)
-      .eq('user_id', 'default_user')
+      .is('user_id', null)
       .single();
 
     // The query without user_id if the above fails, since in upload_keys we didn't specify user_id!

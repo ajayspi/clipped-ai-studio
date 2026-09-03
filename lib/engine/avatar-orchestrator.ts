@@ -297,7 +297,7 @@ export class AvatarOrchestrator {
       try {
         await supabase.from('render_jobs').upsert({
           id: jobId,
-          user_id: 'default_user',
+          user_id: null,
           status: 'completed',
           progress: 100,
           video_url: videoUrl,
@@ -363,7 +363,7 @@ export class AvatarOrchestrator {
     try {
       await supabase.from('render_jobs').insert({
         id: jobId,
-        user_id: 'default_user',
+        user_id: null,
         status: 'pending',
         progress: 0,
         config: {

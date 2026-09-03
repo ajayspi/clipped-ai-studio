@@ -1,4 +1,4 @@
-export function parseJson<T>(raw: string): T {
+﻿export function parseJson<T>(raw: string): T {
   // 1. Strip markdown fences
   const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
   const cleaned = (fenceMatch ? fenceMatch[1] : raw).trim();
@@ -54,7 +54,7 @@ export async function complete(request: { system: string; user: string; maxToken
       .from('settings')
       .select('api_key')
       .eq('provider', 'api_openai')
-      .eq('user_id', 'default_user') // Assuming single-tenant right now
+      .is('user_id', null) // Assuming single-tenant right now
       .single();
       
     if (keyData?.api_key) {

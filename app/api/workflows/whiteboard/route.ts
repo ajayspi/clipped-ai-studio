@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     try {
       await supabase.from('render_jobs').insert({
         id: jobId,
-        user_id: 'default_user',
+        user_id: null,
         status: 'pending',
         progress: 0,
         config: {

@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+﻿import { createClient } from '@supabase/supabase-js'
 import { bundle } from '@remotion/bundler'
 import { renderMedia, selectComposition } from '@remotion/renderer'
 import * as dotenv from 'dotenv'
@@ -24,7 +24,7 @@ if (!fs.existsSync(RENDER_DIR)) {
 }
 
 async function startWorker() {
-  console.log('🎬 Intelligent Render Worker started. Polling for jobs...')
+  console.log('ðŸŽ¬ Intelligent Render Worker started. Polling for jobs...')
   
   // Start the polling loop
   while (true) {
@@ -54,7 +54,7 @@ async function pollAndProcess() {
   if (!jobs || jobs.length === 0) return // No pending jobs
 
   const job = jobs[0]
-  console.log(`\n📦 Found pending job: ${job.id}`)
+  console.log(`\nðŸ“¦ Found pending job: ${job.id}`)
 
   // 2. Mark as processing
   await supabase
@@ -78,7 +78,7 @@ async function pollAndProcess() {
     // Check for TTS API keys in DB
     let keys: any[] | null = null
     try {
-      const { data } = await supabase.from('settings').select('provider, api_key').eq('user_id', 'default_user')
+      const { data } = await supabase.from('settings').select('provider, api_key').is('user_id', null)
       keys = data
     } catch {
       // Fallback silently if settings table is unavailable in dry-run mode
@@ -121,7 +121,7 @@ async function pollAndProcess() {
     }
 
     // Generate TTS for each beat
-    console.log(`🎙️ Generating TTS for ${beatsList.length} beats...`)
+    console.log(`ðŸŽ™ï¸ Generating TTS for ${beatsList.length} beats...`)
     const processedBeats = []
     let totalDurationSeconds = 0
     
@@ -205,7 +205,7 @@ async function pollAndProcess() {
     if (params.input?.aspectRatio === '16:9') compId = 'MainRender-16x9'
     if (params.input?.aspectRatio === '1:1') compId = 'MainRender-1x1'
 
-    console.log(`🚀 Bundling Remotion composition...`)
+    console.log(`ðŸš€ Bundling Remotion composition...`)
     const entryPoint = fs.existsSync(path.resolve(process.cwd(), 'remotion/Root.tsx'))
       ? path.resolve(process.cwd(), 'remotion/Root.tsx')
       : path.resolve(ROOT_DIR, 'remotion/Root.tsx')
@@ -215,11 +215,15 @@ async function pollAndProcess() {
       webpackOverride: (config) => config,
     })
 
-    console.log(`🎬 Extracting composition [${compId}] metadata...`)
+    console.log(`ðŸŽ¬ Extracting composition [${compId}] metadata...`)
     const composition = await selectComposition({
       serveUrl: bundleLocation,
       id: compId,
       inputProps,
+      timeoutInMilliseconds: 60000,
+      chromiumOptions: {
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+      }
     })
 
     await renderMedia({
@@ -228,12 +232,17 @@ async function pollAndProcess() {
       codec: 'h264',
       outputLocation: outputPath,
       inputProps,
+      concurrency: 1, // Use only 1 concurrent frame to save RAM
+      timeoutInMilliseconds: 120000, // Increase timeout for slow VM networking
+      chromiumOptions: {
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+      },
       onProgress: ({ progress }) => {
         // console.log(`Rendering... ${Math.floor(progress * 100)}%`)
       }
     })
 
-    console.log(`✅ Render complete: ${outputPath}`)
+    console.log(`âœ… Render complete: ${outputPath}`)
 
     // 4. Mark as completed
     await supabase
@@ -246,7 +255,7 @@ async function pollAndProcess() {
 
   } catch (err: any) {
     const errorMsg = err?.message || String(err)
-    console.error(`❌ Job ${job.id} failed:`, errorMsg)
+    console.error(`âŒ Job ${job.id} failed:`, errorMsg)
     await supabase
       .from('render_jobs')
       .update({ status: 'failed', logs: JSON.stringify({ error: errorMsg }) })

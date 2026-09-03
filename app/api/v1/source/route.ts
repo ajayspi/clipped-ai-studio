@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/db'
 
 export async function POST(req: Request) {
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
         .from('settings')
         .select('api_key')
         .eq('provider', 'api_pexels')
-        .eq('user_id', 'default_user')
+        .is('user_id', null)
         .single();
         
       const pexelsKey = keyData?.api_key || process.env.PEXELS_API_KEY;
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
         const pixabayKey = keyData?.api_key || process.env.PIXABAY_API_KEY; // If we pulled all keys, wait we only pulled api_pexels above.
         
         // Fetch all keys to ensure we have pixabay
-        const { data: allKeys } = await supabase.from('settings').select('provider, api_key').eq('user_id', 'default_user');
+        const { data: allKeys } = await supabase.from('settings').select('provider, api_key').is('user_id', null);
         const pKey = allKeys?.find(k => k.provider === 'api_pixabay')?.api_key || process.env.PIXABAY_API_KEY;
         
         if (pKey) {
@@ -106,7 +106,7 @@ export async function POST(req: Request) {
         .from('settings')
         .select('api_key')
         .eq('provider', 'api_openai')
-        .eq('user_id', 'default_user')
+        .is('user_id', null)
         .single();
         
       const openaiKey = openaiKeyData?.api_key || process.env.OPENAI_API_KEY;
@@ -169,7 +169,7 @@ export async function POST(req: Request) {
         .from('settings')
         .select('api_key')
         .eq('provider', 'api_luma')
-        .eq('user_id', 'default_user')
+        .is('user_id', null)
         .single();
         
       const lumaKey = lumaKeyData?.api_key || process.env.LUMA_API_KEY;
@@ -226,7 +226,7 @@ export async function POST(req: Request) {
           .from('settings')
           .select('api_key')
           .eq('provider', 'api_huggingface')
-          .eq('user_id', 'default_user')
+          .is('user_id', null)
           .single();
           
         const hfKey = hfKeyData?.api_key || process.env.HUGGINGFACE_API_KEY;
