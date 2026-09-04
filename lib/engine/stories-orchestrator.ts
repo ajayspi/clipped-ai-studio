@@ -1,3 +1,4 @@
+﻿import { getOmniRouteConfig } from '@/lib/keys';
 import {
   StorySeriesRequest,
   StorySeriesResponse,
@@ -35,7 +36,8 @@ export class StoriesOrchestrator {
 
     console.log(`[StoriesOrchestrator] Generating ${partsCount}-part story series for topic: "${topic}" (${storyType})`);
 
-    const apiKey = process.env.OPENAI_API_KEY;
+    const omniConfig = await getOmniRouteConfig();
+    const apiKey = omniConfig.apiKey || 'omniroute-key';
 
     if (apiKey) {
       try {
@@ -78,7 +80,7 @@ export class StoriesOrchestrator {
   ): Promise<StorySeriesResponse> {
     const prompt = buildStoryPartsPrompt(topic, storyType, partsCount, visualStyle);
 
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await fetch('http://localhost:20128/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -335,3 +337,5 @@ export class StoriesOrchestrator {
 }
 
 export const storiesOrchestrator = new StoriesOrchestrator();
+
+

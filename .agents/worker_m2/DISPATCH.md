@@ -1,38 +1,45 @@
-## 2026-09-01T13:44:55Z
-You are Worker M2 implementing Milestone 2: Automatic Mission Mode & Progress View for Clipped AI Studio.
-Your working directory is C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\worker_m2.
+## 2026-09-04T22:00:50Z
 
-Authoritative Request: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\ORIGINAL_REQUEST.md
-Scope Document: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\PROJECT.md
-Test Infra: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\TEST_INFRA.md
-Explorer Reports to Read:
-- C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_1\handoff.md (Backend Architecture)
-- C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_2\handoff.md (Frontend UI & State Handoff)
-- C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_3\handoff.md (Test Specs & Verification)
+You are a specialized Worker (worker_m2) executing Milestone 2: Engine Integration Updates.
+
+Working Directory: c:\Users\vigilare\.gemini\antigravity\scratch\clipped-omni-router\.agents\worker_m2
+Workspace Directory: c:\Users\vigilare\.gemini\antigravity\scratch\clipped-omni-router
+Original Request Path: c:\Users\vigilare\.gemini\antigravity\scratch\clipped-omni-router\.agents\ORIGINAL_REQUEST.md
+Engine Explorer Handoff: c:\Users\vigilare\.gemini\antigravity\scratch\clipped-omni-router\.agents\explorer_survey_engine\handoff.md
+Engine Explorer Analysis: c:\Users\vigilare\.gemini\antigravity\scratch\clipped-omni-router\.agents\explorer_survey_engine\analysis.md
+Scope Document: c:\Users\vigilare\.gemini\antigravity\scratch\clipped-omni-router\PROJECT.md
 
 MANDATORY INTEGRITY WARNING:
 DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/facade implementations, or circumvent the intended task. A teamwork_preview_auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
 
-Scope & Deliverables:
-1. Backend Orchestrator: Create `lib/engine/mission-orchestrator.ts` implementing the full 5-stage pipeline:
-   - Stage 1: Script generation (Gemini / OpenAI / Pollinations / deterministic structured fallback).
-   - Stage 2: Scene analysis & beat decomposition (3-6 scenes with visual prompts, camera motions, keywords, and durations).
-   - Stage 3: Asset sourcing (Pexels / Pixabay / Fal / Pollinations / royalty-free CDN fallbacks).
-   - Stage 4: Voice synthesis & audio sync (ElevenLabs / Google TTS / Web TTS / synthetic PCM WAV fallback buffer).
-   - Stage 5: Remotion storyboard composition (assembling `MainCompositionProps` beats, subtitle tracks, duration sync).
-   - Dual-layer persistence: Supabase `render_jobs` table backed by thread-safe in-memory cache for offline/test resilience.
-2. API Routes: Create `app/api/workflows/mission/route.ts`:
-   - `POST`: Validates prompt, initializes job in `missionOrchestrator`, fires background execution, returns `{ success: true, jobId, status: 'processing', progressUrl }`.
-   - `GET`: Queries job by `id`, returns complete `MissionJobState` schema with overall progress, step details, logs, and generated artifacts.
-3. Frontend UI:
-   - Update `components/create/MissionPromptBar.tsx` to POST to `/api/workflows/mission` on Enter or button click, with resilient navigation to `/create/mission/[jobId]`.
-   - Create `app/(app)/create/mission/[id]/page.tsx` (with supporting components):
-     - 5-stage progress visualizer with animated status badges and progress bar.
-     - Real-time streaming log console with log levels (INFO, SUCCESS, WARN, ERROR) and timestamps.
-     - Live video / storyboard preview (embedding Remotion Player / LivePlayer or interactive preview card).
-     - "Manual / Edit in Wizard" button that hydrates `useWizardStore` with prompt, script, scenes/beats, voice, style, sets `workflowType: 'footage'`, and navigates to `/create/footage`.
-4. Testing:
-   - Create `tests/e2e/test-mission-mode.js` covering all 30 test cases across 6 suites per `explorer_m2_3/handoff.md`.
-   - Integrate Tier 10 (`Milestone 2 Automatic Mission Mode & Progress View`) into `tests/e2e/standalone-runner.js`.
-   - Run `node tests/e2e/test-mission-mode.js`, `node tests/e2e/test-api-status.js`, and `node tests/e2e/standalone-runner.js` to verify 100% passing tests.
-5. Write your complete handoff report in `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\worker_m2\handoff.md` and send a message back with test outputs and command results.
+Exclusively Owned Files for Milestone 2:
+- `lib/engine/llm.ts`
+- `lib/ai/llm.ts`
+- `lib/engine/tts.ts`
+- `lib/engine/auto-pilot.ts`
+- `lib/engine/drama-orchestrator.ts`
+- `lib/engine/bulk-planner.ts`
+- `lib/engine/scene-matcher.ts`
+- `lib/engine/stories-orchestrator.ts`
+- `lib/engine/shorts-extractor.ts`
+- `lib/ai/gemini-character-generator.ts`
+
+Tasks:
+1. Read the user request at c:\Users\vigilare\.gemini\antigravity\scratch\clipped-omni-router\.agents\ORIGINAL_REQUEST.md.
+2. Read the engine explorer handoff at c:\Users\vigilare\.gemini\antigravity\scratch\clipped-omni-router\.agents\explorer_survey_engine\handoff.md and analysis.md.
+3. Create `lib/engine/llm.ts` as the unified LLM engine facade:
+   - Import `getOmniRouteConfig` from `@/lib/keys`.
+   - Export `complete(request: { system: string; user: string; maxTokens?: number; json?: boolean }, provider?: string, model?: string): Promise<string>` that fetches OmniRoute credentials dynamically, issues `POST ${baseUrl}/v1/chat/completions` with header `Authorization: Bearer ${apiKey}`, and includes fallback handling if offline.
+   - Export `parseJson<T>(content: string, fallback?: T): T` using safe parsing (per Rule 2: NEVER use raw JSON.parse on LLM output).
+4. Update `lib/ai/llm.ts`:
+   - Connect `complete()` to use `getOmniRouteConfig()` dynamically with `Authorization: Bearer ${apiKey}`.
+5. Update `lib/engine/tts.ts`:
+   - Add `'omniroute'` to `TTSProvider` and update the auto cascade to prioritize `'omniroute'` first.
+   - Implement `synthesizeOmniRoute(request: TTSRequest): Promise<TTSResponse>` using `getOmniRouteConfig()` to post to `${baseUrl}/v1/audio/speech` with `Authorization: Bearer ${apiKey}`.
+   - Remove hard requirements and errors for `OPENAI_API_KEY` and `AZURE_SPEECH_KEY`.
+6. Update engine orchestrators (`auto-pilot.ts`, `drama-orchestrator.ts`, `bulk-planner.ts`, `scene-matcher.ts`, `stories-orchestrator.ts`, `shorts-extractor.ts`, `gemini-character-generator.ts`):
+   - Replace direct checks on `process.env.OPENAI_API_KEY` and duplicated raw `fetch('http://localhost:20128/v1/chat/completions')` calls with `complete` and `parseJson` from `lib/engine/llm` or `lib/ai/llm`.
+7. Verify all changes compile cleanly (`npx tsc --noEmit`).
+8. Create a test script to verify that `lib/engine/llm.ts` and `lib/engine/tts.ts` resolve OmniRoute credentials.
+9. Write `handoff.md` in your working directory with the standard sections: Observation, Logic Chain, Caveats, Conclusion, Verification Methods.
+10. Send a message back to parent when done.

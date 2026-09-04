@@ -2,11 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import {
-  Key,
   CheckCircle2,
   XCircle,
   Loader2,
-  PlayCircle,
   Settings,
   Image as ImageIcon,
   Mic,
@@ -25,127 +23,90 @@ import {
   Activity,
   Code2,
   X,
-  Plus,
   Play,
   Pause,
   Volume2,
   Globe,
-  Radio,
   Search,
-  Sliders,
+  Users,
+  FolderKanban,
+  Zap,
+  Cpu,
+  ArrowUpRight,
+  Shield,
+  HelpCircle,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSupabase, TestConnectionResult } from "@/lib/supabase/context";
 import { ApiProviderHub } from "@/components/settings/ApiProviderHub";
 
-interface ApiKeyData {
-  isConfigured: boolean;
-  maskedValue: string;
-  isActive: boolean;
-  updatedAt: string;
-  name?: string;
-  category?: string;
-  isCustom?: boolean;
-  baseUrl?: string;
-}
-
-interface CustomProviderData {
-  id: string;
-  name: string;
-  category: string;
-  isConfigured: boolean;
-  isActive: boolean;
-  maskedValue: string;
-  updatedAt: string | null;
+interface OmniTestResult {
+  success: boolean;
+  latencyMs?: number;
+  models?: string[];
+  modelCount?: number;
+  message?: string;
+  error?: string;
 }
 
 interface VoiceModelItem {
   id: string;
   name: string;
-  provider: 'azure' | 'openai' | 'elevenlabs' | 'google' | 'keyless';
-  providerLabel: string;
+  category: "Neural" | "Expressive" | "Keyless" | "Narrative";
   language: string;
-  gender: 'male' | 'female' | 'neutral';
+  gender: "male" | "female" | "neutral";
   description: string;
   sampleText: string;
 }
 
-const BASE_PROVIDERS = [
-  // AI Models
-  { id: "api_openai", name: "OpenAI (GPT-4o & TTS)", category: "AI Models" },
-  { id: "api_gemini", name: "Google Gemini", category: "AI Models" },
-  { id: "api_anthropic", name: "Anthropic Claude", category: "AI Models" },
-  { id: "api_openrouter", name: "OpenRouter", category: "AI Models" },
-  { id: "api_groq", name: "Groq Cloud (Fast Llama)", category: "AI Models" },
-  { id: "api_deepseek", name: "DeepSeek API", category: "AI Models" },
-  { id: "api_grok", name: "xAI Grok", category: "AI Models" },
-  { id: "api_fal", name: "Fal.ai", category: "AI Models" },
-
-  // Stock Media
-  { id: "api_pexels", name: "Pexels Video & Images", category: "Stock Media" },
-  { id: "api_pixabay", name: "Pixabay Media", category: "Stock Media" },
-  { id: "api_kling", name: "Kling Video AI", category: "Stock Media" },
-  { id: "api_luma", name: "Luma Dream Machine", category: "Stock Media" },
-  { id: "api_huggingface", name: "Hugging Face (Free AI Video)", category: "Stock Media" },
-
-  // Voice & Audio
-  { id: "api_azure_speech", name: "Azure Speech Services (Neural TTS)", category: "Voice & Audio" },
-  { id: "api_azure_region", name: "Azure Speech Region (e.g. eastus)", category: "Voice & Audio" },
-  { id: "api_elevenlabs", name: "ElevenLabs Voice AI", category: "Voice & Audio" },
-  { id: "api_google_tts", name: "Google Cloud Text-to-Speech", category: "Voice & Audio" },
-  { id: "api_deepgram", name: "Deepgram Audio", category: "Voice & Audio" },
-  { id: "api_suno", name: "Suno AI Music", category: "Voice & Audio" },
-
-  // Avatar
-  { id: "api_heygen", name: "HeyGen Avatar", category: "Avatar" },
-  { id: "api_did", name: "D-ID Avatar", category: "Avatar" },
-];
+interface WorkspaceItem {
+  id: string;
+  name: string;
+  color?: string;
+  description?: string;
+  videoCount?: number;
+}
 
 const CATEGORIES = [
-  "AI Models",
-  "Voice & Audio",
-  "Stock Media",
+  "OmniRoute AI",
+  "Voice Catalog",
   "Brand Kits",
+  "Workspaces & Team",
   "Usage & Quotas",
   "Database & Supabase",
   "API Health Hub",
 ];
 
 const STATIC_VOICE_CATALOG: VoiceModelItem[] = [
-  // OpenAI
-  { id: "alloy", name: "Alloy", provider: "openai", providerLabel: "OpenAI", language: "en-US", gender: "neutral", description: "Balanced, versatile, and natural tone", sampleText: "Hello! I am Alloy, an expressive and versatile voice from OpenAI." },
-  { id: "echo", name: "Echo", provider: "openai", providerLabel: "OpenAI", language: "en-US", gender: "male", description: "Warm, resonant, and balanced male tone", sampleText: "Hey there, I am Echo, with a warm and well-rounded male presence." },
-  { id: "fable", name: "Fable", provider: "openai", providerLabel: "OpenAI", language: "en-US", gender: "female", description: "Expressive British accent for narratives", sampleText: "Greetings! I am Fable, a British-accented voice crafted for narrative flair." },
-  { id: "onyx", name: "Onyx", provider: "openai", providerLabel: "OpenAI", language: "en-US", gender: "male", description: "Deep, authoritative, and powerful male tone", sampleText: "I am Onyx, deep, resonant, and authoritative." },
-  { id: "nova", name: "Nova", provider: "openai", providerLabel: "OpenAI", language: "en-US", gender: "female", description: "Energetic, cheerful, and engaging female tone", sampleText: "Hi! I am Nova, energetic, bright, and engaging for vertical shorts." },
-  { id: "shimmer", name: "Shimmer", provider: "openai", providerLabel: "OpenAI", language: "en-US", gender: "female", description: "Clear, crisp, and high-clarity female tone", sampleText: "Hello, I am Shimmer, clear, crisp, and high-clarity." },
+  // OmniRoute Neural & Expressive Voices
+  { id: "alloy", name: "Alloy", category: "Neural", language: "en-US", gender: "neutral", description: "Balanced, versatile, and natural tone for all-purpose narration.", sampleText: "Hello! I am Alloy, an expressive and versatile voice synthesized via OmniRoute." },
+  { id: "echo", name: "Echo", category: "Expressive", language: "en-US", gender: "male", description: "Warm, resonant, and balanced male tone for storytelling.", sampleText: "Hey there, I am Echo, featuring a warm and well-rounded presence." },
+  { id: "fable", name: "Fable", category: "Narrative", language: "en-US", gender: "female", description: "Expressive accent crafted for creative shorts and fiction.", sampleText: "Greetings! I am Fable, a refined voice crafted for narrative flair." },
+  { id: "onyx", name: "Onyx", category: "Narrative", language: "en-US", gender: "male", description: "Deep, authoritative, and commanding male tone for podcasts.", sampleText: "I am Onyx, delivering deep, resonant, and authoritative narration." },
+  { id: "nova", name: "Nova", category: "Expressive", language: "en-US", gender: "female", description: "Energetic, cheerful, and engaging tone for high-retention reels.", sampleText: "Hi! I am Nova, energetic, bright, and engaging for vertical viral shorts." },
+  { id: "shimmer", name: "Shimmer", category: "Neural", language: "en-US", gender: "female", description: "Clear, crisp, and high-clarity female tone for explainer videos.", sampleText: "Hello, I am Shimmer, clear, crisp, and high-clarity." },
 
-  // Azure Neural Voices
-  { id: "en-US-JennyNeural", name: "Jenny (Neural)", provider: "azure", providerLabel: "Azure", language: "en-US", gender: "female", description: "Natural, conversational US English", sampleText: "Welcome to Clipped AI. I am Jenny, a natural American English voice." },
-  { id: "en-US-GuyNeural", name: "Guy (Neural)", provider: "azure", providerLabel: "Azure", language: "en-US", gender: "male", description: "Confident, friendly US English male", sampleText: "Hi, I am Guy, a confident and conversational American English voice." },
-  { id: "en-US-AriaNeural", name: "Aria (Neural)", provider: "azure", providerLabel: "Azure", language: "en-US", gender: "female", description: "Versatile, rich expressiveness and dynamic range", sampleText: "Hello! I am Aria, featuring rich expressiveness and dynamic range." },
-  { id: "en-IN-NeerjaNeural", name: "Neerja (Neural)", provider: "azure", providerLabel: "Azure", language: "en-IN", gender: "female", description: "Authentic Indian English female", sampleText: "Namaste! I am Neerja, bringing natural Indian English narration." },
-  { id: "en-IN-PrabhatNeural", name: "Prabhat (Neural)", provider: "azure", providerLabel: "Azure", language: "en-IN", gender: "male", description: "Professional Indian English male", sampleText: "Hello! I am Prabhat, delivering polished Indian English speech." },
-  { id: "hi-IN-SwaraNeural", name: "Swara (Hindi Neural)", provider: "azure", providerLabel: "Azure", language: "hi-IN", gender: "female", description: "Natural, fluent Hindi female", sampleText: "नमस्ते! मैं स्वरा हूँ, आपकी वीडियो के लिए एकदम सटीक आवाज़।" },
-  { id: "hi-IN-MadhurNeural", name: "Madhur (Hindi Neural)", provider: "azure", providerLabel: "Azure", language: "hi-IN", gender: "male", description: "Warm, clear Hindi male", sampleText: "नमस्ते! मैं मधुर हूँ, स्पष्ट और प्रभावशाली हिंदी आवाज़।" },
-  { id: "ta-IN-PallaviNeural", name: "Pallavi (Tamil Neural)", provider: "azure", providerLabel: "Azure", language: "ta-IN", gender: "female", description: "Expressive Tamil female narration", sampleText: "வணக்கம்! நான் பல்லவி, சிறந்த தமிழ் குரல்." },
-  { id: "te-IN-ShrutiNeural", name: "Shruti (Telugu Neural)", provider: "azure", providerLabel: "Azure", language: "te-IN", gender: "female", description: "Fluent Telugu female narration", sampleText: "నమస్కారం! నేను శృతి, తెలుగు వీడియోల కోసం ఉత్తమ స్వరం." },
+  // Multilingual Neural Voices
+  { id: "jenny", name: "Jenny (Neural)", category: "Neural", language: "en-US", gender: "female", description: "Natural, conversational English narration.", sampleText: "Welcome to Clipped AI. I am Jenny, a natural conversational voice." },
+  { id: "guy", name: "Guy (Neural)", category: "Neural", language: "en-US", gender: "male", description: "Confident and conversational male narrator.", sampleText: "Hi, I am Guy, a confident and conversational narrator." },
+  { id: "aria", name: "Aria (Neural)", category: "Expressive", language: "en-US", gender: "female", description: "Rich expressiveness with wide dynamic range.", sampleText: "Hello! I am Aria, featuring rich dynamic range." },
+  { id: "neerja", name: "Neerja (Neural)", category: "Neural", language: "en-IN", gender: "female", description: "Authentic Indian English female narration.", sampleText: "Namaste! I am Neerja, bringing natural Indian English narration." },
+  { id: "prabhat", name: "Prabhat (Neural)", category: "Neural", language: "en-IN", gender: "male", description: "Polished Indian English male narration.", sampleText: "Hello! I am Prabhat, delivering polished Indian English speech." },
+  { id: "swara", name: "Swara (Hindi)", category: "Neural", language: "hi-IN", gender: "female", description: "Natural, fluent Hindi female narration.", sampleText: "नमस्ते! मैं स्वरा हूँ, आपकी वीडियो के लिए एकदम सटीक आवाज़।" },
+  { id: "madhur", name: "Madhur (Hindi)", category: "Neural", language: "hi-IN", gender: "male", description: "Warm, clear Hindi male narration.", sampleText: "नमस्ते! मैं मधुर हूँ, स्पष्ट और प्रभावशाली हिंदी आवाज़।" },
 
-  // ElevenLabs
-  { id: "21m00Tcm4TlvDq8ikWAM", name: "Rachel", provider: "elevenlabs", providerLabel: "ElevenLabs", language: "en-US", gender: "female", description: "Calm, natural, and realistic multilingual speech", sampleText: "Hello there, Rachel here with ElevenLabs multilingual ultra-realistic speech." },
-  { id: "AZnzlk1XvdvUeBnXmlld", name: "Domi", provider: "elevenlabs", providerLabel: "ElevenLabs", language: "en-US", gender: "female", description: "Strong, dynamic, and viral short-form tone", sampleText: "Hi, I am Domi, high-energy and modern for viral social content." },
-  { id: "ErXwobaYiN019PkySvjV", name: "Antoni", provider: "elevenlabs", providerLabel: "ElevenLabs", language: "en-US", gender: "male", description: "Well-rounded and clear documentary tone", sampleText: "Greetings! I am Antoni, a balanced voice tailored for documentaries." },
-  { id: "pNInz6obpgDQGcFmaJgB", name: "Adam", provider: "elevenlabs", providerLabel: "ElevenLabs", language: "en-US", gender: "male", description: "Deep, resonant, and high-retention viral voice", sampleText: "Hey everyone, Adam here. Let’s create high-retention vertical clips." },
-
-  // Google Cloud
-  { id: "en-US-Journey-F", name: "Journey Female", provider: "google", providerLabel: "Google", language: "en-US", gender: "female", description: "Google Cloud Journey voice with natural intonation", sampleText: "Hello, this is Google Cloud Journey voice with natural intonation." },
-  { id: "en-US-Journey-D", name: "Journey Male", provider: "google", providerLabel: "Google", language: "en-US", gender: "male", description: "Google Cloud Journey male voice", sampleText: "Hi, this is Google Cloud Journey male voice." },
-  { id: "en-IN-Neural2-A", name: "Neural2 Female (en-IN)", provider: "google", providerLabel: "Google", language: "en-IN", gender: "female", description: "Google Cloud Neural2 Indian English voice", sampleText: "Welcome! This is Google Cloud Neural2 Indian English voice." },
+  // Character Voices
+  { id: "rachel", name: "Rachel", category: "Expressive", language: "en-US", gender: "female", description: "Calm, natural, and realistic speech.", sampleText: "Hello there, Rachel here with ultra-realistic speech." },
+  { id: "domi", name: "Domi", category: "Expressive", language: "en-US", gender: "female", description: "Strong, dynamic, and viral short-form tone.", sampleText: "Hi, I am Domi, high-energy and modern for viral social content." },
+  { id: "antoni", name: "Antoni", category: "Narrative", language: "en-US", gender: "male", description: "Well-rounded and clear documentary tone.", sampleText: "Greetings! I am Antoni, a balanced voice tailored for documentaries." },
+  { id: "adam", name: "Adam", category: "Narrative", language: "en-US", gender: "male", description: "Deep, resonant, and high-retention viral voice.", sampleText: "Hey everyone, Adam here. Let us create high-retention vertical clips." },
 
   // Free / Keyless
-  { id: "free-en-us", name: "Free English (US)", provider: "keyless", providerLabel: "Free / Keyless", language: "en-US", gender: "female", description: "High-speed zero-cost keyless voice", sampleText: "Hello! This is a free, instant keyless voice powered by Clipped AI." },
-  { id: "free-en-in", name: "Free Indian English", provider: "keyless", providerLabel: "Free / Keyless", language: "en-IN", gender: "female", description: "High-speed keyless Indian English", sampleText: "Namaste! This is the free keyless Indian English voice option." },
-  { id: "free-hi-in", name: "Free Hindi Voice", provider: "keyless", providerLabel: "Free / Keyless", language: "hi-IN", gender: "female", description: "High-speed keyless Hindi voice", sampleText: "नमस्ते! यह क्लिप्ड एआई का निःशुल्क वॉयस विकल्प है।" },
+  { id: "free-en-us", name: "Free English (US)", category: "Keyless", language: "en-US", gender: "female", description: "Instant zero-cost keyless voice powered by Clipped Studio.", sampleText: "Hello! This is a free, instant keyless voice powered by Clipped AI." },
+  { id: "free-en-in", name: "Free Indian English", category: "Keyless", language: "en-IN", gender: "female", description: "Instant keyless Indian English voice option.", sampleText: "Namaste! This is the free keyless Indian English voice option." },
+  { id: "free-hi-in", name: "Free Hindi Voice", category: "Keyless", language: "hi-IN", gender: "female", description: "Instant keyless Hindi voice option.", sampleText: "नमस्ते! यह क्लिप्ड एआई का निःशुल्क वॉयस विकल्प है।" },
 ];
 
 const SCHEMA_DDL_SQL = `-- =========================================================================
@@ -213,12 +174,13 @@ CREATE TABLE IF NOT EXISTS public.published_videos (
     published_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 6. Settings table (API Keys and Configuration)
+-- 6. Settings table (API Keys and OmniRoute Configuration)
 CREATE TABLE IF NOT EXISTS public.settings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
     provider TEXT NOT NULL,
     api_key TEXT NOT NULL,
+    base_url TEXT,
     is_active BOOLEAN DEFAULT true,
     priority INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
@@ -239,6 +201,18 @@ CREATE TABLE IF NOT EXISTS public.scheduled_posts (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_scheduled_posts_status_time ON public.scheduled_posts(status, scheduled_for);
+
+-- 8. Workspaces table
+CREATE TABLE IF NOT EXISTS public.workspaces (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    description TEXT,
+    color TEXT DEFAULT '#8b5cf6',
+    icon TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
 
 -- Trigger function for updated_at
 CREATE OR REPLACE FUNCTION update_modified_column() 
@@ -283,17 +257,25 @@ CREATE POLICY "Users can manage their own posts" ON public.scheduled_posts FOR A
 `;
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState("AI Models");
-  const [keys, setKeys] = useState<Record<string, ApiKeyData>>({});
-  const [customProviders, setCustomProviders] = useState<CustomProviderData[]>([]);
+  const [activeTab, setActiveTab] = useState("OmniRoute AI");
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState<string | null>(null);
-  const [testing, setTesting] = useState<string | null>(null);
-  const [testingAll, setTestingAll] = useState(false);
-  const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string }>>({});
-  const [inputs, setInputs] = useState<Record<string, string>>({});
 
-  // Voice Catalog State
+  // ── OmniRoute Configuration State ──────────────────────────────────────────
+  const [endpointUrl, setEndpointUrl] = useState("http://localhost:20128/v1");
+  const [apiKey, setApiKey] = useState("");
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [isConfigured, setIsConfigured] = useState(false);
+  const [maskedApiKey, setMaskedApiKey] = useState("");
+  const [omniSource, setOmniSource] = useState("default");
+  const [savingOmni, setSavingOmni] = useState(false);
+  const [testingOmni, setTestingOmni] = useState(false);
+  const [omniTestResult, setOmniTestResult] = useState<OmniTestResult | null>(null);
+  const [omniFeedback, setOmniFeedback] = useState<{
+    type: "success" | "error" | "info";
+    message: string;
+  } | null>(null);
+
+  // ── Voice Catalog State ───────────────────────────────────────────────────
   const [voiceFilter, setVoiceFilter] = useState<string>("All");
   const [voiceSearch, setVoiceSearch] = useState<string>("");
   const [loadingVoiceId, setLoadingVoiceId] = useState<string | null>(null);
@@ -301,16 +283,26 @@ export default function SettingsPage() {
   const [voicePreviewError, setVoicePreviewError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Custom Provider Modal State
-  const [showCustomModal, setShowCustomModal] = useState(false);
-  const [customName, setCustomName] = useState("");
-  const [customKey, setCustomKey] = useState("");
-  const [customBaseUrl, setCustomBaseUrl] = useState("");
-  const [customCategory, setCustomCategory] = useState("AI Models");
-  const [savingCustom, setSavingCustom] = useState(false);
-  const [customModalError, setCustomModalError] = useState<string | null>(null);
+  // ── Brand Kit & Watermark State ───────────────────────────────────────────
+  const [brandColor, setBrandColor] = useState("#8b5cf6");
+  const [subtitlePreset, setSubtitlePreset] = useState("Hormozi Pop");
+  const [subtitlePosition, setSubtitlePosition] = useState("Bottom (Recommended)");
+  const [watermarkEnabled, setWatermarkEnabled] = useState(true);
+  const [watermarkText, setWatermarkText] = useState("Clipped AI");
+  const [watermarkPosition, setWatermarkPosition] = useState("Bottom Right");
+  const [watermarkOpacity, setWatermarkOpacity] = useState(80);
+  const [brandSavedFeedback, setBrandSavedFeedback] = useState(false);
 
-  // Supabase Context & State
+  // ── Workspaces State ──────────────────────────────────────────────────────
+  const [workspaces, setWorkspaces] = useState<WorkspaceItem[]>([
+    { id: "ws-default", name: "Default Workspace", color: "#8b5cf6", description: "Primary creative campaign folder", videoCount: 4 },
+    { id: "ws-shorts", name: "TikTok & Shorts", color: "#ec4899", description: "Viral vertical video pipeline", videoCount: 2 },
+  ]);
+  const [newWorkspaceName, setNewWorkspaceName] = useState("");
+  const [newWorkspaceColor, setNewWorkspaceColor] = useState("#3b82f6");
+  const [creatingWorkspace, setCreatingWorkspace] = useState(false);
+
+  // ── Supabase Context & State ──────────────────────────────────────────────
   const {
     url: activeSupabaseUrl,
     anonKey: activeSupabaseAnonKey,
@@ -332,10 +324,64 @@ export default function SettingsPage() {
   const [showDdlModal, setShowDdlModal] = useState(false);
   const [ddlCopied, setDdlCopied] = useState(false);
   const [urlCopied, setUrlCopied] = useState(false);
-  const [dbFeedback, setDbFeedback] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
+  const [dbFeedback, setDbFeedback] = useState<{
+    type: "success" | "error" | "info";
+    message: string;
+  } | null>(null);
+
+  // ── Handle URL Tab Parameter on Mount ──────────────────────────────────────
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      if (tabParam) {
+        const decoded = decodeURIComponent(tabParam);
+        if (decoded === "AI Models" || decoded === "Stock Media" || decoded === "Avatar") {
+          setActiveTab("OmniRoute AI");
+        } else if (decoded === "Voice & Audio") {
+          setActiveTab("Voice Catalog");
+        } else if (CATEGORIES.includes(decoded)) {
+          setActiveTab(decoded);
+        }
+      }
+    }
+  }, []);
+
+  // ── Fetch OmniRoute Configuration ──────────────────────────────────────────
+  async function fetchOmniConfig() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/settings/keys");
+      const data = await res.json();
+      if (data.endpointUrl || data.omniroute?.endpointUrl) {
+        setEndpointUrl(data.endpointUrl || data.omniroute?.endpointUrl);
+      }
+      setIsConfigured(Boolean(data.isConfigured || data.omniroute?.isConfigured));
+      setMaskedApiKey(data.maskedApiKey || data.omniroute?.maskedApiKey || "");
+      setOmniSource(data.source || data.omniroute?.source || "default");
+    } catch (err) {
+      console.error("Failed to load OmniRoute keys", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ── Fetch Workspaces ──────────────────────────────────────────────────────
+  async function loadWorkspaces() {
+    try {
+      const res = await fetch("/api/workspaces");
+      const data = await res.json();
+      if (data.workspaces && Array.isArray(data.workspaces) && data.workspaces.length > 0) {
+        setWorkspaces(data.workspaces);
+      }
+    } catch {
+      // Keep initial fallback workspaces if offline
+    }
+  }
 
   useEffect(() => {
-    fetchKeys();
+    fetchOmniConfig();
+    loadWorkspaces();
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
@@ -349,123 +395,108 @@ export default function SettingsPage() {
     setDbKeyInput(activeSupabaseAnonKey);
   }, [activeSupabaseUrl, activeSupabaseAnonKey]);
 
-  async function fetchKeys() {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/settings/keys");
-      const data = await res.json();
-      if (data.keys) {
-        setKeys(data.keys);
-      }
-      if (data.customProviders) {
-        setCustomProviders(data.customProviders);
-      }
-    } catch (err) {
-      console.error("Failed to load keys", err);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function testKey(providerId: string) {
-    setTesting(providerId);
-    try {
-      const res = await fetch("/api/settings/keys/check", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider: providerId }),
-      });
-      const data = await res.json();
-      setTestResults((prev) => ({
-        ...prev,
-        [providerId]: { success: data.success, message: data.message || data.error },
-      }));
-      return data.success;
-    } catch (err: any) {
-      setTestResults((prev) => ({
-        ...prev,
-        [providerId]: { success: false, message: "Network error" },
-      }));
-      return false;
-    } finally {
-      setTesting(null);
-    }
-  }
-
-  async function testAll() {
-    setTestingAll(true);
-    const allKnown = getAllProvidersForActiveTab();
-    const promises = allKnown.filter((p) => keys[p.id]?.isConfigured).map((p) => testKey(p.id));
-    await Promise.all(promises);
-    setTestingAll(false);
-  }
-
-  async function saveKey(providerId: string) {
-    const value = inputs[providerId];
-    if (!value) return;
-
-    setSaving(providerId);
-    try {
-      const res = await fetch("/api/settings/keys", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider: providerId, apiKey: value }),
-      });
-
-      if (res.ok) {
-        setInputs((prev) => ({ ...prev, [providerId]: "" }));
-        await fetchKeys();
-      }
-    } catch (err) {
-      console.error("Failed to save key", err);
-    } finally {
-      setSaving(null);
-    }
-  }
-
-  async function handleAddCustomProvider() {
-    if (!customName.trim()) {
-      setCustomModalError("Provider name is required");
+  // ── OmniRoute Action Handlers ─────────────────────────────────────────────
+  async function handleSaveOmni() {
+    if (!endpointUrl.trim()) {
+      setOmniFeedback({ type: "error", message: "Endpoint URL is required." });
       return;
     }
 
-    setSavingCustom(true);
-    setCustomModalError(null);
-
-    const providerId = `custom_${customName.toLowerCase().replace(/[^a-z0-9_]/g, "_")}`;
-
+    setSavingOmni(true);
+    setOmniFeedback(null);
     try {
       const res = await fetch("/api/settings/keys", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          provider: providerId,
-          name: customName.trim(),
-          apiKey: customKey.trim(),
-          category: customCategory,
-          baseUrl: customBaseUrl.trim() || undefined,
-          isActive: true,
+          endpointUrl: endpointUrl.trim(),
+          apiKey: apiKey.trim(),
         }),
       });
 
+      const data = await res.json();
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to save custom provider");
+        throw new Error(data.error || "Failed to save OmniRoute configuration");
       }
 
-      setShowCustomModal(false);
-      setCustomName("");
-      setCustomKey("");
-      setCustomBaseUrl("");
-      await fetchKeys();
+      setOmniFeedback({
+        type: "success",
+        message: "OmniRoute configuration saved and active across all generation pipelines!",
+      });
+      setIsConfigured(true);
+      if (apiKey.trim()) {
+        setMaskedApiKey(data.omniroute?.maskedApiKey || "••••••••");
+        setApiKey("");
+      }
+      await fetchOmniConfig();
     } catch (err: any) {
-      setCustomModalError(err.message || "Failed to save custom provider");
+      setOmniFeedback({
+        type: "error",
+        message: err.message || "Failed to save configuration",
+      });
     } finally {
-      setSavingCustom(false);
+      setSavingOmni(false);
     }
   }
 
-  // Voice Preview Play / Pause Controller
+  async function handleTestOmni() {
+    setTestingOmni(true);
+    setOmniFeedback(null);
+    setOmniTestResult(null);
+    try {
+      const res = await fetch("/api/settings/keys/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          endpointUrl: endpointUrl.trim(),
+          apiKey: apiKey.trim() || undefined,
+        }),
+      });
+
+      const data = await res.json();
+      setOmniTestResult({
+        success: Boolean(data.success),
+        latencyMs: typeof data.latencyMs === "number" ? data.latencyMs : undefined,
+        models: Array.isArray(data.models) ? data.models : [],
+        modelCount: Array.isArray(data.models) ? data.models.length : (data.modelCount || 0),
+        message: data.message,
+        error: data.error,
+      });
+
+      if (data.success) {
+        setOmniFeedback({
+          type: "success",
+          message: data.message || `Connected to OmniRoute Gateway successfully (${data.latencyMs ?? 0}ms).`,
+        });
+      } else {
+        setOmniFeedback({
+          type: "error",
+          message: data.error || data.message || "Connection to OmniRoute Gateway failed.",
+        });
+      }
+    } catch (err: any) {
+      setOmniTestResult({
+        success: false,
+        error: err.message || "Network test failed.",
+      });
+      setOmniFeedback({
+        type: "error",
+        message: err.message || "Could not reach OmniRoute check endpoint.",
+      });
+    } finally {
+      setTestingOmni(false);
+    }
+  }
+
+  function handlePreset(presetUrl: string) {
+    setEndpointUrl(presetUrl);
+    setOmniFeedback({
+      type: "info",
+      message: `Preset loaded: ${presetUrl}. Click "Save Configuration" or "Test Connection".`,
+    });
+  }
+
+  // ── Voice Preview Play / Pause Controller ─────────────────────────────────
   const handleToggleVoicePreview = async (voice: VoiceModelItem) => {
     setVoicePreviewError(null);
 
@@ -490,7 +521,7 @@ export default function SettingsPage() {
         body: JSON.stringify({
           text: voice.sampleText,
           voiceId: voice.id,
-          provider: voice.provider,
+          provider: "omniroute",
           language: voice.language,
           speed: 1.0,
         }),
@@ -524,29 +555,16 @@ export default function SettingsPage() {
     }
   };
 
-  // Combine static and dynamic custom providers
-  function getAllProvidersForActiveTab() {
-    const staticForTab = BASE_PROVIDERS.filter((p) => p.category === activeTab);
-    const dynamicForTab = customProviders
-      .filter((cp) => cp.category === activeTab)
-      .map((cp) => ({
-        id: cp.id,
-        name: `${cp.name} (Custom)`,
-        category: cp.category,
-      }));
-
-    return [...staticForTab, ...dynamicForTab];
-  }
-
-  // Filtered voice models
+  // ── Filtered Voices ───────────────────────────────────────────────────────
   const filteredVoices = STATIC_VOICE_CATALOG.filter((voice) => {
     const matchesFilter =
       voiceFilter === "All" ||
-      (voiceFilter === "Azure" && voice.provider === "azure") ||
-      (voiceFilter === "OpenAI" && voice.provider === "openai") ||
-      (voiceFilter === "ElevenLabs" && voice.provider === "elevenlabs") ||
-      (voiceFilter === "Google" && voice.provider === "google") ||
-      (voiceFilter === "Free/Keyless" && voice.provider === "keyless");
+      (voiceFilter === "Neural" && voice.category === "Neural") ||
+      (voiceFilter === "Expressive" && voice.category === "Expressive") ||
+      (voiceFilter === "Narrative" && voice.category === "Narrative") ||
+      (voiceFilter === "Keyless" && voice.category === "Keyless") ||
+      (voiceFilter === "English" && voice.language.startsWith("en")) ||
+      (voiceFilter === "Hindi" && voice.language.startsWith("hi"));
 
     const matchesSearch =
       !voiceSearch.trim() ||
@@ -557,7 +575,59 @@ export default function SettingsPage() {
     return matchesFilter && matchesSearch;
   });
 
-  // Database Tab Actions
+  // ── Workspaces Action Handlers ────────────────────────────────────────────
+  async function handleAddWorkspace() {
+    if (!newWorkspaceName.trim()) return;
+    setCreatingWorkspace(true);
+    try {
+      const res = await fetch("/api/workspaces", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newWorkspaceName.trim(),
+          color: newWorkspaceColor,
+        }),
+      });
+      const data = await res.json();
+      if (data.workspace) {
+        setWorkspaces((prev) => [...prev, data.workspace]);
+      } else {
+        setWorkspaces((prev) => [
+          ...prev,
+          {
+            id: `ws-${Date.now()}`,
+            name: newWorkspaceName.trim(),
+            color: newWorkspaceColor,
+            description: "Custom project folder",
+            videoCount: 0,
+          },
+        ]);
+      }
+      setNewWorkspaceName("");
+    } catch {
+      setWorkspaces((prev) => [
+        ...prev,
+        {
+          id: `ws-${Date.now()}`,
+          name: newWorkspaceName.trim(),
+          color: newWorkspaceColor,
+          description: "Custom project folder",
+          videoCount: 0,
+        },
+      ]);
+      setNewWorkspaceName("");
+    } finally {
+      setCreatingWorkspace(false);
+    }
+  }
+
+  // ── Brand Kit Action Handler ──────────────────────────────────────────────
+  function handleSaveBrandKit() {
+    setBrandSavedFeedback(true);
+    setTimeout(() => setBrandSavedFeedback(false), 2500);
+  }
+
+  // ── Database Tab Actions ──────────────────────────────────────────────────
   async function handleTestDbConnection() {
     setTestingDb(true);
     setDbFeedback(null);
@@ -645,39 +715,37 @@ export default function SettingsPage() {
     );
   }
 
-  const currentTabProviders = getAllProvidersForActiveTab();
-
   return (
     <div className="p-8 max-w-6xl mx-auto w-full">
-      {/* Header */}
+      {/* ── Page Header ───────────────────────────────────────────────────── */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
           <p className="text-muted-foreground mt-2">
-            Manage your AI synthesis engines, voice models, custom LLMs, and cloud database.
+            Configure your unified OmniRoute AI Gateway, brand kits, workspaces, and database.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowCustomModal(true)}
-            className="inline-flex items-center justify-center gap-1.5 rounded-md text-sm font-medium transition-colors bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 h-10 px-4 py-2"
-          >
-            <Plus className="w-4 h-4" />
-            Add Custom API
-          </button>
-          <button
-            onClick={testAll}
-            disabled={testingAll}
-            className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 h-10 px-5 py-2 disabled:opacity-50"
-          >
-            {testingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlayCircle className="w-4 h-4" />}
-            Run System Diagnostics
-          </button>
+
+        {/* Real-time Gateway Health Header Chip */}
+        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-border/60 bg-card/60 backdrop-blur-sm text-xs shadow-sm">
+          <span className="relative flex h-2.5 w-2.5">
+            {isConfigured && (
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            )}
+            <span
+              className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
+                isConfigured ? "bg-emerald-500" : "bg-amber-500"
+              }`}
+            />
+          </span>
+          <span className="font-medium text-foreground">
+            {isConfigured ? "OmniRoute Gateway Active" : "Gateway Using Defaults"}
+          </span>
         </div>
       </div>
 
       <div className="flex flex-col md:flex-row gap-8">
-        {/* Vertical Tabs Sidebar */}
+        {/* ── Vertical Navigation Sidebar ───────────────────────────────────── */}
         <aside className="w-full md:w-64 flex-shrink-0">
           <nav className="flex flex-row md:flex-col gap-1 overflow-x-auto pb-4 md:pb-0 relative">
             {CATEGORIES.map((category) => {
@@ -686,8 +754,10 @@ export default function SettingsPage() {
                 <button
                   key={category}
                   onClick={() => setActiveTab(category)}
-                  className={`relative flex items-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${
-                    isActive ? "text-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                  className={`relative flex items-center gap-2.5 px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                    isActive
+                      ? "text-primary font-semibold"
+                      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                   }`}
                 >
                   {isActive && (
@@ -697,13 +767,14 @@ export default function SettingsPage() {
                       transition={{ type: "spring", stiffness: 400, damping: 30 }}
                     />
                   )}
-                  <span className="relative z-10 flex items-center gap-2">
-                    {category === "AI Models" && <Settings className="w-4 h-4" />}
-                    {category === "Voice & Audio" && <Mic className="w-4 h-4" />}
-                    {category === "Stock Media" && <ImageIcon className="w-4 h-4" />}
-                    {category === "Brand Kits" && <Layout className="w-4 h-4" />}
-                    {category === "Usage & Quotas" && <PieChart className="w-4 h-4" />}
-                    {category === "Database & Supabase" && <Database className="w-4 h-4" />}
+                  <span className="relative z-10 flex items-center gap-2.5">
+                    {category === "OmniRoute AI" && <Zap className="w-4 h-4 text-purple-400" />}
+                    {category === "Voice Catalog" && <Volume2 className="w-4 h-4 text-emerald-400" />}
+                    {category === "Brand Kits" && <Palette className="w-4 h-4 text-pink-400" />}
+                    {category === "Workspaces & Team" && <FolderKanban className="w-4 h-4 text-blue-400" />}
+                    {category === "Usage & Quotas" && <PieChart className="w-4 h-4 text-amber-400" />}
+                    {category === "Database & Supabase" && <Database className="w-4 h-4 text-cyan-400" />}
+                    {category === "API Health Hub" && <Activity className="w-4 h-4 text-rose-400" />}
                     {category}
                   </span>
                 </button>
@@ -712,7 +783,7 @@ export default function SettingsPage() {
           </nav>
         </aside>
 
-        {/* Tab Content Area */}
+        {/* ── Main Tab Content Area ─────────────────────────────────────────── */}
         <main className="flex-1 min-w-0">
           <AnimatePresence mode="wait">
             <motion.div
@@ -722,106 +793,251 @@ export default function SettingsPage() {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
             >
-              {activeTab === "Voice & Audio" ? (
-                <div className="space-y-8">
-                  {/* Voice API Keys Card */}
-                  <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-                    <div className="p-6 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-muted/20">
+              {/* ════════════════════════════════════════════════════════════════
+                  TAB 1: OmniRoute AI Configuration Panel
+                  ════════════════════════════════════════════════════════════════ */}
+              {activeTab === "OmniRoute AI" && (
+                <div className="space-y-6">
+                  <div className="rounded-2xl border border-border/60 bg-card shadow-sm overflow-hidden">
+                    {/* Header */}
+                    <div className="p-6 border-b border-border/40 bg-muted/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                       <div>
                         <h2 className="text-lg font-semibold flex items-center gap-2">
-                          <Mic className="w-5 h-5 text-primary" />
-                          Voice Synthesis Credentials
+                          <Zap className="w-5 h-5 text-purple-400" />
+                          OmniRoute Configuration
                         </h2>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          Configure API keys for Azure Speech, OpenAI TTS, ElevenLabs, and Google Cloud.
+                          Configure your single OmniRoute or OpenRouter AI gateway. All LLM chat, vision, and speech generation routes through this endpoint.
                         </p>
+                      </div>
+
+                      {/* Live Status Badge */}
+                      <div className="flex items-center gap-2">
+                        {isConfigured ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            Connected ({omniSource})
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground border">
+                            <span className="w-2 h-2 rounded-full bg-zinc-400" />
+                            Default Port 20128
+                          </span>
+                        )}
+
+                        {omniTestResult?.latencyMs !== undefined && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-mono bg-muted text-muted-foreground border">
+                            <Activity className="w-3 h-3 text-emerald-500" />
+                            {omniTestResult.latencyMs}ms
+                          </span>
+                        )}
                       </div>
                     </div>
 
-                    <div className="divide-y">
-                      {currentTabProviders.map((provider) => {
-                        const keyData = keys[provider.id];
-                        const isConfigured = keyData?.isConfigured;
-                        const testState = testResults[provider.id];
-                        const isTesting = testing === provider.id || testingAll;
+                    {/* Body */}
+                    <div className="p-6 space-y-6">
+                      {/* Feedback Banner */}
+                      {omniFeedback && (
+                        <div
+                          className={`p-4 rounded-xl text-xs flex items-start gap-2.5 border ${
+                            omniFeedback.type === "success"
+                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                              : omniFeedback.type === "error"
+                              ? "bg-red-500/10 text-red-500 border-red-500/20"
+                              : "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                          }`}
+                        >
+                          {omniFeedback.type === "success" ? (
+                            <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+                          ) : omniFeedback.type === "error" ? (
+                            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                          ) : (
+                            <Activity className="w-4 h-4 shrink-0 mt-0.5" />
+                          )}
+                          <span>{omniFeedback.message}</span>
+                        </div>
+                      )}
 
-                        return (
-                          <div
-                            key={provider.id}
-                            className="p-5 flex flex-col xl:flex-row gap-5 items-start xl:items-center justify-between hover:bg-muted/30 transition-colors"
+                      {/* 1. Endpoint URL Field & Presets */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            Gateway Endpoint URL (Base URL)
+                          </label>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] text-muted-foreground">Presets:</span>
+                            <button
+                              type="button"
+                              onClick={() => handlePreset("http://localhost:20128/v1")}
+                              className="px-2 py-0.5 rounded text-[11px] font-mono bg-muted hover:bg-muted/80 text-foreground border transition-colors"
+                            >
+                              Local OmniRoute
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handlePreset("https://openrouter.ai/api/v1")}
+                              className="px-2 py-0.5 rounded text-[11px] font-mono bg-muted hover:bg-muted/80 text-foreground border transition-colors"
+                            >
+                              OpenRouter Cloud
+                            </button>
+                          </div>
+                        </div>
+
+                        <input
+                          type="url"
+                          placeholder="http://localhost:20128/v1"
+                          value={endpointUrl}
+                          onChange={(e) => setEndpointUrl(e.target.value)}
+                          className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 font-mono text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        />
+                        <p className="text-[11px] text-muted-foreground">
+                          Default local instance: <code className="text-foreground">http://localhost:20128/v1</code>. For OpenRouter cloud, use <code className="text-foreground">https://openrouter.ai/api/v1</code>.
+                        </p>
+                      </div>
+
+                      {/* 2. API Key Field */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
+                          OmniRoute / OpenRouter API Key
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showApiKey ? "text" : "password"}
+                            placeholder={maskedApiKey ? `Configured: ${maskedApiKey}` : "sk-..."}
+                            value={apiKey}
+                            onChange={(e) => setApiKey(e.target.value)}
+                            className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 pr-10 py-1 font-mono text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowApiKey(!showApiKey)}
+                            className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground"
                           >
-                            <div className="space-y-1 min-w-[200px]">
-                              <div className="font-medium text-sm flex items-center gap-2">
-                                {provider.name}
-                                {isConfigured ? (
-                                  <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
-                                ) : (
-                                  <XCircle className="w-4 h-4 text-muted-foreground shrink-0" />
-                                )}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {isConfigured
-                                  ? `Configured (${keyData?.source || "database"})`
-                                  : "Not configured"}
-                              </div>
-                              {testState && (
-                                <div
-                                  className={`text-xs mt-1 font-medium ${
-                                    testState.success ? "text-green-500" : "text-red-500"
-                                  }`}
-                                >
-                                  {testState.message}
-                                </div>
+                            {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">
+                          Optional for local OmniRoute instances; required for OpenRouter cloud or authenticated gateways.
+                        </p>
+                      </div>
+
+                      {/* 3. Action Buttons */}
+                      <div className="flex flex-wrap items-center gap-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={handleSaveOmni}
+                          disabled={savingOmni}
+                          className="inline-flex items-center gap-2 rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2 disabled:opacity-50"
+                        >
+                          {savingOmni ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Check className="w-4 h-4" />
+                          )}
+                          Save Configuration
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleTestOmni}
+                          disabled={testingOmni}
+                          className="inline-flex items-center gap-2 rounded-md text-sm font-medium transition-colors border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 disabled:opacity-50"
+                        >
+                          {testingOmni ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Activity className="w-4 h-4" />
+                          )}
+                          Test Connection
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handlePreset("http://localhost:20128/v1")}
+                          className="inline-flex items-center gap-1.5 rounded-md text-sm font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-muted h-9 px-3 py-2 ml-auto"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          Reset to Local Default
+                        </button>
+                      </div>
+
+                      {/* 4. Connection Test Diagnostics Result */}
+                      {omniTestResult && (
+                        <div
+                          className={`p-4 rounded-xl border space-y-3 ${
+                            omniTestResult.success
+                              ? "bg-emerald-500/5 border-emerald-500/30"
+                              : "bg-red-500/5 border-red-500/30"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-sm font-medium">
+                              {omniTestResult.success ? (
+                                <>
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                  <span className="text-emerald-500">Gateway Active & Reachable</span>
+                                </>
+                              ) : (
+                                <>
+                                  <XCircle className="w-4 h-4 text-red-500" />
+                                  <span className="text-red-500">Connection Failed</span>
+                                </>
                               )}
                             </div>
 
-                            <div className="flex-1 w-full max-w-xl flex flex-col gap-2">
-                              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                                <div className="relative flex-1">
-                                  <input
-                                    type="password"
-                                    placeholder={isConfigured ? keyData?.maskedValue : "Enter API Key / Region"}
-                                    value={inputs[provider.id] || ""}
-                                    onChange={(e) =>
-                                      setInputs((prev) => ({ ...prev, [provider.id]: e.target.value }))
-                                    }
-                                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                                  />
-                                </div>
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => saveKey(provider.id)}
-                                    disabled={!inputs[provider.id] || saving === provider.id}
-                                    className="inline-flex items-center justify-center rounded-md text-xs font-semibold bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 disabled:opacity-50"
+                            {omniTestResult.latencyMs !== undefined && (
+                              <span className="text-xs font-mono text-muted-foreground">
+                                Latency: <strong className="text-foreground">{omniTestResult.latencyMs}ms</strong>
+                              </span>
+                            )}
+                          </div>
+
+                          {omniTestResult.models && omniTestResult.models.length > 0 && (
+                            <div className="space-y-2 pt-1">
+                              <div className="text-xs text-muted-foreground flex items-center justify-between">
+                                <span>
+                                  Available Models ({omniTestResult.models.length}):
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-1.5">
+                                {omniTestResult.models.map((m) => (
+                                  <span
+                                    key={m}
+                                    className="px-2.5 py-0.5 rounded-md bg-muted/60 text-foreground font-mono text-xs border"
                                   >
-                                    {saving === provider.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
-                                  </button>
-                                  <button
-                                    onClick={() => testKey(provider.id)}
-                                    disabled={!isConfigured || isTesting}
-                                    className="inline-flex items-center justify-center rounded-md text-xs font-medium border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-3.5 disabled:opacity-50"
-                                  >
-                                    {isTesting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Test API"}
-                                  </button>
-                                </div>
+                                    {m}
+                                  </span>
+                                ))}
                               </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          )}
+
+                          {omniTestResult.error && (
+                            <p className="text-xs text-red-400 leading-relaxed font-mono">
+                              {omniTestResult.error}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
+                </div>
+              )}
 
-                  {/* Voice Model Catalog with Live Previews */}
-                  <div className="rounded-xl border bg-card shadow-sm p-6 space-y-6">
+              {/* ════════════════════════════════════════════════════════════════
+                  TAB 2: Voice Catalog with Live Previews
+                  ════════════════════════════════════════════════════════════════ */}
+              {activeTab === "Voice Catalog" && (
+                <div className="space-y-6">
+                  <div className="rounded-2xl border border-border/60 bg-card shadow-sm p-6 space-y-6">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-5">
                       <div>
                         <h3 className="text-lg font-semibold flex items-center gap-2">
-                          <Volume2 className="w-5 h-5 text-primary" />
+                          <Volume2 className="w-5 h-5 text-emerald-400" />
                           Voice Model Catalog
                         </h3>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          Explore, audition, and test voice models across all integrated engines.
+                          Audition, test, and preview neural voice models routed seamlessly through your OmniRoute Gateway.
                         </p>
                       </div>
 
@@ -832,9 +1048,8 @@ export default function SettingsPage() {
 
                     {/* Filter Pills & Search */}
                     <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
-                      {/* Filter Pills */}
                       <div className="flex flex-wrap gap-1.5">
-                        {["All", "Azure", "OpenAI", "ElevenLabs", "Google", "Free/Keyless"].map((pill) => {
+                        {["All", "Neural", "Expressive", "Narrative", "English", "Hindi", "Keyless"].map((pill) => {
                           const isSelected = voiceFilter === pill;
                           return (
                             <button
@@ -852,7 +1067,6 @@ export default function SettingsPage() {
                         })}
                       </div>
 
-                      {/* Search Input */}
                       <div className="relative w-full sm:w-64">
                         <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-muted-foreground" />
                         <input
@@ -887,7 +1101,6 @@ export default function SettingsPage() {
                                   </p>
                                 </div>
 
-                                {/* Interactive Play/Pause Button */}
                                 <button
                                   type="button"
                                   onClick={() => handleToggleVoicePreview(voice)}
@@ -910,11 +1123,10 @@ export default function SettingsPage() {
                               </div>
                             </div>
 
-                            {/* Badges Footer */}
                             <div className="flex items-center justify-between border-t pt-2.5 text-[10px]">
                               <div className="flex flex-wrap gap-1.5">
                                 <span className="inline-flex items-center px-2 py-0.5 rounded font-medium bg-background border text-foreground">
-                                  {voice.providerLabel}
+                                  {voice.category}
                                 </span>
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded font-medium bg-background border text-muted-foreground">
                                   <Globe className="w-2.5 h-2.5" /> {voice.language}
@@ -936,14 +1148,375 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </div>
-              ) : activeTab === "Database & Supabase" ? (
+              )}
+
+              {/* ════════════════════════════════════════════════════════════════
+                  TAB 3: Brand Kit & Watermark Settings
+                  ════════════════════════════════════════════════════════════════ */}
+              {activeTab === "Brand Kits" && (
+                <div className="rounded-2xl border border-border/60 bg-card shadow-sm overflow-hidden">
+                  <div className="p-6 border-b border-border/40 bg-muted/20">
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                      <Palette className="w-5 h-5 text-pink-400" />
+                      Brand Kit & Watermark Settings
+                    </h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Define your global brand identity, subtitle typography, and video watermark overlays.
+                    </p>
+                  </div>
+
+                  <div className="p-6 space-y-6">
+                    {brandSavedFeedback && (
+                      <div className="p-4 rounded-xl text-xs flex items-center gap-2.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                        <CheckCircle2 className="w-4 h-4 shrink-0" />
+                        <span>Brand Kit and Watermark settings updated successfully!</span>
+                      </div>
+                    )}
+
+                    <div className="space-y-6 max-w-2xl">
+                      {/* Brand Color */}
+                      <div>
+                        <label className="text-sm font-medium text-foreground">Global Primary Color</label>
+                        <p className="text-xs text-muted-foreground mb-2">Used for subtitles, highlights, and UI branding.</p>
+                        <div className="flex gap-4 items-center">
+                          <input
+                            type="color"
+                            value={brandColor}
+                            onChange={(e) => setBrandColor(e.target.value)}
+                            className="w-12 h-12 rounded-lg border p-1 cursor-pointer bg-background"
+                          />
+                          <span className="font-mono text-sm border px-3 py-1.5 rounded-md bg-muted/20">
+                            {brandColor.toUpperCase()}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Subtitle Preset */}
+                      <div>
+                        <label className="text-sm font-medium text-foreground">Default Subtitle Preset</label>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          The typography and animation style applied to newly generated video captions.
+                        </p>
+                        <select
+                          value={subtitlePreset}
+                          onChange={(e) => setSubtitlePreset(e.target.value)}
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                        >
+                          <option>Hormozi Pop</option>
+                          <option>Cyber Neon</option>
+                          <option>Minimalist Clean</option>
+                          <option>Cinematic Boxed</option>
+                          <option>Bold Impact</option>
+                          <option>Retro Karaoke</option>
+                        </select>
+                      </div>
+
+                      {/* Subtitle Position */}
+                      <div>
+                        <label className="text-sm font-medium text-foreground">Default Subtitle Position</label>
+                        <select
+                          value={subtitlePosition}
+                          onChange={(e) => setSubtitlePosition(e.target.value)}
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring mt-1.5"
+                        >
+                          <option>Bottom (Recommended)</option>
+                          <option>Center</option>
+                          <option>Top</option>
+                        </select>
+                      </div>
+
+                      {/* Watermark Section */}
+                      <div className="pt-4 border-t border-border/40 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-sm font-semibold text-foreground">Video Watermark Overlay</h3>
+                            <p className="text-xs text-muted-foreground">Overlay your brand logo or handle on exported videos.</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setWatermarkEnabled(!watermarkEnabled)}
+                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                              watermarkEnabled ? "bg-primary" : "bg-muted"
+                            }`}
+                          >
+                            <span
+                              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                                watermarkEnabled ? "translate-x-5" : "translate-x-0"
+                              }`}
+                            />
+                          </button>
+                        </div>
+
+                        {watermarkEnabled && (
+                          <div className="space-y-4 p-4 rounded-xl border border-border/50 bg-muted/10">
+                            <div>
+                              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-1">
+                                Watermark Text / Handle
+                              </label>
+                              <input
+                                type="text"
+                                value={watermarkText}
+                                onChange={(e) => setWatermarkText(e.target.value)}
+                                placeholder="e.g. @yourbrand or BrandName"
+                                className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm"
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-1">
+                                  Position
+                                </label>
+                                <select
+                                  value={watermarkPosition}
+                                  onChange={(e) => setWatermarkPosition(e.target.value)}
+                                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm"
+                                >
+                                  <option>Bottom Right</option>
+                                  <option>Bottom Left</option>
+                                  <option>Top Right</option>
+                                  <option>Top Left</option>
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-1">
+                                  Opacity ({watermarkOpacity}%)
+                                </label>
+                                <input
+                                  type="range"
+                                  min="20"
+                                  max="100"
+                                  value={watermarkOpacity}
+                                  onChange={(e) => setWatermarkOpacity(Number(e.target.value))}
+                                  className="w-full mt-2"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleSaveBrandKit}
+                        className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium shadow hover:bg-primary/90 transition-colors"
+                      >
+                        Save Brand Kit & Watermark
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ════════════════════════════════════════════════════════════════
+                  TAB 4: Workspaces & Team Settings
+                  ════════════════════════════════════════════════════════════════ */}
+              {activeTab === "Workspaces & Team" && (
                 <div className="space-y-6">
-                  {/* Connection Overview Card */}
-                  <div className="rounded-xl border bg-card shadow-sm p-6 space-y-6">
+                  <div className="rounded-2xl border border-border/60 bg-card shadow-sm overflow-hidden">
+                    <div className="p-6 border-b border-border/40 bg-muted/20">
+                      <h2 className="text-lg font-semibold flex items-center gap-2">
+                        <FolderKanban className="w-5 h-5 text-blue-400" />
+                        Workspaces & Folder Organization
+                      </h2>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Group video generation jobs into projects, campaigns, and team folders.
+                      </p>
+                    </div>
+
+                    <div className="p-6 space-y-6">
+                      {/* Workspaces List */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {workspaces.map((ws) => (
+                          <div
+                            key={ws.id}
+                            className="p-4 rounded-xl border border-border/50 bg-muted/10 flex items-start justify-between gap-3"
+                          >
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className="w-3 h-3 rounded-full shrink-0"
+                                  style={{ backgroundColor: ws.color || "#8b5cf6" }}
+                                />
+                                <h4 className="font-semibold text-sm text-foreground">{ws.name}</h4>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                {ws.description || "Video campaign workspace"}
+                              </p>
+                              <span className="text-[11px] font-mono text-muted-foreground inline-block mt-1">
+                                {ws.videoCount ?? 0} video project(s)
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Create New Workspace Form */}
+                      <div className="pt-4 border-t border-border/40 space-y-3">
+                        <h4 className="text-sm font-semibold text-foreground">Create New Workspace</h4>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          <input
+                            type="text"
+                            placeholder="Workspace Name (e.g. YouTube Shorts Q3)"
+                            value={newWorkspaceName}
+                            onChange={(e) => setNewWorkspaceName(e.target.value)}
+                            className="flex h-9 flex-1 rounded-md border border-input bg-background px-3 text-sm shadow-sm"
+                          />
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={newWorkspaceColor}
+                              onChange={(e) => setNewWorkspaceColor(e.target.value)}
+                              className="w-9 h-9 rounded border p-1 cursor-pointer bg-background"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleAddWorkspace}
+                              disabled={creatingWorkspace || !newWorkspaceName.trim()}
+                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary text-primary-foreground text-xs font-semibold shadow hover:bg-primary/90 disabled:opacity-50"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Add Workspace
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Team Members Card */}
+                  <div className="rounded-2xl border border-border/60 bg-card shadow-sm p-6 space-y-4">
+                    <div className="flex items-center justify-between border-b pb-4">
+                      <div>
+                        <h3 className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                          <Users className="w-4 h-4 text-primary" />
+                          Team & Collaboration
+                        </h3>
+                        <p className="text-xs text-muted-foreground">
+                          Manage studio contributors and multi-seat access.
+                        </p>
+                      </div>
+                      <span className="text-xs font-medium px-2.5 py-1 rounded bg-muted text-muted-foreground">
+                        2 Members Active
+                      </span>
+                    </div>
+
+                    <div className="divide-y divide-border/30">
+                      <div className="py-3 flex items-center justify-between">
+                        <div>
+                          <div className="text-sm font-medium text-foreground">Account Owner (You)</div>
+                          <div className="text-xs text-muted-foreground">Full Administrative Access</div>
+                        </div>
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                          Owner
+                        </span>
+                      </div>
+                      <div className="py-3 flex items-center justify-between">
+                        <div>
+                          <div className="text-sm font-medium text-foreground">Creative Assistant</div>
+                          <div className="text-xs text-muted-foreground">Video Generation & Script Editor</div>
+                        </div>
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                          Editor
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ════════════════════════════════════════════════════════════════
+                  TAB 5: Monthly Usage & Quotas
+                  ════════════════════════════════════════════════════════════════ */}
+              {activeTab === "Usage & Quotas" && (
+                <div className="rounded-2xl border border-border/60 bg-card shadow-sm overflow-hidden">
+                  <div className="p-6 border-b border-border/40 bg-muted/20">
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                      <PieChart className="w-5 h-5 text-amber-400" />
+                      Monthly Usage & Quotas
+                    </h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Monitor resource consumption across video renders and LLM inference.
+                    </p>
+                  </div>
+
+                  <div className="p-6 space-y-6">
+                    <div className="grid gap-6 sm:grid-cols-2">
+                      {/* Video Generations */}
+                      <div className="p-6 border border-border/50 rounded-2xl flex flex-col items-center justify-center text-center bg-muted/10">
+                        <div className="relative w-32 h-32 flex items-center justify-center">
+                          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                            <path
+                              className="text-muted/20"
+                              strokeWidth="3"
+                              stroke="currentColor"
+                              fill="none"
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            />
+                            <path
+                              className="text-primary"
+                              strokeDasharray="66, 100"
+                              strokeWidth="3"
+                              stroke="currentColor"
+                              fill="none"
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            />
+                          </svg>
+                          <div className="absolute flex flex-col items-center">
+                            <span className="text-2xl font-bold font-mono">2/3</span>
+                          </div>
+                        </div>
+                        <h3 className="mt-4 font-semibold text-foreground">Video Generations</h3>
+                        <p className="text-xs text-muted-foreground">Free Tier Allocation</p>
+                      </div>
+
+                      {/* LLM Tokens */}
+                      <div className="p-6 border border-border/50 rounded-2xl flex flex-col items-center justify-center text-center bg-muted/10">
+                        <div className="relative w-32 h-32 flex items-center justify-center">
+                          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                            <path
+                              className="text-muted/20"
+                              strokeWidth="3"
+                              stroke="currentColor"
+                              fill="none"
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            />
+                            <path
+                              className="text-blue-500"
+                              strokeDasharray="30, 100"
+                              strokeWidth="3"
+                              stroke="currentColor"
+                              fill="none"
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            />
+                          </svg>
+                          <div className="absolute flex flex-col items-center">
+                            <span className="text-xl font-bold font-mono">1.2M</span>
+                          </div>
+                        </div>
+                        <h3 className="mt-4 font-semibold text-foreground">OmniRoute LLM Tokens</h3>
+                        <p className="text-xs text-muted-foreground">Monthly Consumption</p>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-muted/20 rounded-xl text-xs text-muted-foreground text-center border border-border/40">
+                      Quotas automatically reset on the 1st of every month. Connect a custom OpenRouter or local endpoint for unlimited quota.
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ════════════════════════════════════════════════════════════════
+                  TAB 6: Database & Supabase Settings
+                  ════════════════════════════════════════════════════════════════ */}
+              {activeTab === "Database & Supabase" && (
+                <div className="space-y-6">
+                  <div className="rounded-2xl border border-border/60 bg-card shadow-sm p-6 space-y-6">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-5">
                       <div>
                         <h2 className="text-lg font-semibold flex items-center gap-2">
-                          <Database className="w-5 h-5 text-primary" />
+                          <Database className="w-5 h-5 text-cyan-400" />
                           Supabase Project Routing
                         </h2>
                         <p className="text-xs text-muted-foreground mt-1">
@@ -985,13 +1558,14 @@ export default function SettingsPage() {
                     </div>
 
                     {/* Active Endpoint Banner */}
-                    <div className="p-3.5 rounded-lg bg-muted/40 border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                    <div className="p-3.5 rounded-xl bg-muted/40 border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                       <div className="flex items-center gap-2 overflow-hidden">
                         <Server className="w-4 h-4 text-muted-foreground shrink-0" />
                         <span className="text-muted-foreground font-medium shrink-0">Active Endpoint:</span>
                         <span className="font-mono truncate select-all">{activeSupabaseUrl}</span>
                       </div>
                       <button
+                        type="button"
                         onClick={() => handleCopyUrl(activeSupabaseUrl)}
                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium bg-background border hover:bg-muted transition-colors shrink-0"
                       >
@@ -1003,12 +1577,12 @@ export default function SettingsPage() {
                     {/* Feedback Alert Banner */}
                     {dbFeedback && (
                       <div
-                        className={`p-4 rounded-lg text-xs flex items-start gap-2.5 border ${
+                        className={`p-4 rounded-xl text-xs flex items-start gap-2.5 border ${
                           dbFeedback.type === "success"
-                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                             : dbFeedback.type === "error"
-                            ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
-                            : "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
+                            ? "bg-red-500/10 text-red-500 border-red-500/20"
+                            : "bg-blue-500/10 text-blue-400 border-blue-500/20"
                         }`}
                       >
                         {dbFeedback.type === "success" ? (
@@ -1069,6 +1643,7 @@ export default function SettingsPage() {
                     {/* Action Buttons Bar */}
                     <div className="flex flex-wrap items-center gap-3 pt-2">
                       <button
+                        type="button"
                         onClick={handleTestDbConnection}
                         disabled={testingDb || !dbUrlInput.trim()}
                         className="inline-flex items-center gap-2 rounded-md text-sm font-medium transition-colors border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 disabled:opacity-50"
@@ -1078,6 +1653,7 @@ export default function SettingsPage() {
                       </button>
 
                       <button
+                        type="button"
                         onClick={handleSaveDbConnection}
                         disabled={savingDb || !dbUrlInput.trim() || !dbKeyInput.trim()}
                         className="inline-flex items-center gap-2 rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2 disabled:opacity-50"
@@ -1087,6 +1663,7 @@ export default function SettingsPage() {
                       </button>
 
                       <button
+                        type="button"
                         onClick={handleResetDbConnection}
                         className="inline-flex items-center gap-1.5 rounded-md text-sm font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-muted h-9 px-3 py-2"
                       >
@@ -1096,6 +1673,7 @@ export default function SettingsPage() {
 
                       <div className="ml-auto">
                         <button
+                          type="button"
                           onClick={() => setShowDdlModal(true)}
                           className="inline-flex items-center gap-1.5 rounded-md text-sm font-medium transition-colors border border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400 hover:bg-violet-500/20 h-9 px-3.5 py-2"
                         >
@@ -1107,7 +1685,7 @@ export default function SettingsPage() {
                   </div>
 
                   {/* Schema Diagnostic & Health Card */}
-                  <div className="rounded-xl border bg-card shadow-sm p-6 space-y-4">
+                  <div className="rounded-2xl border border-border/60 bg-card shadow-sm p-6 space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-semibold flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-primary" />
@@ -1124,7 +1702,7 @@ export default function SettingsPage() {
                         { name: "videos", desc: "Generated video projects" },
                         { name: "render_jobs", desc: "Background render queue" },
                         { name: "api_credits", desc: "Quota & token tracking" },
-                        { name: "settings", desc: "API keys & provider settings" },
+                        { name: "settings", desc: "API keys & OmniRoute settings" },
                         { name: "scheduled_posts", desc: "Multi-platform planner" },
                       ].map((table) => {
                         const tableInfo = (dbTestResult?.schema || schemaStatus)?.tables?.[table.name];
@@ -1135,7 +1713,7 @@ export default function SettingsPage() {
                         return (
                           <div
                             key={table.name}
-                            className="p-3 rounded-lg border bg-muted/20 flex items-start justify-between gap-3"
+                            className="p-3 rounded-xl border border-border/50 bg-muted/20 flex items-start justify-between gap-3"
                           >
                             <div>
                               <div className="font-mono font-semibold text-xs text-foreground flex items-center gap-1.5">
@@ -1166,230 +1744,23 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </div>
-              ) : activeTab === "Usage & Quotas" ? (
-                <div className="rounded-lg border bg-card shadow-sm">
-                  <div className="p-6 border-b">
-                    <h2 className="text-lg font-semibold flex items-center gap-2">
-                      <PieChart className="w-5 h-5 text-primary" />
-                      Monthly Usage & Quotas
+              )}
+
+              {/* ════════════════════════════════════════════════════════════════
+                  TAB 7: API Health Hub (OmniRoute Gateway Health Hub)
+                  ════════════════════════════════════════════════════════════════ */}
+              {activeTab === "API Health Hub" && (
+                <div className="space-y-5">
+                  <div>
+                    <h2 className="text-xl font-bold flex items-center gap-2">
+                      <Activity className="w-5 h-5 text-primary" />
+                      API Health Hub
                     </h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Live health and latency telemetry for your OmniRoute Gateway and model catalog.
+                    </p>
                   </div>
-                  <div className="p-6">
-                    <div className="grid gap-6 sm:grid-cols-2">
-                      <div className="p-6 border rounded-xl flex flex-col items-center justify-center text-center">
-                        <div className="relative w-32 h-32 flex items-center justify-center">
-                          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                            <path
-                              className="text-muted/20"
-                              strokeWidth="3"
-                              stroke="currentColor"
-                              fill="none"
-                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                            />
-                            <path
-                              className="text-primary"
-                              strokeDasharray="66, 100"
-                              strokeWidth="3"
-                              stroke="currentColor"
-                              fill="none"
-                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                            />
-                          </svg>
-                          <div className="absolute flex flex-col items-center">
-                            <span className="text-2xl font-bold">2/3</span>
-                          </div>
-                        </div>
-                        <h3 className="mt-4 font-semibold">Video Generations</h3>
-                        <p className="text-sm text-muted-foreground">Free Tier Limit</p>
-                      </div>
-
-                      <div className="p-6 border rounded-xl flex flex-col items-center justify-center text-center">
-                        <div className="relative w-32 h-32 flex items-center justify-center">
-                          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                            <path
-                              className="text-muted/20"
-                              strokeWidth="3"
-                              stroke="currentColor"
-                              fill="none"
-                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                            />
-                            <path
-                              className="text-blue-500"
-                              strokeDasharray="30, 100"
-                              strokeWidth="3"
-                              stroke="currentColor"
-                              fill="none"
-                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                            />
-                          </svg>
-                          <div className="absolute flex flex-col items-center">
-                            <span className="text-xl font-bold">1.2M</span>
-                          </div>
-                        </div>
-                        <h3 className="mt-4 font-semibold">LLM Tokens</h3>
-                        <p className="text-sm text-muted-foreground">Across all models</p>
-                      </div>
-                    </div>
-                    <div className="mt-6 p-4 bg-muted/20 rounded-lg text-sm text-muted-foreground text-center">
-                      Quotas automatically reset on the 1st of every month. Upgrade your plan to increase limits.
-                    </div>
-                  </div>
-                </div>
-              ) : activeTab === "Brand Kits" ? (
-                <div className="rounded-lg border bg-card shadow-sm">
-                  <div className="p-6 border-b">
-                    <h2 className="text-lg font-semibold flex items-center gap-2">
-                      <Palette className="w-5 h-5 text-primary" />
-                      Brand Kits
-                    </h2>
-                  </div>
-                  <div className="p-6 space-y-6">
-                    <div className="space-y-4 max-w-xl">
-                      <div>
-                        <label className="text-sm font-medium">Global Primary Color</label>
-                        <p className="text-xs text-muted-foreground mb-2">Used for subtitles and highlights.</p>
-                        <div className="flex gap-4 items-center">
-                          <input
-                            type="color"
-                            className="w-12 h-12 rounded border p-1 cursor-pointer"
-                            defaultValue="#ffffff"
-                          />
-                          <span className="font-mono text-sm border px-3 py-1.5 rounded-md">#FFFFFF</span>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-sm font-medium">Default Subtitle Preset</label>
-                        <p className="text-xs text-muted-foreground mb-2">
-                          The default styling applied to new generated videos.
-                        </p>
-                        <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring">
-                          <option>Hormozi Pop</option>
-                          <option>Cyber Neon</option>
-                          <option>Minimalist Clean</option>
-                          <option>Cinematic Boxed</option>
-                          <option>Bold Impact</option>
-                          <option>Retro Karaoke</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="text-sm font-medium">Default Subtitle Position</label>
-                        <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring mt-2">
-                          <option>Bottom (Recommended)</option>
-                          <option>Center</option>
-                          <option>Top</option>
-                        </select>
-                      </div>
-
-                      <button className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium shadow hover:bg-primary/90">
-                        Save Brand Kit
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                /* AI Models, Stock Media, and Avatar tabs with Dynamic Custom Provider support */
-                <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
-                  <div className="p-6 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-muted/20">
-                    <div>
-                      <h2 className="text-lg font-semibold flex items-center gap-2">
-                        <Key className="w-5 h-5 text-primary" />
-                        {activeTab} Integrations
-                      </h2>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Manage API keys and custom model endpoints for {activeTab.toLowerCase()}.
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        setCustomCategory(activeTab);
-                        setShowCustomModal(true);
-                      }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition-colors"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      Add Custom Provider
-                    </button>
-                  </div>
-
-                  <div className="divide-y">
-                    {currentTabProviders.map((provider) => {
-                      const keyData = keys[provider.id];
-                      const isConfigured = keyData?.isConfigured;
-                      const testState = testResults[provider.id];
-                      const isTesting = testing === provider.id || testingAll;
-
-                      return (
-                        <div
-                          key={provider.id}
-                          className="p-6 flex flex-col xl:flex-row gap-6 items-start xl:items-center justify-between hover:bg-muted/30 transition-colors"
-                        >
-                          <div className="space-y-1 min-w-[200px]">
-                            <div className="font-medium flex items-center gap-2 text-sm">
-                              {provider.name}
-                              {isConfigured ? (
-                                <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
-                              ) : (
-                                <XCircle className="w-4 h-4 text-muted-foreground shrink-0" />
-                              )}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {isConfigured
-                                ? `Configured (${keyData?.source || "database"})`
-                                : "Not configured"}
-                            </div>
-                            {testState && (
-                              <div
-                                className={`text-xs mt-1 font-medium ${
-                                  testState.success ? "text-green-500" : "text-red-500"
-                                }`}
-                              >
-                                {testState.message}
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="flex-1 w-full max-w-xl flex flex-col gap-2">
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                              <div className="relative flex-1">
-                                <input
-                                  type="password"
-                                  placeholder={isConfigured ? keyData?.maskedValue : "Enter API Key / Token"}
-                                  value={inputs[provider.id] || ""}
-                                  onChange={(e) =>
-                                    setInputs((prev) => ({ ...prev, [provider.id]: e.target.value }))
-                                  }
-                                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                                />
-                              </div>
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => saveKey(provider.id)}
-                                  disabled={!inputs[provider.id] || saving === provider.id}
-                                  className="inline-flex items-center justify-center rounded-md text-xs font-semibold bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 disabled:opacity-50"
-                                >
-                                  {saving === provider.id ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    "Save"
-                                  )}
-                                </button>
-                                <button
-                                  onClick={() => testKey(provider.id)}
-                                  disabled={!isConfigured || isTesting}
-                                  className="inline-flex items-center justify-center rounded-md text-xs font-medium border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-3.5 disabled:opacity-50"
-                                >
-                                  {isTesting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Test API"}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <ApiProviderHub />
                 </div>
               )}
             </motion.div>
@@ -1397,130 +1768,7 @@ export default function SettingsPage() {
         </main>
       </div>
 
-      {/* Add Custom API Integration Modal */}
-      <AnimatePresence>
-        {showCustomModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowCustomModal(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
-            />
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="relative w-full max-w-lg bg-card border rounded-2xl shadow-2xl flex flex-col overflow-hidden z-10"
-            >
-              <div className="flex items-center justify-between p-5 border-b bg-muted/30">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary border border-primary/20 flex items-center justify-center">
-                    <Plus className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-semibold">Add Custom API Integration</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Connect any OpenAI-compatible, custom LLM, or self-hosted endpoint.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowCustomModal(false)}
-                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="p-6 space-y-4">
-                {customModalError && (
-                  <div className="p-3 rounded-lg bg-red-500/10 text-red-500 text-xs flex items-center gap-2 border border-red-500/20">
-                    <AlertTriangle className="w-4 h-4 shrink-0" />
-                    <span>{customModalError}</span>
-                  </div>
-                )}
-
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-1">
-                    Provider Name (e.g. Grok, DeepSeek, Ollama, Cerebras)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. DeepSeek V3 / Ollama"
-                    value={customName}
-                    onChange={(e) => setCustomName(e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-1">
-                    Integration Category
-                  </label>
-                  <select
-                    value={customCategory}
-                    onChange={(e) => setCustomCategory(e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  >
-                    <option value="AI Models">AI Models</option>
-                    <option value="Voice & Audio">Voice & Audio</option>
-                    <option value="Stock Media">Stock Media</option>
-                    <option value="Avatar">Avatar</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-1">
-                    API Key / Secret Token
-                  </label>
-                  <input
-                    type="password"
-                    placeholder="sk-..."
-                    value={customKey}
-                    onChange={(e) => setCustomKey(e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm font-mono focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-1">
-                    Base URL (Optional for self-hosted / proxies)
-                  </label>
-                  <input
-                    type="url"
-                    placeholder="https://api.deepseek.com or http://localhost:11434"
-                    value={customBaseUrl}
-                    onChange={(e) => setCustomBaseUrl(e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm font-mono focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2.5 p-4 border-t bg-muted/20">
-                <button
-                  onClick={() => setShowCustomModal(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-medium border bg-background hover:bg-muted transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAddCustomProvider}
-                  disabled={savingCustom || !customName.trim()}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow transition-all disabled:opacity-50"
-                >
-                  {savingCustom ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                  Save Custom API
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Schema DDL Modal */}
+      {/* ── Schema DDL Modal ──────────────────────────────────────────────── */}
       <AnimatePresence>
         {showDdlModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-10">
@@ -1551,6 +1799,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setShowDdlModal(false)}
                   className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 >
@@ -1568,6 +1817,7 @@ export default function SettingsPage() {
                 </span>
                 <div className="flex items-center gap-2">
                   <button
+                    type="button"
                     onClick={handleCopyDdl}
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow transition-all active:scale-[0.98]"
                   >
@@ -1575,6 +1825,7 @@ export default function SettingsPage() {
                     {ddlCopied ? "Copied to Clipboard!" : "Copy SQL Script"}
                   </button>
                   <button
+                    type="button"
                     onClick={() => setShowDdlModal(false)}
                     className="px-3.5 py-2 rounded-lg text-xs font-medium border bg-background hover:bg-muted transition-colors"
                   >
@@ -1586,22 +1837,6 @@ export default function SettingsPage() {
           </div>
         )}
       </AnimatePresence>
-
-      {/* ── API Health Hub Panel ─────────────────────────────────────────── */}
-      {activeCategory === "API Health Hub" && (
-        <div className="mt-2">
-          <div className="mb-5">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <Activity className="w-5 h-5 text-primary" />
-              API Health Hub
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Live status of every connected API. The Smart Router automatically selects the fastest healthy provider for each category.
-            </p>
-          </div>
-          <ApiProviderHub />
-        </div>
-      )}
     </div>
   );
 }

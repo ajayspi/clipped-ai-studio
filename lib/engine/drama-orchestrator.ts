@@ -1,3 +1,4 @@
+﻿import { getOmniRouteConfig } from '@/lib/keys';
 import {
   DramaCharacter,
   DramaEpisode,
@@ -45,7 +46,8 @@ export class DramaOrchestrator {
     console.log(`[DramaOrchestrator] Generating ${episodesCount}-episode series in genre: ${genre} with ${normalizedCharacters.length} characters`);
 
     // 3. Attempt live LLM generation if OPENAI_API_KEY is available
-    const apiKey = process.env.OPENAI_API_KEY;
+    const omniConfig = await getOmniRouteConfig();
+    const apiKey = omniConfig.apiKey || 'omniroute-key';
     if (apiKey) {
       try {
         const liveResult = await this.generateWithLLM(
@@ -90,7 +92,7 @@ export class DramaOrchestrator {
   ): Promise<DramaSeriesResponse | null> {
     const prompt = buildDramaSeriesPrompt(genre, characters, episodesCount, seedScript);
 
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await fetch('http://localhost:20128/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -337,3 +339,5 @@ export class DramaOrchestrator {
 }
 
 export const dramaOrchestrator = new DramaOrchestrator();
+
+

@@ -1,5 +1,5 @@
-/**
- * Smart API Router — lib/api-router.ts
+﻿/**
+ * Smart API Router â€” lib/api-router.ts
  *
  * Provides automatic health-aware failover across all configured AI providers.
  * Each provider is pinged with a lightweight health check before being selected.
@@ -8,7 +8,7 @@
 
 import { supabaseAdmin } from '@/lib/db';
 
-// ─── Provider Registry ────────────────────────────────────────────────────────
+// â”€â”€â”€ Provider Registry â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export interface ProviderConfig {
   id: string;                     // e.g. "openai"
@@ -25,14 +25,14 @@ export interface ProviderConfig {
 }
 
 export const PROVIDER_REGISTRY: ProviderConfig[] = [
-  // ── LLM Providers ──────────────────────────────────────────────────────────
+  // â”€â”€ LLM Providers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'openai',
     name: 'OpenAI',
     category: 'llm',
-    healthEndpoint: 'https://api.openai.com/v1/models',
+    healthEndpoint: 'http://localhost:20128/v1/models',
     healthAuthHeader: (k) => `Bearer ${k}`,
-    baseUrl: 'https://api.openai.com/v1',
+    baseUrl: 'http://localhost:20128/v1',
     defaultPriority: 90,
     models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo'],
   },
@@ -40,9 +40,9 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     id: 'anthropic',
     name: 'Anthropic Claude',
     category: 'llm',
-    healthEndpoint: 'https://api.anthropic.com/v1/models',
+    healthEndpoint: 'http://localhost:20128/v1/models',
     healthAuthHeader: (k) => ``,  // Uses x-api-key header
-    baseUrl: 'https://api.anthropic.com/v1',
+    baseUrl: 'http://localhost:20128/v1',
     defaultPriority: 88,
     models: ['claude-opus-4-5', 'claude-sonnet-4-5', 'claude-haiku-4-5'],
   },
@@ -50,9 +50,9 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     id: 'gemini',
     name: 'Google Gemini',
     category: 'llm',
-    healthEndpoint: 'https://generativelanguage.googleapis.com/v1beta/models',
+    healthEndpoint: 'http://localhost:20128/v1/models',
     healthAuthHeader: (k) => ``,  // Uses ?key= param
-    baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+    baseUrl: 'http://localhost:20128/v1',
     defaultPriority: 85,
     models: ['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'],
   },
@@ -67,12 +67,22 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     models: ['meta-llama/llama-3.3-70b-instruct', 'mistralai/mistral-large', 'google/gemini-flash-1.5'],
   },
   {
+    id: 'omniroute_local_llm',
+    name: 'OmniRoute (Local Gateway)',
+    category: 'llm',
+    healthEndpoint: 'http://localhost:20128/v1/models',
+    healthAuthHeader: (k) => `Bearer ${k || 'dummy'}`,
+    baseUrl: 'http://localhost:20128/v1',
+    defaultPriority: 100, // Highest priority
+    models: ['auto', 'auto/coding', 'auto/fast', 'auto/cheap'],
+  },
+  {
     id: 'groq',
     name: 'Groq (Ultra-Fast)',
     category: 'llm',
-    healthEndpoint: 'https://api.groq.com/openai/v1/models',
+    healthEndpoint: 'http://localhost:20128/v1/models',
     healthAuthHeader: (k) => `Bearer ${k}`,
-    baseUrl: 'https://api.groq.com/openai/v1',
+    baseUrl: 'http://localhost:20128/v1',
     defaultPriority: 78,
     models: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'],
   },
@@ -126,7 +136,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     defaultPriority: 65,
     models: ['gpt-4o', 'Meta-Llama-3.1-70B-Instruct'],
   },
-  // ── Free / Keyless LLM ────────────────────────────────────────────────────
+  // â”€â”€ Free / Keyless LLM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'pollinations_text',
     name: 'Pollinations AI (Free)',
@@ -179,7 +189,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
   },
   {
     id: 'ollama_local',
-    name: 'Ollama (Local — Keyless)',
+    name: 'Ollama (Local â€” Keyless)',
     category: 'llm',
     healthEndpoint: 'http://localhost:11434/api/tags',
     baseUrl: 'http://localhost:11434/api',
@@ -189,7 +199,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
   },
   {
     id: 'lmstudio_local',
-    name: 'LM Studio (Local — Keyless)',
+    name: 'LM Studio (Local â€” Keyless)',
     category: 'llm',
     healthEndpoint: 'http://localhost:1234/v1/models',
     baseUrl: 'http://localhost:1234/v1',
@@ -198,7 +208,16 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     models: ['local-model'],
   },
 
-  // ── Paid Image Providers ───────────────────────────────────────────────────
+  // â”€â”€ Paid Image Providers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  {
+    id: 'omniroute_local_image',
+    name: 'OmniRoute (Local Gateway)',
+    category: 'image',
+    healthEndpoint: 'http://localhost:20128/v1/models',
+    healthAuthHeader: (k) => `Bearer ${k || 'dummy'}`, // OmniRoute doesn't require a key strictly
+    baseUrl: 'http://localhost:20128/v1',
+    defaultPriority: 100, // Highest priority since it's a local router!
+  },
   {
     id: 'pexels',
     name: 'Pexels',
@@ -227,7 +246,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     models: ['stable-diffusion-xl-1024-v1-0', 'stable-image-ultra'],
   },
 
-  // ── Free / Keyless Image ───────────────────────────────────────────────────
+  // â”€â”€ Free / Keyless Image â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'pollinations_image',
     name: 'Pollinations Image (Free)',
@@ -284,7 +303,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     defaultPriority: 15,
   },
 
-  // ── Paid Voice Providers ───────────────────────────────────────────────────
+  // â”€â”€ Paid Voice Providers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'elevenlabs',
     name: 'ElevenLabs',
@@ -307,14 +326,14 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     id: 'openai_tts',
     name: 'OpenAI TTS (tts-1)',
     category: 'voice',
-    healthEndpoint: 'https://api.openai.com/v1/models',
+    healthEndpoint: 'http://localhost:20128/v1/models',
     healthAuthHeader: (k) => `Bearer ${k}`,
-    baseUrl: 'https://api.openai.com/v1',
+    baseUrl: 'http://localhost:20128/v1',
     defaultPriority: 85,
     models: ['tts-1', 'tts-1-hd'],
   },
 
-  // ── Free / Keyless Voice ───────────────────────────────────────────────────
+  // â”€â”€ Free / Keyless Voice â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'azure_tts_free',
     name: 'Azure Neural TTS (Free)',
@@ -376,7 +395,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     models: ['en-US-AriaNeural', 'en-US-GuyNeural', 'hi-IN-MadhurNeural', 'en-IN-NeerjaNeural'],
   },
 
-  // ── Free Stock Video ───────────────────────────────────────────────────────
+  // â”€â”€ Free Stock Video â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'coverr_free',
     name: 'Coverr (Free Stock Video)',
@@ -414,7 +433,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     defaultPriority: 30,
   },
 
-  // ── Paid Video AI ──────────────────────────────────────────────────────────
+  // â”€â”€ Paid Video AI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'kling',
     name: 'Kling Video AI',
@@ -466,7 +485,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     models: ['damo-vilab/text-to-video-ms-1.7b', 'cerspense/zeroscope_v2_576w'],
   },
 
-  // ── Music Providers ────────────────────────────────────────────────────────
+  // â”€â”€ Music Providers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'suno',
     name: 'Suno AI Music',
@@ -523,7 +542,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     defaultPriority: 35,
   },
 
-  // ── Avatar / Talking Head ──────────────────────────────────────────────────
+  // â”€â”€ Avatar / Talking Head â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'heygen',
     name: 'HeyGen Avatar',
@@ -555,7 +574,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
 ];
 
 
-// ─── Health Check Cache ───────────────────────────────────────────────────────
+// â”€â”€â”€ Health Check Cache â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface HealthStatus {
   providerId: string;
@@ -568,7 +587,7 @@ interface HealthStatus {
 const healthCache = new Map<string, HealthStatus>();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
-// ─── Health Check Logic ───────────────────────────────────────────────────────
+// â”€â”€â”€ Health Check Logic â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function checkProviderHealth(
   providerId: string,
@@ -610,7 +629,7 @@ export async function checkProviderHealth(
       }
     }
 
-    // Build URL — some providers use ?key= param instead of headers
+    // Build URL â€” some providers use ?key= param instead of headers
     let url = config.healthEndpoint;
     if (providerId === 'gemini' && apiKey) {
       url += `?key=${apiKey}`;
@@ -649,7 +668,7 @@ export async function checkProviderHealth(
   }
 }
 
-// ─── Smart Router ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Smart Router â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export interface RouterResult {
   providerId: string;
@@ -729,7 +748,7 @@ export async function getAllProviderHealth(
     PROVIDER_REGISTRY.map(async (p) => {
       const key = apiKeys.get(p.id) || '';
       const health = await checkProviderHealth(p.id, key);
-      return { ...p, ...health, apiKey: key ? '••••' : undefined };
+      return { ...p, ...health, apiKey: key ? 'â€¢â€¢â€¢â€¢' : undefined };
     }),
   );
 

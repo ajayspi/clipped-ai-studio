@@ -1,3 +1,4 @@
+﻿import { getOmniRouteConfig } from '@/lib/keys';
 import {
   AutoPilotConfig,
   AutoPilotResponse,
@@ -95,7 +96,7 @@ export class AutoPilot {
           videoUrl: initialJobResult.videoUrl,
           duration: initialJobResult.duration,
         } : undefined,
-        isDryRun: !Boolean(process.env.OPENAI_API_KEY),
+        isDryRun: false, // OmniRoute always active
         configuredAt: new Date().toISOString(),
       },
     };
@@ -174,7 +175,8 @@ export class AutoPilot {
     niche: string,
     sourceStrategy: string
   ): Promise<{ topic: string; script: string; hook: string }> {
-    const apiKey = process.env.OPENAI_API_KEY;
+    const omniConfig = await getOmniRouteConfig();
+    const apiKey = omniConfig.apiKey || 'omniroute-key';
 
     if (apiKey) {
       try {
@@ -210,7 +212,7 @@ Return valid JSON:
   "script": "..."
 }`;
 
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await fetch('http://localhost:20128/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -295,3 +297,5 @@ Return valid JSON:
 }
 
 export const autoPilot = new AutoPilot();
+
+

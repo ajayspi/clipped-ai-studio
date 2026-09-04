@@ -106,3 +106,35 @@ Implement the following premium features:
 Dynamic API Key Management & Custom API Integrations:
 1. Dynamically render API key input fields in the Settings UI for ANY provider found in the Supabase `settings` table (including Grok, Groq, Suno, Cerebras, Mistral, GitHub Models, DeepSeek, Azure, etc.) rather than strictly hardcoding the UI list.
 2. Provide a generic "Add Custom API Integration" button and modal/form in the Settings UI allowing users to define custom provider names, paste API keys / base URLs, and connect custom or local keyless endpoints.
+
+## Follow-up — 2026-09-05T03:15:47+05:30
+
+# Teamwork Project Prompt
+
+Refactor the Settings page of the Clipped application to exclusively support a single OmniRoute/OpenRouter configuration. Remove all individual AI provider settings (OpenAI, Gemini, Azure, etc.) and replace them with a single panel to input the OmniRoute Endpoint URL and API Key.
+
+Working directory: c:\Users\vigilare\.gemini\antigravity\scratch\clipped-omni-router
+Integrity mode: development
+
+## Requirements
+
+### R1. Overhaul Settings UI
+Modify the `SettingsPage` to remove all individual AI provider panels (Azure, OpenAI, ElevenLabs, etc.). Create a single "OmniRoute Configuration" panel containing input fields for an Endpoint URL and an API Key. Use the existing Shadcn UI design patterns.
+
+### R2. Refactor Backend Storage
+Update the backend API route for settings (`app/api/settings/keys/route.ts`) to accept, validate, and store only the OmniRoute Endpoint URL and API Key. Remove all storage and validation logic pertaining to the deprecated individual provider keys.
+
+### R3. Engine Integration Updates
+Update the engine files (e.g., `lib/engine/llm.ts`, `lib/engine/tts.ts`) to fetch the OmniRoute credentials from the updated settings instead of looking for the deprecated `OPENAI_API_KEY` or others.
+
+## Acceptance Criteria
+
+### Settings UI Verification (Agent-as-judge)
+- [ ] The Settings page successfully renders without crashing.
+- [ ] Visual inspection confirms that individual provider panels (Azure, OpenAI, ElevenLabs) are completely removed from the UI code.
+- [ ] A single OmniRoute panel is present and accepts URL and Key inputs.
+
+### Backend Verification (Programmatic/Agent-as-judge)
+- [ ] Sending a POST request to `/api/settings/keys` with OmniRoute credentials successfully saves the keys.
+- [ ] Sending a GET request to `/api/settings/keys` successfully retrieves the saved OmniRoute credentials and contains no legacy provider keys.
+- [ ] Code search confirms no active references to `OPENAI_API_KEY` remain in the API settings storage logic.

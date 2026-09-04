@@ -1,3 +1,4 @@
+﻿import { getOmniRouteConfig } from '@/lib/keys';
 import {
   BulkPlanRequest,
   BulkPlanResponse,
@@ -36,31 +37,29 @@ export class BulkPlanner {
 
     console.log(`[BulkPlanner] Generating ${contentCount}-day content plan for niche: "${niche}" across platforms: ${platforms.join(', ')}`);
 
-    const apiKey = process.env.OPENAI_API_KEY;
+    const omniConfig = await getOmniRouteConfig();
+    const apiKey = omniConfig.apiKey || 'omniroute-key';
 
-    if (apiKey) {
-      try {
-        const response = await this.generateWithOpenAI(
-          niche,
-          contentCount,
-          cadence,
-          platforms,
-          visualStyle,
-          voice,
-          aspectRatio,
-          apiKey
-        );
-        if (response && response.success && response.items && response.items.length > 0) {
-          return response;
-        }
-      } catch (err: any) {
-        console.warn(`[BulkPlanner] OpenAI generation failed (${err?.message || err}). Using cost-safe dry-run generator.`);
+    try {
+      const response = await this.generateWithOpenAI(
+        niche,
+        contentCount,
+        cadence,
+        platforms,
+        visualStyle,
+        voice,
+        aspectRatio,
+        apiKey
+      );
+      if (response && response.success && response.items && response.items.length > 0) {
+        return response;
       }
-    } else {
-      console.log(`[BulkPlanner] OPENAI_API_KEY not configured. Using cost-safe dry-run generator.`);
+    } catch (err: any) {
+      console.warn(`[BulkPlanner] OmniRoute generation failed (${err?.message || err}). Using fallback.`);
     }
 
     // Cost-safe deterministic dry-run generation fallback
+
     return this.generateDryRun(niche, contentCount, cadence, platforms, visualStyle, voice, aspectRatio);
   }
 
@@ -78,15 +77,16 @@ export class BulkPlanner {
     apiKey: string
   ): Promise<BulkPlanResponse> {
     const prompt = buildBulkPlanPrompt(niche, contentCount, cadence, platforms, visualStyle);
+    const authHeader = apiKey ? `Bearer ${apiKey}` : 'Bearer dummy';
 
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await fetch('http://localhost:20128/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': authHeader,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'auto', // Route through OmniRoute
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: SYSTEM_PROMPTS.BULK_CONTENT_PLANNER },
@@ -96,7 +96,7 @@ export class BulkPlanner {
     });
 
     if (!res.ok) {
-      throw new Error(`OpenAI API Error: ${res.status} ${res.statusText}`);
+      throw new Error(`OmniRoute API Error: ${res.status} ${res.statusText}`);
     }
 
     const data = await res.json();
@@ -238,3 +238,5 @@ export class BulkPlanner {
 }
 
 export const bulkPlanner = new BulkPlanner();
+
+

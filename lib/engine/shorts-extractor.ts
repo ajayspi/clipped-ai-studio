@@ -1,3 +1,4 @@
+﻿import { getOmniRouteConfig } from '@/lib/keys';
 import {
   ExtractedClip,
   ShortsExtractionRequest,
@@ -42,7 +43,8 @@ export class ShortsExtractor {
     }
 
     // 3. Attempt live LLM extraction if OPENAI_API_KEY is available
-    const apiKey = process.env.OPENAI_API_KEY;
+    const omniConfig = await getOmniRouteConfig();
+    const apiKey = omniConfig.apiKey || 'omniroute-key';
     if (apiKey && rawTranscript.length > 50) {
       try {
         const liveResult = await this.extractWithLLM(
@@ -87,7 +89,7 @@ export class ShortsExtractor {
   ): Promise<ShortsExtractionResponse | null> {
     const prompt = buildShortsExtractionPrompt(transcript, clipCount, strategy);
 
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await fetch('http://localhost:20128/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -314,3 +316,5 @@ export class ShortsExtractor {
 }
 
 export const shortsExtractor = new ShortsExtractor();
+
+

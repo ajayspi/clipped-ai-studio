@@ -1,118 +1,133 @@
-# Project: Clipped AI Studio — Final Product Package
+# Project: Clipped Application — Settings Page OmniRoute Refactoring
 
 ## Architecture
-Clipped is a full-stack Next.js 15 (React 19) AI video generation platform powered by Remotion, multi-provider LLMs/TTS/Video models, Supabase PostgreSQL, and automated social publishing.
+Refactoring the Clipped application Settings and AI/voice infrastructure to exclusively support a unified OmniRoute/OpenRouter gateway, deprecating all individual AI provider panels, storage keys, and hardcoded credentials.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │                                    CLIENT LAYER                                        │
-│  - App Shell, Header, Sidebar, Dynamic Supabase Context Provider                       │
-│  - Creation Hub & Workflows (/create, /create/*)                                       │
-│  - Subtitles Configuration with Glassmorphism & Visual Depth (R3)                      │
-│  - Settings (/settings) with Custom Supabase Panel (R1) & Voice Previews (R2)          │
-│  - Workspaces & Folder Organization (R4.3)                                             │
-│  - Analytics Dashboard & API Cost Estimation (R4.5)                                    │
-│  - Brand Kit & Watermark Configuration (R4.2)                                          │
+│  - Settings Page (app/(app)/settings/page.tsx): Single OmniRoute Configuration Panel    │
+│    * Endpoint URL input (with default http://localhost:20128/v1 and presets)           │
+│    * API Key input (with visibility toggle)                                            │
+│    * Save Configuration & Test Connection buttons (with latency & model feedback)      │
+│    * Removed: Azure, OpenAI, ElevenLabs, Gemini, Grok, Groq, custom provider modal     │
+│  - Retained: Supabase Database Panel, Brand Kits, Workspaces, Analytics                │
 └──────────────────────────────────────────┬─────────────────────────────────────────────┘
                                            │
 ┌──────────────────────────────────────────▼─────────────────────────────────────────────┐
-│                                 API & ENGINE LAYER                                     │
-│  - Dynamic Supabase SSR Client & Connection Diagnostics (/api/settings/supabase/test)  │
-│  - Voice Engine (Azure TTS, OpenAI TTS, Keyless Fallback) & Preview API (/api/tts/*)   │
-│  - Developer REST API (/api/v1/generate, /api/v1/jobs/[id]) & HMAC Webhooks (R4.4)     │
-│  - Social Publishing Engine (YouTube Shorts, TikTok, Instagram) & Export (R4.1)        │
-│  - Cost Estimator & Usage Tracking Engine (lib/engine/cost-estimator.ts)               │
-│  - Remotion Composition (Subtitles, Neon Glows, Watermark Overlay) & Render Worker     │
+│                                 API & STORAGE LAYER                                    │
+│  - Backend Settings Keys Route (app/api/settings/keys/route.ts):                       │
+│    * GET: Returns exclusively OmniRoute credentials (endpointUrl, maskedApiKey)       │
+│           Strictly 0 legacy provider keys returned                                     │
+│    * POST: Accepts, validates (HTTP/HTTPS), and stores OmniRoute credentials           │
+│            Rejects legacy provider submissions with 400 Bad Request                    │
+│    * Zero references to OPENAI_API_KEY or PROVIDER_ENV_MAP in settings storage logic   │
+│  - Settings Connection Test Route (app/api/settings/keys/check/route.ts):              │
+│    * Directly tests OmniRoute GET /v1/models with latency & model enumeration          │
+│  - Centralized Credential Resolver (lib/keys.ts):                                      │
+│    * getOmniRouteConfig(): In-memory cached lookup from Supabase settings with env fallback│
 └──────────────────────────────────────────┬─────────────────────────────────────────────┘
                                            │
 ┌──────────────────────────────────────────▼─────────────────────────────────────────────┐
-│                            PERSISTENCE & INFRASTRUCTURE                                │
-│  - Dynamic Supabase Instance (LocalStorage + Cookies + Fallback)                       │
-│  - Tables: users, videos, render_jobs, api_credits, settings, scheduled_posts,         │
-│            workspaces, campaigns                                                       │
-│  - Opaque-Box Automated Test Suite (tests/e2e/standalone-runner.js)                    │
+│                                    ENGINE LAYER                                        │
+│  - Unified LLM Engine (lib/engine/llm.ts & lib/ai/llm.ts):                             │
+│    * Fetches OmniRoute credentials dynamically via getOmniRouteConfig()                │
+│    * Dispatches chat completions to ${endpointUrl}/v1/chat/completions with Auth header│
+│    * Exports complete() and safe parseJson()                                           │
+│  - TTS Engine (lib/engine/tts.ts):                                                     │
+│    * OmniRoute promoted to primary TTS provider calling ${endpointUrl}/v1/audio/speech │
+│    * Removed mandatory OPENAI_API_KEY / AZURE_SPEECH_KEY constraints                   │
+│  - Engine Orchestrators (auto-pilot, drama, bulk-planner, scene-matcher, etc.):         │
+│    * Consolidated to use unified LLM engine without ad-hoc OPENAI_API_KEY checks       │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Feature Inventory
 | # | Feature | Description | Milestone | Source |
 |---|---------|-------------|-----------|--------|
-| 1 | Custom Supabase UI | Settings panel for NEXT_PUBLIC_SUPABASE_URL & ANON_KEY | M1 | R1 |
-| 2 | Dynamic Client Routing | SupabaseProvider + localStorage + SSR cookies for dynamic DB | M1 | R1 |
-| 3 | Supabase Test Probe | POST /api/settings/supabase/test for latency & schema checks | M1 | R1 |
-| 4 | Azure TTS Integration | Azure Cognitive Speech REST synthesis in TTSEngine | M2 | R2 |
-| 5 | Free/Keyless Voice APIs | Google Translate TTS, Web Speech, in-memory synth | M2 | R2 |
-| 6 | Voice Audio Previews | Play/Pause preview buttons next to voice models with sample audio | M2 | R2 |
-| 7 | Modern Subtitles UI | Glassmorphism, backdrop-blur, shadows, visual depth | M3 | R3 |
-| 8 | Subtitle Style Presets | 6 presets: Hormozi Pop, Cyber Neon, Minimalist, Cinematic, etc. | M3 | R3 |
-| 9 | Subtitle Position Selector | 3-segment smartphone mockup selector + live preview sandbox | M3 | R3 |
-| 10 | One-Click Export & Publish | Direct publish to YouTube Shorts / TikTok mocks + export API | M4 | R4.1 |
-| 11 | Custom Branding & Watermark | Watermark overlay in Remotion (5 anchors, scale, opacity, badge) | M4 | R4.2 |
-| 12 | Project Workspaces | Folders & campaigns organization, workspaces table & UI filter | M4 | R4.3 |
-| 13 | Developer API & Webhooks | /api/v1/generate, /api/v1/jobs/[id], HMAC signed webhooks | M4 | R4.4 |
-| 14 | Advanced Analytics Dashboard | API usage tracking, multi-provider cost estimation model | M4 | R4.5 |
-| 15 | Standalone Test Suite | Automated opaque-box tests covering all R1-R4 criteria | M5 | Acceptance Criteria |
+| 1 | OmniRoute Credential Resolver | `lib/keys.ts::getOmniRouteConfig()` with Supabase settings query & env fallback | M1 | R2, R3 |
+| 2 | Backend Keys GET Endpoint | `app/api/settings/keys/route.ts` returning ONLY OmniRoute credentials | M1 | R2, AC |
+| 3 | Backend Keys POST Endpoint | `app/api/settings/keys/route.ts` validating & saving OmniRoute credentials | M1 | R2, AC |
+| 4 | Legacy Key Storage Elimination | Complete removal of `OPENAI_API_KEY` & `PROVIDER_ENV_MAP` in storage logic | M1 | R2, AC |
+| 5 | OmniRoute Connection Probe | `app/api/settings/keys/check/route.ts` testing `${endpointUrl}/v1/models` | M1 | R1, R2 |
+| 6 | Unified Engine LLM Facade | `lib/engine/llm.ts` & `lib/ai/llm.ts` calling OmniRoute with Auth header | M2 | R3 |
+| 7 | OmniRoute TTS Integration | `lib/engine/tts.ts` promoting OmniRoute to primary speech synthesis | M2 | R3 |
+| 8 | Engine Deprecated Key Cleanup | Remove `OPENAI_API_KEY` requirements from orchestrators & callers | M2 | R3 |
+| 9 | Settings Page OmniRoute Panel | Single OmniRoute configuration panel in `app/(app)/settings/page.tsx` | M3 | R1, AC |
+| 10 | Individual Provider Removal | Complete removal of Azure, OpenAI, ElevenLabs, Gemini panels & modals | M3 | R1, AC |
+| 11 | Settings UI Render Integrity | Zero crash, full Shadcn UI compliance, visual feedback | M3 | AC |
+| 12 | Programmatic Backend Tests | Automated test suite for GET, POST, validation, and legacy key absence | M4 | AC |
+| 13 | E2E System Verification | Full verification across UI render, backend storage, and engine pipeline | M4 | AC |
+| 14 | Forensic Integrity Audit | Independent binary integrity audit verifying genuine implementation | M4 | Audit |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| 1 | Custom Supabase Connection | Settings panel, dynamic context, cookies, connection probe test | none | PLANNED |
-| 2 | Voice API Expansion & Previews | Azure TTS, Free/Keyless, Preview API, Play/Pause UI in Settings & Wizard | none | PLANNED |
-| 3 | Modernize Subtitles UI | SubtitlesStep redesign, glassmorphism, 6 presets, position selector, Remotion styling | none | PLANNED |
-| 4 | Premium Package Features | Social Export, Branding & Watermarks, Workspaces, Developer API/Webhooks, Analytics | M1, M2, M3 | PLANNED |
-| 5 | E2E Testing & Verification | Comprehensive test runner for R1-R4 acceptance criteria | M1, M2, M3, M4 | PLANNED |
-| 6 | Forensic Audit & Packaging | Integrity verification, build validation, and final presentation | M5 | PLANNED |
+| 1 | Backend Storage & API Keys Route | Refactor `lib/keys.ts`, `app/api/settings/keys/route.ts`, and `check/route.ts` to exclusively support OmniRoute | none | DONE |
+| 2 | Engine Integration Updates | Create `lib/engine/llm.ts`, update `lib/ai/llm.ts`, `lib/engine/tts.ts`, and clean up engine caller key dependencies | M1 | IN_PROGRESS |
+| 3 | Settings UI Overhaul | Refactor `app/(app)/settings/page.tsx` to remove all individual provider panels and add single OmniRoute panel | M1 | IN_PROGRESS |
+| 4 | E2E Verification & Forensic Audit | Comprehensive test execution, acceptance criteria validation, and forensic integrity audit | M1, M2, M3 | PLANNED |
 
 ## Interface Contracts
 
-### 1. Supabase Dynamic Client Context
-- `lib/supabase/context.tsx`:
-  - `useSupabase()`: returns `{ supabase, config, setCustomConfig, resetToDefault, testConnection }`
-  - `clipped_custom_supabase_config` in `localStorage`
-  - `clipped_custom_supabase_url`, `clipped_custom_supabase_anon_key` in `document.cookie`
-- `app/api/settings/supabase/test/route.ts`:
-  - Request: `{ url: string, anonKey: string }`
-  - Response: `{ success: boolean, reachable: boolean, latencyMs: number, schema: { isHealthy: boolean, tables: Record<string, { exists: boolean }> } }`
+### 1. OmniRoute Credential Resolver (`lib/keys.ts`)
+```ts
+export interface OmniRouteConfig {
+  baseUrl: string; // e.g. "http://localhost:20128" or "https://openrouter.ai/api"
+  apiKey: string;  // e.g. "sk-..."
+  isConfigured: boolean;
+  source: 'database' | 'environment' | 'default';
+}
 
-### 2. TTS Voice Preview & Synthesis
-- `lib/engine/tts.ts`:
-  - Providers: `'azure' | 'elevenlabs' | 'openai' | 'google' | 'coqui' | 'keyless' | 'mock' | 'auto'`
-  - `synthesize(request: TTSRequest): Promise<TTSResponse>`
-- `app/api/tts/preview/route.ts`:
-  - Request: `{ text?: string, voiceId: string, provider?: string, language?: string, speed?: number }`
-  - Response: `{ success: boolean, audioUrl: string, audioBase64: string, duration: number, providerUsed: string, voiceId: string }`
+export async function getOmniRouteConfig(): Promise<OmniRouteConfig>;
+```
 
-### 3. Remotion Composition & Watermark
-- `remotion/Composition.tsx`:
-  - `WatermarkConfig`: `{ url?: string, position?: 'top-left'|'top-right'|'bottom-left'|'bottom-right'|'center', opacity?: number, scale?: number, margin?: number, handle?: string }`
-  - `SubtitleStyleConfig`: `{ preset: string, color: string, highlightColor?: string, outlineColor: string, outlineWidth: number, fontSize: number, yPosition: number, showBox: boolean, boxColor: string, boxOpacity?: number, neonGlow?: boolean, uppercase: boolean, maxWidth: number }`
+### 2. Backend Settings API (`app/api/settings/keys/route.ts`)
+- **`GET /api/settings/keys`**:
+  - Response:
+    ```json
+    {
+      "omniroute": {
+        "endpointUrl": "http://localhost:20128/v1",
+        "maskedApiKey": "sk-••••••••1234",
+        "isConfigured": true,
+        "source": "database"
+      },
+      "keys": {
+        "omniroute": {
+          "endpointUrl": "http://localhost:20128/v1",
+          "maskedApiKey": "sk-••••••••1234",
+          "isConfigured": true
+        }
+      }
+    }
+    ```
+  - Strictly **no** legacy keys: `openai`, `azure_speech`, `elevenlabs`, `gemini`, etc.
+- **`POST /api/settings/keys`**:
+  - Request: `{ endpointUrl: string, apiKey: string }` or `{ provider: "omniroute", endpointUrl: string, apiKey: string }`
+  - Validation: `endpointUrl` must be a valid `http://` or `https://` URL.
+  - Rejection: Requests specifying legacy providers (e.g. `provider: "openai"`) return HTTP 400.
+  - Response: `{ success: true, omniroute: { isConfigured: true } }`
 
-### 4. Developer API & Webhooks
-- `app/api/v1/generate/route.ts`:
-  - Request: `{ prompt: string, workflow?: string, aspectRatio?: string, voice?: string, burnSubtitles?: boolean, watermarkUrl?: string, webhookUrl?: string, metadata?: Record<string, any> }`
-  - Response: `{ success: true, jobId: string, status: "processing", createdAt: string, statusUrl: string }`
-- `app/api/v1/jobs/[id]/route.ts`:
-  - Response: `{ jobId: string, status: string, progress: number, videoUrl?: string, duration?: number, costEstimation?: { totalCostUsd: number, llmTokens: number, ttsCharacters: number } }`
+### 3. OmniRoute Connection Check API (`app/api/settings/keys/check/route.ts`)
+- **`POST /api/settings/keys/check`**:
+  - Request: `{ endpointUrl?: string, apiKey?: string }`
+  - Response: `{ success: boolean, latencyMs: number, models?: string[], error?: string }`
 
-### 5. Workspaces & Analytics
-- `app/api/workspaces/route.ts`:
-  - `GET`: Returns list of workspaces with video counts.
-  - `POST`: `{ name: string, color?: string, icon?: string, description?: string }`
-- `lib/engine/cost-estimator.ts`:
-  - `calculateVideoCost(params: VideoCostParams): VideoCostBreakdown`
-  - `getAggregatedAnalytics(): AnalyticsSummary`
+### 4. Engine LLM & TTS Integration
+- **`lib/engine/llm.ts`**:
+  - `complete(request: { system: string; user: string; maxTokens?: number; json?: boolean }, model?: string): Promise<string>`
+  - Uses `getOmniRouteConfig()`, sends `POST ${baseUrl}/v1/chat/completions` with `Authorization: Bearer ${apiKey}`.
+  - `parseJson<T>(content: string, fallback: T): T`
+- **`lib/engine/tts.ts`**:
+  - Provider `'omniroute'` sends `POST ${baseUrl}/v1/audio/speech` with `Authorization: Bearer ${apiKey}`.
 
 ## Code Layout
-- `app/(app)/settings/page.tsx` — Settings page with Supabase Connection & Voice Catalog tabs
-- `app/(app)/analytics/page.tsx` — Analytics and cost estimations dashboard
-- `app/(app)/library/page.tsx` — Video library with workspaces filter and one-click export
-- `components/wizard/SubtitlesStep.tsx` — Modernized Subtitles UI
-- `components/wizard/VoiceStep.tsx` — Voice Step with audio previews
-- `lib/supabase/context.tsx` — Dynamic Supabase React Context
-- `lib/supabase/client.ts` — Dynamic Browser SSR client
-- `lib/supabase/server.ts` — Dynamic Server SSR client with cookie inspection
-- `lib/engine/tts.ts` — Expanded TTS engine (Azure + Keyless + OpenAI)
-- `lib/engine/cost-estimator.ts` — Cost calculation engine
-- `lib/engine/webhook-dispatcher.ts` — HMAC webhook dispatcher
-- `remotion/Composition.tsx` — Remotion composition with watermark & neon subtitle support
-- `tests/e2e/standalone-runner.js` — Automated test suite for R1-R4
+- `lib/keys.ts` — Centralized API key and OmniRoute credential resolver
+- `app/api/settings/keys/route.ts` — Settings keys GET and POST handlers
+- `app/api/settings/keys/check/route.ts` — OmniRoute health check / model probe
+- `lib/engine/llm.ts` — Unified LLM engine facade
+- `lib/ai/llm.ts` — Core LLM completion implementation
+- `lib/engine/tts.ts` — Text-to-speech engine with primary OmniRoute provider
+- `app/(app)/settings/page.tsx` — Settings page with single OmniRoute panel
+- `tests/e2e/omniroute-verification.ts` — Automated verification runner for acceptance criteria

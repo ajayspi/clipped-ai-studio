@@ -1,252 +1,253 @@
 import { NextResponse } from 'next/server';
-import { supabase, supabaseAdmin } from '@/lib/db';
+import { supabaseAdmin, supabase } from '@/lib/db';
+import { getOmniRouteConfig, clearOmniRouteConfigCache } from '@/lib/keys';
 
-export interface ProviderConfig {
-  envVars: string[];
-  category: string;
-  name: string;
-  defaultBaseUrl?: string;
-}
-
-export const PROVIDER_ENV_MAP: Record<string, ProviderConfig> = {
-  // AI Models
-  gemini: { envVars: ['GEMINI_API_KEY', 'GOOGLE_API_KEY', 'GOOGLE_AI_KEY'], category: 'AI Models', name: 'Google Gemini' },
-  openai: { envVars: ['OPENAI_API_KEY'], category: 'AI Models', name: 'OpenAI' },
-  anthropic: { envVars: ['ANTHROPIC_API_KEY'], category: 'AI Models', name: 'Anthropic Claude' },
-  openrouter: { envVars: ['OPENROUTER_API_KEY'], category: 'AI Models', name: 'OpenRouter' },
-  fal: { envVars: ['FAL_API_KEY', 'FAL_KEY'], category: 'AI Models', name: 'Fal.ai' },
-  grok: { envVars: ['GROK_API_KEY', 'XAI_API_KEY'], category: 'AI Models', name: 'xAI Grok' },
-  groq: { envVars: ['GROQ_API_KEY'], category: 'AI Models', name: 'Groq Cloud' },
-  deepseek: { envVars: ['DEEPSEEK_API_KEY'], category: 'AI Models', name: 'DeepSeek' },
-  mistral: { envVars: ['MISTRAL_API_KEY'], category: 'AI Models', name: 'Mistral AI' },
-  cerebras: { envVars: ['CEREBRAS_API_KEY'], category: 'AI Models', name: 'Cerebras' },
-  github_models: { envVars: ['GITHUB_MODELS_KEY', 'GITHUB_TOKEN'], category: 'AI Models', name: 'GitHub Models' },
-  ollama: { envVars: ['OLLAMA_BASE_URL', 'OLLAMA_URL'], category: 'AI Models', name: 'Ollama (Local LLM)', defaultBaseUrl: 'http://localhost:11434' },
-
-  // Stock Media & Video
-  pexels: { envVars: ['PEXELS_API_KEY'], category: 'Stock Media', name: 'Pexels' },
-  pixabay: { envVars: ['PIXABAY_API_KEY'], category: 'Stock Media', name: 'Pixabay' },
-  kling: { envVars: ['KLING_API_KEY'], category: 'Stock Media', name: 'Kling Video' },
-  luma: { envVars: ['LUMA_API_KEY'], category: 'Stock Media', name: 'Luma Dream Machine' },
-  huggingface: { envVars: ['HUGGINGFACE_API_KEY', 'HF_TOKEN'], category: 'Stock Media', name: 'Hugging Face' },
-
-  // Voice & Audio
-  azure_speech: { envVars: ['AZURE_SPEECH_KEY', 'AZURE_TTS_KEY', 'AZURE_API_KEY'], category: 'Voice & Audio', name: 'Azure Speech Services' },
-  azure_region: { envVars: ['AZURE_SPEECH_REGION', 'AZURE_REGION'], category: 'Voice & Audio', name: 'Azure Speech Region' },
-  elevenlabs: { envVars: ['ELEVENLABS_API_KEY', 'XI_API_KEY'], category: 'Voice & Audio', name: 'ElevenLabs' },
-  google_tts: { envVars: ['GOOGLE_TTS_KEY', 'GOOGLE_TTS_API_KEY', 'GOOGLE_API_KEY'], category: 'Voice & Audio', name: 'Google Cloud TTS' },
-  deepgram: { envVars: ['DEEPGRAM_API_KEY'], category: 'Voice & Audio', name: 'Deepgram' },
-  suno: { envVars: ['SUNO_API_KEY'], category: 'Voice & Audio', name: 'Suno Audio' },
-
-  // Avatar
-  heygen: { envVars: ['HEYGEN_API_KEY'], category: 'Avatar', name: 'HeyGen' },
-  did: { envVars: ['DID_API_KEY', 'D_ID_API_KEY'], category: 'Avatar', name: 'D-ID' },
-};
+export const dynamic = 'force-dynamic';
 
 function maskKey(key: string): string {
   if (!key) return '';
-  if (key.length <= 8) return '••••••••';
-  return `••••••••••••${key.slice(-4)}`;
+  const trimmed = key.trim();
+  if (trimmed.length <= 8) return '••••••••';
+  if (trimmed.startsWith('sk-')) {
+    return `sk-••••••••${trimmed.slice(-4)}`;
+  }
+  return `••••••••••••${trimmed.slice(-4)}`;
+}
+
+function isValidHttpUrl(urlString: string): boolean {
+  if (!urlString || typeof urlString !== 'string') return false;
+  const trimmed = urlString.trim();
+  if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) return false;
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+const LEGACY_PROVIDERS = new Set([
+  'openai', 'gemini', 'anthropic', 'openrouter', 'fal', 'grok', 'groq',
+  'deepseek', 'mistral', 'cerebras', 'github_models', 'ollama',
+  'pexels', 'pixabay', 'kling', 'luma', 'huggingface',
+  'azure', 'azure_speech', 'azure_region', 'elevenlabs', 'google_tts',
+  'deepgram', 'suno', 'heygen', 'did'
+]);
+
+async function upsertSettingRow(provider: string, apiKey: string, baseUrl?: string, name?: string) {
+  const dbClient = supabaseAdmin || supabase;
+  try {
+    const { data: existing } = await dbClient
+      .from('settings')
+      .select('id')
+      .eq('provider', provider)
+      .limit(1)
+      .maybeSingle();
+
+    const fullData: Record<string, any> = {
+      provider,
+      api_key: apiKey,
+      is_active: true,
+      updated_at: new Date().toISOString(),
+    };
+    if (baseUrl) fullData.base_url = baseUrl;
+    if (name) fullData.name = name;
+
+    if (existing?.id) {
+      const { data, error } = await dbClient
+        .from('settings')
+        .update(fullData)
+        .eq('id', existing.id)
+        .select()
+        .single();
+
+      if (error) {
+        // Fallback without extra columns if not present in schema
+        const { data: fallbackData } = await dbClient
+          .from('settings')
+          .update({
+            api_key: apiKey,
+            is_active: true,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existing.id)
+          .select()
+          .single();
+        return fallbackData;
+      }
+      return data;
+    } else {
+      const { data, error } = await dbClient
+        .from('settings')
+        .insert(fullData)
+        .select()
+        .single();
+
+      if (error) {
+        // Fallback without extra columns
+        const { data: fallbackData } = await dbClient
+          .from('settings')
+          .insert({
+            provider,
+            api_key: apiKey,
+            is_active: true,
+          })
+          .select()
+          .single();
+        return fallbackData;
+      }
+      return data;
+    }
+  } catch (err) {
+    console.warn(`[API Keys POST] Upsert exception for ${provider}:`, err);
+    return null;
+  }
 }
 
 export async function GET() {
-  const result: Record<string, {
-    name?: string;
-    category?: string;
-    isConfigured: boolean;
-    isActive: boolean;
-    maskedValue: string;
-    updatedAt: string | null;
-    source: 'database' | 'env' | 'none';
-    isCustom?: boolean;
-    baseUrl?: string;
-  }> = {};
+  const config = await getOmniRouteConfig(true);
 
-  const customProviders: Array<{
-    id: string;
-    name: string;
-    category: string;
-    isConfigured: boolean;
-    isActive: boolean;
-    maskedValue: string;
-    updatedAt: string | null;
-  }> = [];
+  const endpointUrl = config.baseUrl;
+  const apiKey = config.apiKey;
+  const maskedApiKey = maskKey(apiKey);
+  const isConfigured = config.isConfigured;
+  const source = config.source;
 
-  // 1. Seed with known providers from environment variables
-  for (const [provider, config] of Object.entries(PROVIDER_ENV_MAP)) {
-    let envKey: string | undefined;
-    for (const envVar of config.envVars) {
-      if (process.env[envVar]) {
-        envKey = process.env[envVar];
-        break;
-      }
-    }
+  let updatedAt: string | null = null;
+  let isActive = true;
 
-    const hasEnv = Boolean(envKey && envKey.trim().length > 0);
-    const entry = {
-      name: config.name,
-      category: config.category,
-      isConfigured: hasEnv,
-      isActive: hasEnv,
-      maskedValue: hasEnv ? maskKey(envKey!) : '',
-      updatedAt: hasEnv ? new Date().toISOString() : null,
-      source: hasEnv ? ('env' as const) : ('none' as const),
-      isCustom: false,
-    };
-
-    result[provider] = entry;
-    result[`api_${provider}`] = entry; // Provide alias compatibility
-  }
-
-  // 2. Query Supabase database and merge/override known & dynamically load custom providers
   try {
-    const { data: dbKeys, error } = await supabaseAdmin
+    const dbClient = supabaseAdmin || supabase;
+    const { data: row } = await dbClient
       .from('settings')
-      .select('*');
+      .select('updated_at, is_active')
+      .eq('provider', 'omniroute')
+      .limit(1)
+      .maybeSingle();
 
-    if (!error && Array.isArray(dbKeys)) {
-      for (const row of dbKeys) {
-        if (!row.provider) continue;
-        const rawProvider = String(row.provider);
-        const cleanName = rawProvider.replace(/^api_/, '');
-        const hasKey = Boolean(row.api_key && String(row.api_key).trim().length > 0);
-        const isKnown = Boolean(PROVIDER_ENV_MAP[cleanName] || PROVIDER_ENV_MAP[rawProvider]);
-
-        // Determine category & display name
-        const knownConfig = PROVIDER_ENV_MAP[cleanName] || PROVIDER_ENV_MAP[rawProvider];
-        const category = row.category || knownConfig?.category || 'AI Models';
-        const name = row.name || knownConfig?.name || (cleanName.charAt(0).toUpperCase() + cleanName.slice(1));
-
-        const dbEntry = {
-          name,
-          category,
-          isConfigured: hasKey,
-          isActive: row.is_active ?? hasKey,
-          maskedValue: hasKey ? maskKey(row.api_key) : '',
-          updatedAt: row.updated_at || new Date().toISOString(),
-          source: (hasKey ? 'database' : (result[cleanName]?.source || 'none')) as 'database' | 'env' | 'none',
-          isCustom: !isKnown,
-          baseUrl: row.base_url || undefined,
-        };
-
-        result[cleanName] = dbEntry;
-        result[`api_${cleanName}`] = dbEntry;
-        result[rawProvider] = dbEntry;
-
-        if (!isKnown) {
-          customProviders.push({
-            id: rawProvider,
-            name,
-            category,
-            isConfigured: hasKey,
-            isActive: row.is_active ?? hasKey,
-            maskedValue: hasKey ? maskKey(row.api_key) : '',
-            updatedAt: row.updated_at || new Date().toISOString(),
-          });
-        }
-      }
+    if (row) {
+      if (row.updated_at) updatedAt = row.updated_at;
+      if (row.is_active !== undefined && row.is_active !== null) isActive = row.is_active;
     }
-  } catch (dbErr) {
-    console.warn('[API Keys GET] Supabase query notice (falling back to env vars):', dbErr);
-  }
+  } catch {}
 
   return NextResponse.json({
-    keys: result,
-    customProviders,
-    availableCategories: ['AI Models', 'Stock Media', 'Voice & Audio', 'Brand Kits', 'Usage & Quotas', 'Database & Supabase'],
+    success: true,
+    endpointUrl,
+    maskedApiKey,
+    isConfigured,
+    source,
+    omniroute: {
+      endpointUrl,
+      maskedApiKey,
+      isConfigured,
+      source,
+      isActive,
+      updatedAt,
+    },
+    keys: {
+      omniroute: {
+        endpointUrl,
+        maskedApiKey,
+        isConfigured,
+        isActive,
+        name: 'OmniRoute Gateway',
+        category: 'AI Gateway',
+        maskedValue: maskedApiKey || '••••••••',
+        baseUrl: endpointUrl,
+        updatedAt,
+        source,
+      },
+      omniroute_endpoint_url: {
+        endpointUrl,
+        maskedApiKey: endpointUrl,
+        isConfigured: Boolean(endpointUrl),
+        isActive: true,
+        name: 'OmniRoute Endpoint URL',
+        category: 'AI Gateway',
+        maskedValue: endpointUrl,
+        baseUrl: endpointUrl,
+        updatedAt,
+        source,
+      },
+      omniroute_api_key: {
+        endpointUrl,
+        maskedApiKey,
+        isConfigured: Boolean(apiKey),
+        isActive: true,
+        name: 'OmniRoute API Key',
+        category: 'AI Gateway',
+        maskedValue: maskedApiKey,
+        updatedAt,
+        source,
+      },
+    },
+    customProviders: [],
+    availableCategories: ['AI Gateway'],
   });
 }
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { provider, apiKey, isActive, category, baseUrl, name } = body;
+    const body = await req.json().catch(() => ({}));
+    const { provider } = body;
 
-    if (!provider) {
-      return NextResponse.json({ error: 'Provider is required' }, { status: 400 });
-    }
-
-    const cleanProvider = String(provider).trim();
-
-    const { data: existing } = await supabaseAdmin
-      .from('settings')
-      .select('id')
-      .eq('provider', cleanProvider)
-      .limit(1)
-      .single();
-
-    let result;
-    if (existing) {
-      // Update existing record
-      const updateData: any = {};
-      if (apiKey !== undefined && apiKey !== '') updateData.api_key = apiKey;
-      if (isActive !== undefined) updateData.is_active = isActive;
-      if (category !== undefined) updateData.category = category;
-      if (baseUrl !== undefined) updateData.base_url = baseUrl;
-      if (name !== undefined) updateData.name = name;
-      updateData.updated_at = new Date().toISOString();
-      
-      const { data, error } = await supabaseAdmin
-        .from('settings')
-        .update(updateData)
-        .eq('id', existing.id)
-        .select()
-        .single();
-      
-      if (error) {
-        // Fallback without extra columns if columns are not present in schema
-        const basicUpdate: any = {};
-        if (apiKey !== undefined && apiKey !== '') basicUpdate.api_key = apiKey;
-        if (isActive !== undefined) basicUpdate.is_active = isActive;
-        const { data: fallbackData, error: fallbackError } = await supabaseAdmin
-          .from('settings')
-          .update(basicUpdate)
-          .eq('id', existing.id)
-          .select()
-          .single();
-        if (fallbackError) throw fallbackError;
-        result = fallbackData;
-      } else {
-        result = data;
-      }
-    } else {
-      // Insert new record
-      const insertData: any = {
-        provider: cleanProvider,
-        api_key: apiKey || '',
-        is_active: isActive !== undefined ? isActive : true,
-      };
-      if (category) insertData.category = category;
-      if (baseUrl) insertData.base_url = baseUrl;
-      if (name) insertData.name = name;
-
-      const { data, error } = await supabaseAdmin
-        .from('settings')
-        .insert(insertData)
-        .select()
-        .single();
-        
-      if (error) {
-        // Fallback to basic columns (provider, api_key, is_active)
-        const { data: fallbackData, error: fallbackError } = await supabaseAdmin
-          .from('settings')
-          .insert({
-            provider: cleanProvider,
-            api_key: apiKey || '',
-            is_active: isActive !== undefined ? isActive : true,
-          })
-          .select()
-          .single();
-        if (fallbackError) throw fallbackError;
-        result = fallbackData;
-      } else {
-        result = data;
+    // Check if provider is a deprecated legacy provider or unsupported
+    if (provider && typeof provider === 'string') {
+      const cleanP = provider.toLowerCase().trim().replace(/^api_/, '');
+      const isOmni = cleanP === 'omniroute' || cleanP === 'omniroute_endpoint_url' || cleanP === 'omniroute_api_key';
+      if (!isOmni || LEGACY_PROVIDERS.has(cleanP)) {
+        return NextResponse.json(
+          { error: 'Individual AI providers are deprecated. Only OmniRoute configuration is supported.' },
+          { status: 400 }
+        );
       }
     }
 
-    return NextResponse.json({ success: true, setting: result });
+    const rawEndpointUrl = (
+      body.endpointUrl ||
+      body.baseUrl ||
+      body.url ||
+      (provider === 'omniroute_endpoint_url' ? body.apiKey : undefined)
+    );
+
+    const rawApiKey = (
+      body.apiKey !== undefined
+        ? body.apiKey
+        : (body.key !== undefined ? body.key : undefined)
+    );
+
+    if (!rawEndpointUrl || typeof rawEndpointUrl !== 'string' || !isValidHttpUrl(rawEndpointUrl)) {
+      return NextResponse.json(
+        { error: 'endpointUrl is required and must be a valid URL starting with http:// or https://' },
+        { status: 400 }
+      );
+    }
+
+    const endpointUrl = rawEndpointUrl.trim().replace(/\/+$/, '');
+    const apiKey = typeof rawApiKey === 'string' ? rawApiKey.trim() : '';
+
+    // Safely persist credentials
+    await upsertSettingRow('omniroute_endpoint_url', endpointUrl, endpointUrl, 'OmniRoute Endpoint URL');
+    if (rawApiKey !== undefined) {
+      await upsertSettingRow('omniroute_api_key', apiKey, undefined, 'OmniRoute API Key');
+    }
+    const savedSetting = await upsertSettingRow('omniroute', apiKey, endpointUrl, 'OmniRoute Gateway');
+
+    // Invalidate in-memory cache
+    clearOmniRouteConfigCache();
+
+    return NextResponse.json({
+      success: true,
+      setting: savedSetting,
+      omniroute: {
+        endpointUrl,
+        maskedApiKey: maskKey(apiKey),
+        isConfigured: true,
+      },
+    });
   } catch (error: any) {
-    console.error('Failed to update key:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('Failed to update OmniRoute settings:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }

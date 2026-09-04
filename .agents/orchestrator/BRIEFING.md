@@ -1,21 +1,21 @@
-# BRIEFING — 2026-08-31T23:54:00Z
+# BRIEFING — 2026-09-04T21:48:02Z
 
 ## Mission
-Restore stripped template literals in background workers (scripts/publish-worker.ts, scripts/render-worker.ts) and verify E2E video generation pipeline dry-run.
+Refactor the Settings page of the Clipped application to exclusively support a single OmniRoute/OpenRouter configuration, removing all individual AI provider settings, updating backend storage at /api/settings/keys, and updating engine integrations in lib/engine/llm.ts and lib/engine/tts.ts.
 
 ## 🔒 My Identity
 - Archetype: orchestrator
 - Roles: orchestrator, user_liaison, human_reporter, successor
-- Working directory: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\orchestrator
+- Working directory: c:\Users\vigilare\.gemini\antigravity\scratch\clipped-omni-router\.agents\orchestrator
 - Original parent: parent
-- Original parent conversation ID: 61670df8-3236-4a20-8aba-81e917960db2
+- Original parent conversation ID: 36ce3163-64a0-4b38-9265-4fb07f40fc1d
 
 ## 🔒 My Workflow
-- **Pattern**: SWE Light
-- **Scope document**: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\ORIGINAL_REQUEST.md
-1. **Decompose**: SWE Light does not decompose. Entire task given verbatim to implementer and refined via reviewers.
+- **Pattern**: Project
+- **Scope document**: c:\Users\vigilare\.gemini\antigravity\scratch\clipped-omni-router\PROJECT.md
+1. **Decompose**: Survey codebase via 3 Explorers, create feature inventory, architecture, milestones, interface contracts, and code layout in PROJECT.md.
 2. **Dispatch & Execute** (pick ONE):
-   - **Direct (iteration loop)**: Sequential refinement loop: implementer -> reviewer 1 -> reviewer 2 -> reviewer 3 -> victory auditor. Maintain open issues ledger across all rounds.
+   - **Direct (iteration loop)**: Decomposed milestones executed via Explorer -> Worker -> Reviewers (2) -> Challengers (2) -> Forensic Auditor -> Gate.
 3. **On failure** (in this order):
    - Retry: nudge stuck agent or re-send task
    - Replace: spawn fresh agent with partial progress
@@ -23,52 +23,59 @@ Restore stripped template literals in background workers (scripts/publish-worker
    - Redistribute: split stuck agent's remaining work
    - Redesign: re-partition decomposition
    - Escalate: report to parent (sub-orchestrators only, last resort)
-4. **Succession**: Self-succeed at >= 16 spawns or large context, write soft handoff, spawn successor.
+4. **Succession**: At >= 16 spawns, write handoff.md, spawn successor.
 - **Work items**:
-  1. Fix background workers & E2E verification [done]
-- **Current phase**: 4 (Completed)
-- **Current focus**: Handoff and Parent Notification
+  1. Survey & Codebase Exploration [done]
+  2. Milestone 1: Backend Storage & API Keys Route [in-progress]
+  3. Milestone 2: Engine Integration Updates [pending]
+  4. Milestone 3: Settings UI Overhaul [pending]
+  5. Milestone 4: E2E Verification & Forensic Integrity Audit [pending]
+- **Current phase**: 2 (Milestone Execution)
+- **Current focus**: Milestone 1 - Backend Storage & API Keys Route
 
 ## 🔒 Key Constraints
-- NEVER write, modify, or create source code files yourself. Delegate all implementation and repair.
-- NEVER explore or debug codebase to solve task yourself.
-- Propagate original task verbatim.
-- Sequential refinement, no parallel candidates.
-- Maintain open issues ledger across all rounds.
+- NEVER write, modify, or create source code files directly.
+- NEVER run build/test commands yourself — require workers to do so.
+- NEVER investigate or explore the problem at the code level — dispatch Explorers for technical investigation.
+- You MAY use file-editing tools ONLY for metadata/state files (.md) in your .agents/ folder.
+- DO NOT CHEAT. Mandatory integrity audit gating. Auditor is binary veto.
+- Always pass ORIGINAL_REQUEST.md path verbatim to all subagents.
 - Never reuse a subagent after it has delivered its handoff — always spawn fresh.
-- Minimum 3 review rounds + victory audit before completion.
 
 ## Current Parent
-- Conversation ID: 61670df8-3236-4a20-8aba-81e917960db2
-- Updated: 2026-08-31T23:33:05Z
+- Conversation ID: 36ce3163-64a0-4b38-9265-4fb07f40fc1d
+- Updated: 2026-09-04T21:48:02Z
 
 ## Key Decisions Made
-- Executed full SWE Light lifecycle: Implementer -> Reviewer 1 -> Reviewer 2 -> Reviewer 3 -> Victory Auditor.
-- Victory Auditor returned VERDICT: VICTORY CONFIRMED with 137/137 tests passing.
+- Initialized OmniRoute refactoring mission.
+- Spawning 3 survey explorers focused on: 1) Settings UI & components, 2) Backend API settings/keys route & schema, 3) Engine integrations (llm.ts, tts.ts, etc.) and references to deprecated keys.
 
 ## Team Roster
 | Agent | Type | Work Item | Status | Conv ID |
-|---|---|---|---|---|
-| implementer_r1 | teamwork_preview_implementer | Fix worker backtick syntax and conduct E2E dry-run | completed | c0e34594-f9e0-43d6-9da0-085e75384a67 |
-| reviewer_r1 | teamwork_preview_reviewer | Review round 1: break & fix worker scripts and execute E2E | completed | 734d7e74-80fd-4081-8f7e-c9a62341dcff |
-| reviewer_r2 | teamwork_preview_reviewer | Review round 2: adversarial review and edge cases | completed | e2dcec62-11b6-4c06-b3ef-48d94ea3a6c6 |
-| reviewer_r3 | teamwork_preview_reviewer | Review round 3: final review pass and test execution | completed | 7f454564-b9f2-4dd9-a865-f2172d43e869 |
-| auditor | teamwork_preview_victory_auditor | Independent victory audit | completed | 6f031c0d-b352-4759-b876-7f4af728a9b2 |
+|-------|------|-----------|--------|---------|
+| explorer_survey_ui | teamwork_preview_explorer | Survey Settings UI and component structure | completed | 837fb779-2a9c-41aa-9d8c-ce9e23b1b71e |
+| explorer_survey_backend | teamwork_preview_explorer | Survey backend API /api/settings/keys & storage | completed | 79f518ab-60b8-4114-82c0-02fac45ab582 |
+| explorer_survey_engine | teamwork_preview_explorer | Survey engine integrations (llm.ts, tts.ts) & key usage | completed | 2e511a0b-4ceb-40f7-bd47-7b2de26e9406 |
+| worker_m1 | teamwork_preview_worker | Backend Storage & API Keys Route Refactoring | completed | e8bb9e67-3d66-4551-ad29-304267c5ce3c |
+| worker_m2 | teamwork_preview_worker | Engine Integration Updates (llm.ts, tts.ts) | in-progress | eef11351-77f2-4157-bd0c-26a354f2c1cd |
+| worker_m3 | teamwork_preview_worker | Settings UI Overhaul (SettingsPage OmniRoute Panel) | in-progress | a0f04b90-295b-4636-9333-b1f0ffb0238d |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 5 / 16
-- Pending subagents: none
+- Spawn count: 6 / 16
+- Pending subagents: eef11351-77f2-4157-bd0c-26a354f2c1cd, a0f04b90-295b-4636-9333-b1f0ffb0238d
 - Predecessor: none
-- Successor: none (task completed)
+- Successor: not yet spawned
 
 ## Active Timers
-- Heartbeat cron: cancelled (task complete)
+- Heartbeat cron: ff4c3bf1-5754-474e-a782-3fbe0b4f7fd2/task-26
 - Safety timer: none
+- On succession: kill all timers before spawning successor
+- On context truncation: run manage_task(Action="list") — re-create if missing
 
 ## Artifact Index
-- C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\ORIGINAL_REQUEST.md — Authoritative User Request
-- C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\orchestrator\DISPATCH.md — Dispatch history
-- C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\orchestrator\progress.md — Liveness and progress tracking
-- C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\orchestrator\BRIEFING.md — Persistent working memory
-- C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\orchestrator\handoff.md — Hard handoff report
+- c:\Users\vigilare\.gemini\antigravity\scratch\clipped-omni-router\.agents\ORIGINAL_REQUEST.md — Authoritative User Request
+- c:\Users\vigilare\.gemini\antigravity\scratch\clipped-omni-router\.agents\orchestrator\DISPATCH.md — Dispatch log
+- c:\Users\vigilare\.gemini\antigravity\scratch\clipped-omni-router\.agents\orchestrator\BRIEFING.md — Working memory
+- c:\Users\vigilare\.gemini\antigravity\scratch\clipped-omni-router\.agents\orchestrator\progress.md — Liveness & progress tracking
+- c:\Users\vigilare\.gemini\antigravity\scratch\clipped-omni-router\PROJECT.md — Global architecture & milestones
