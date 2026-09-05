@@ -1,135 +1,161 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/db';
+import { getOmniRouteConfig } from '@/lib/keys';
+
+export const dynamic = 'force-dynamic';
+
+const LEGACY_PROVIDERS = new Set([
+  'openai', 'gemini', 'anthropic', 'openrouter', 'fal', 'grok', 'groq',
+  'deepseek', 'mistral', 'cerebras', 'github_models', 'ollama',
+  'pexels', 'pixabay', 'kling', 'luma', 'huggingface',
+  'azure', 'azure_speech', 'azure_region', 'elevenlabs', 'google_tts',
+  'deepgram', 'suno', 'heygen', 'did'
+]);
 
 export async function POST(req: Request) {
+  const startTime = Date.now();
   try {
-    const { provider } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const { provider } = body;
 
-    if (!provider) {
-      return NextResponse.json({ error: 'Provider is required' }, { status: 400 });
+    // If a legacy provider was explicitly requested, reject
+    if (provider && typeof provider === 'string') {
+      const cleanP = provider.toLowerCase().trim().replace(/^api_/, '');
+      const isOmni = cleanP === 'omniroute' || cleanP === 'omniroute_endpoint_url' || cleanP === 'omniroute_api_key';
+      if (!isOmni || LEGACY_PROVIDERS.has(cleanP)) {
+        return NextResponse.json({
+          success: false,
+          latencyMs: Date.now() - startTime,
+          error: 'Individual AI providers are deprecated. Only OmniRoute configuration is supported.',
+          message: 'Individual AI providers are deprecated. Only OmniRoute configuration is supported.',
+        }, { status: 400 });
+      }
     }
 
-    const cleanProvider = String(provider).replace(/^api_/, '').toLowerCase();
+    // Resolve endpointUrl and apiKey from request body or stored config
+    const config = await getOmniRouteConfig();
 
-    // Check DB first
-    let key: string | undefined;
-    const { data: existing } = await supabase
-      .from('settings')
-      .select('api_key')
-      .eq('provider', provider)
-      .limit(1)
-      .single();
+    const rawEndpointUrl = (
+      body.endpointUrl ||
+      body.baseUrl ||
+      body.url ||
+      (provider === 'omniroute_endpoint_url' ? body.apiKey : undefined) ||
+      config.baseUrl ||
+      'http://localhost:20128'
+    );
 
-    if (existing && existing.api_key) {
-      key = existing.api_key;
+    const rawApiKey = (
+      body.apiKey !== undefined
+        ? body.apiKey
+        : (body.key !== undefined ? body.key : config.apiKey)
+    );
+
+    if (!rawEndpointUrl || typeof rawEndpointUrl !== 'string') {
+      return NextResponse.json({
+        success: false,
+        latencyMs: Date.now() - startTime,
+        error: 'Invalid Endpoint URL. Must start with http:// or https://',
+        message: 'Invalid Endpoint URL',
+      }, { status: 400 });
+    }
+
+    const trimmedUrl = rawEndpointUrl.trim();
+    if (!trimmedUrl.startsWith('http://') && !trimmedUrl.startsWith('https://')) {
+      return NextResponse.json({
+        success: false,
+        latencyMs: Date.now() - startTime,
+        error: 'Invalid Endpoint URL. Must start with http:// or https://',
+        message: 'Invalid Endpoint URL',
+      }, { status: 400 });
+    }
+
+    const endpointUrl = trimmedUrl.replace(/\/+$/, '');
+    const apiKey = typeof rawApiKey === 'string' ? rawApiKey.trim() : '';
+
+    // Construct test URLs
+    let primaryUrl: string;
+    let fallbackUrl: string | null = null;
+
+    if (endpointUrl.endsWith('/v1')) {
+      primaryUrl = `${endpointUrl}/models`;
     } else {
-      // Check env vars as fallback
-      const envMap: Record<string, string[]> = {
-        openai: ['OPENAI_API_KEY'],
-        gemini: ['GEMINI_API_KEY', 'GOOGLE_API_KEY'],
-        anthropic: ['ANTHROPIC_API_KEY'],
-        openrouter: ['OPENROUTER_API_KEY'],
-        azure_speech: ['AZURE_SPEECH_KEY', 'AZURE_TTS_KEY', 'AZURE_API_KEY'],
-        azure: ['AZURE_SPEECH_KEY', 'AZURE_TTS_KEY', 'AZURE_API_KEY'],
-        google_tts: ['GOOGLE_TTS_KEY', 'GOOGLE_TTS_API_KEY', 'GOOGLE_API_KEY'],
-        elevenlabs: ['ELEVENLABS_API_KEY', 'XI_API_KEY'],
-        pexels: ['PEXELS_API_KEY'],
-        pixabay: ['PIXABAY_API_KEY'],
-        groq: ['GROQ_API_KEY'],
-        deepseek: ['DEEPSEEK_API_KEY'],
-        grok: ['GROK_API_KEY', 'XAI_API_KEY'],
-        fal: ['FAL_API_KEY', 'FAL_KEY'],
-        deepgram: ['DEEPGRAM_API_KEY'],
-      };
-
-      const possibleEnvs = envMap[cleanProvider] || [];
-      for (const envVar of possibleEnvs) {
-        if (process.env[envVar]) {
-          key = process.env[envVar];
-          break;
-        }
-      }
+      primaryUrl = `${endpointUrl}/v1/models`;
+      fallbackUrl = `${endpointUrl}/models`;
     }
 
-    if (!key || !key.trim()) {
-      return NextResponse.json({ success: false, error: 'Key not configured in database or environment' });
+    const headers: Record<string, string> = {
+      'Accept': 'application/json',
+    };
+    if (apiKey) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
     }
 
-    let isWorking = false;
-    let message = 'Verification failed';
-
+    let response: Response;
     try {
-      if (cleanProvider.includes('openai')) {
-        const res = await fetch('https://api.openai.com/v1/models', {
-          headers: { 'Authorization': `Bearer ${key}` },
-          signal: AbortSignal.timeout(4000),
+      response = await fetch(primaryUrl, {
+        headers,
+        signal: AbortSignal.timeout(5000),
+      });
+      if (response.status === 404 && fallbackUrl) {
+        response = await fetch(fallbackUrl, {
+          headers,
+          signal: AbortSignal.timeout(5000),
         });
-        isWorking = res.ok;
-      } else if (cleanProvider.includes('azure')) {
-        const region = process.env.AZURE_SPEECH_REGION || 'eastus';
-        const res = await fetch(`https://${region}.tts.speech.microsoft.com/cognitiveservices/voices/list`, {
-          headers: { 'Ocp-Apim-Subscription-Key': key },
-          signal: AbortSignal.timeout(4000),
-        });
-        isWorking = res.ok;
-      } else if (cleanProvider.includes('elevenlabs')) {
-        const res = await fetch('https://api.elevenlabs.io/v1/voices', {
-          headers: { 'xi-api-key': key },
-          signal: AbortSignal.timeout(4000),
-        });
-        isWorking = res.ok;
-      } else if (cleanProvider.includes('google_tts') || cleanProvider.includes('google')) {
-        const res = await fetch(`https://texttospeech.googleapis.com/v1/voices?key=${key}`, {
-          signal: AbortSignal.timeout(4000),
-        });
-        isWorking = res.ok;
-      } else if (cleanProvider.includes('groq')) {
-        const res = await fetch('https://api.groq.com/openai/v1/models', {
-          headers: { 'Authorization': `Bearer ${key}` },
-          signal: AbortSignal.timeout(4000),
-        });
-        isWorking = res.ok;
-      } else if (cleanProvider.includes('deepseek')) {
-        const res = await fetch('https://api.deepseek.com/models', {
-          headers: { 'Authorization': `Bearer ${key}` },
-          signal: AbortSignal.timeout(4000),
-        });
-        isWorking = res.ok;
-      } else if (cleanProvider.includes('openrouter')) {
-        const res = await fetch('https://openrouter.ai/api/v1/models', {
-          headers: { 'Authorization': `Bearer ${key}` },
-          signal: AbortSignal.timeout(4000),
-        });
-        isWorking = res.ok;
-      } else if (cleanProvider.includes('pexels')) {
-        const res = await fetch('https://api.pexels.com/v1/search?query=nature&per_page=1', {
-          headers: { 'Authorization': key },
-          signal: AbortSignal.timeout(4000),
-        });
-        isWorking = res.ok;
-      } else if (cleanProvider.includes('pixabay')) {
-        const res = await fetch(`https://pixabay.com/api/?key=${key}&q=nature`, {
-          signal: AbortSignal.timeout(4000),
-        });
-        isWorking = res.ok;
-      } else {
-        // Generic validator for tokens
-        isWorking = key.length >= 8;
       }
-
-      if (isWorking) {
-        message = 'Key is valid and working.';
-      } else {
-        message = 'Provider API returned authentication failure or invalid response.';
-      }
-    } catch (e: any) {
-      isWorking = false;
-      message = e.message || 'Connection test timed out';
+    } catch (fetchErr: any) {
+      const latencyMs = Date.now() - startTime;
+      return NextResponse.json({
+        success: false,
+        latencyMs,
+        error: `Could not connect to OmniRoute at ${endpointUrl}: ${fetchErr.message || 'Network error or timeout'}`,
+        message: `Connection failed: ${fetchErr.message || 'Network error'}`,
+      });
     }
 
-    return NextResponse.json({ success: isWorking, message });
-  } catch (error: any) {
-    console.error('Failed to test key:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const latencyMs = Date.now() - startTime;
+
+    if (!response.ok) {
+      let detail = response.statusText;
+      try {
+        const errJson = await response.json();
+        detail = errJson.error?.message || errJson.message || JSON.stringify(errJson);
+      } catch {}
+
+      return NextResponse.json({
+        success: false,
+        latencyMs,
+        error: `OmniRoute endpoint returned HTTP ${response.status}: ${detail}`,
+        message: `Connection failed (HTTP ${response.status})`,
+      });
+    }
+
+    let models: string[] = [];
+    try {
+      const resJson = await response.json();
+      if (Array.isArray(resJson?.data)) {
+        models = resJson.data.map((m: any) => (typeof m === 'string' ? m : m.id || m.name)).filter(Boolean);
+      } else if (Array.isArray(resJson)) {
+        models = resJson.map((m: any) => (typeof m === 'string' ? m : m.id || m.name)).filter(Boolean);
+      } else if (Array.isArray(resJson?.models)) {
+        models = resJson.models.map((m: any) => (typeof m === 'string' ? m : m.id || m.name)).filter(Boolean);
+      }
+    } catch {
+      // Non-fatal if body was not JSON
+    }
+
+    return NextResponse.json({
+      success: true,
+      latencyMs,
+      models,
+      message: `Successfully connected to OmniRoute (${latencyMs}ms). ${models.length} model(s) available.`,
+      isWorking: true,
+    });
+  } catch (err: any) {
+    const latencyMs = Date.now() - startTime;
+    return NextResponse.json({
+      success: false,
+      latencyMs,
+      error: err.message || 'Unexpected error during connection test',
+      message: err.message || 'Unexpected error',
+    }, { status: 500 });
   }
 }

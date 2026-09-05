@@ -16,6 +16,8 @@
  *   Kannada (kn-IN), Bengali (bn-IN), Marathi (mr-IN)
  */
 
+import { getOmniRouteConfig } from '@/lib/keys';
+
 // ============================================================================
 // Types & Interface Contracts
 // ============================================================================
@@ -205,8 +207,8 @@ export function detectLanguageFromScript(text: string): SupportedLanguage {
   }
   // Devanagari Unicode block: U+0900 - U+097F (used by Hindi and Marathi)
   if (/[\u0900-\u097F]/.test(text)) {
-    // Check for Marathi-specific letter 'ळ' (\u0933) or typical Marathi particles
-    if (/[\u0933]|आहे|नाही|झाला|केला/.test(text)) {
+    // Check for Marathi-specific letter 'Ã Â¤Â³' (\u0933) or typical Marathi particles
+    if (/[\u0933]|Ã Â¤â€ Ã Â¤Â¹Ã Â¥â€¡|Ã Â¤Â¨Ã Â¤Â¾Ã Â¤Â¹Ã Â¥â‚¬|Ã Â¤ÂÃ Â¤Â¾Ã Â¤Â²Ã Â¤Â¾|Ã Â¤â€¢Ã Â¥â€¡Ã Â¤Â²Ã Â¤Â¾/.test(text)) {
       return 'mr-IN';
     }
     return 'hi-IN';
@@ -473,78 +475,21 @@ export class TTSEngine {
       return this.generateDryRun(jobId, rawText, language, request, providerAttempts, 'Explicit mock requested');
     }
 
-    // 2. Cascade Chain determination
-    const requestedProvider = (request.provider && request.provider !== 'auto')
-      ? (request.provider.toLowerCase() as TTSProvider)
-      : undefined;
 
-    let providersToTry: TTSProvider[] = [];
-
-    if (requestedProvider === 'azure') {
-      providersToTry = ['azure', 'openai', 'elevenlabs', 'google', 'coqui', 'keyless'];
-    } else if (requestedProvider === 'openai') {
-      providersToTry = ['openai', 'azure', 'elevenlabs', 'google', 'coqui', 'keyless'];
-    } else if (requestedProvider === 'elevenlabs') {
-      providersToTry = ['elevenlabs', 'azure', 'openai', 'google', 'coqui', 'keyless'];
-    } else if (requestedProvider === 'google') {
-      providersToTry = ['google', 'azure', 'openai', 'elevenlabs', 'coqui', 'keyless'];
-    } else if (requestedProvider === 'coqui') {
-      providersToTry = ['coqui', 'azure', 'openai', 'elevenlabs', 'google', 'keyless'];
-    } else if (requestedProvider === 'keyless') {
-      providersToTry = ['keyless'];
-    } else {
-      // Default auto cascade: Azure -> OpenAI -> ElevenLabs -> Google -> Coqui -> Keyless
-      providersToTry = ['azure', 'openai', 'elevenlabs', 'google', 'coqui', 'keyless'];
-    }
+    // All TTS routes through OmniRoute (OpenAI-compatible /v1/audio/speech).
+    // Keyless Google Translate TTS is the free fallback.
+    const providersToTry: TTSProvider[] = ['openai', 'keyless'];
 
     for (const provider of providersToTry) {
       const startTime = Date.now();
       try {
-        // --- A. AZURE SPEECH SERVICES ---
-        if (provider === 'azure') {
-          const apiKey =
-            request.apiKey ||
-            process.env.AZURE_SPEECH_KEY ||
-            process.env.AZURE_TTS_KEY ||
-            process.env.AZURE_API_KEY;
-          const region =
-            request.region ||
-            process.env.AZURE_SPEECH_REGION ||
-            process.env.AZURE_REGION ||
-            'eastus';
-
-          if (!apiKey) {
-            providerAttempts.push({
-              provider: 'azure',
-              status: 'skipped',
-              error: 'Missing AZURE_SPEECH_KEY or AZURE_SPEECH_REGION',
-            });
-            continue;
-          }
-
-          const res = await this.synthesizeWithAzure(jobId, rawText, language, request, apiKey, region);
-          providerAttempts.push({
-            provider: 'azure',
-            status: 'success',
-            latencyMs: Date.now() - startTime,
-          });
-          res.metadata.providerAttempts = providerAttempts;
-          return res;
-        }
-
-        // --- B. OPENAI TTS ---
+        // --- OmniRoute TTS (OpenAI-compatible /v1/audio/speech) ---
         if (provider === 'openai') {
-          const apiKey = request.apiKey || process.env.OPENAI_API_KEY;
-          if (!apiKey) {
-            providerAttempts.push({
-              provider: 'openai',
-              status: 'skipped',
-              error: 'Missing OPENAI_API_KEY',
-            });
-            continue;
-          }
+          const omniConfig = await getOmniRouteConfig();
+          const apiKey = request.apiKey || omniConfig.apiKey || 'omniroute-key';
+          const baseUrl = omniConfig.baseUrl || 'http://localhost:20128';
 
-          const res = await this.synthesizeWithOpenAI(jobId, rawText, language, request, apiKey);
+          const res = await this.synthesizeWithOpenAI(jobId, rawText, language, request, apiKey, baseUrl);
           providerAttempts.push({
             provider: 'openai',
             status: 'success',
@@ -553,78 +498,6 @@ export class TTSEngine {
           res.metadata.providerAttempts = providerAttempts;
           return res;
         }
-
-        // --- C. ELEVENLABS ---
-        if (provider === 'elevenlabs') {
-          const apiKey = request.apiKey || process.env.ELEVENLABS_API_KEY || process.env.XI_API_KEY;
-          if (!apiKey) {
-            providerAttempts.push({
-              provider: 'elevenlabs',
-              status: 'skipped',
-              error: 'Missing ELEVENLABS_API_KEY',
-            });
-            continue;
-          }
-
-          const res = await this.synthesizeWithElevenLabs(jobId, rawText, language, request, apiKey);
-          providerAttempts.push({
-            provider: 'elevenlabs',
-            status: 'success',
-            latencyMs: Date.now() - startTime,
-          });
-          res.metadata.providerAttempts = providerAttempts;
-          return res;
-        }
-
-        // --- D. GOOGLE CLOUD TTS ---
-        if (provider === 'google') {
-          const apiKey =
-            request.apiKey ||
-            process.env.GOOGLE_TTS_API_KEY ||
-            process.env.GOOGLE_TTS_KEY ||
-            process.env.GOOGLE_API_KEY;
-          const bearerToken = process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.GOOGLE_TTS_BEARER_TOKEN;
-
-          if (!apiKey && !bearerToken) {
-            providerAttempts.push({
-              provider: 'google',
-              status: 'skipped',
-              error: 'Missing GOOGLE_TTS_API_KEY or credentials',
-            });
-            continue;
-          }
-
-          const res = await this.synthesizeWithGoogle(jobId, rawText, language, request, apiKey, bearerToken);
-          providerAttempts.push({
-            provider: 'google',
-            status: 'success',
-            latencyMs: Date.now() - startTime,
-          });
-          res.metadata.providerAttempts = providerAttempts;
-          return res;
-        }
-
-        // --- E. COQUI TTS ---
-        if (provider === 'coqui') {
-          const coquiUrl = process.env.COQUI_TTS_URL || 'http://localhost:5002';
-          try {
-            await fetch(`${coquiUrl.replace(/\/$/, '')}/api/tts`, { method: 'HEAD', signal: AbortSignal.timeout(500) });
-          } catch (e) {
-            providerAttempts.push({ provider: 'coqui', status: 'skipped', error: 'Coqui unreachable' });
-            continue;
-          }
-
-          const res = await this.synthesizeWithCoqui(jobId, rawText, language, request, coquiUrl);
-          providerAttempts.push({
-            provider: 'coqui',
-            status: 'success',
-            latencyMs: Date.now() - startTime,
-          });
-          res.metadata.providerAttempts = providerAttempts;
-          return res;
-        }
-
-        // --- F. FREE & KEYLESS TTS ---
         if (provider === 'keyless') {
           const res = await this.synthesizeWithKeyless(jobId, rawText, language, request);
           providerAttempts.push({
@@ -752,14 +625,15 @@ export class TTSEngine {
   }
 
   /**
-   * OpenAI TTS API Integration
+   * OpenAI-compatible TTS API Integration — routes through OmniRoute gateway.
    */
   private async synthesizeWithOpenAI(
     jobId: string,
     text: string,
     language: SupportedLanguage,
     request: TTSRequest,
-    apiKey: string
+    apiKey: string,
+    baseUrl?: string
   ): Promise<TTSResponse> {
     const rawVoice = (request.voiceId || request.voice || 'alloy').toLowerCase().trim();
     const validVoices = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'];
@@ -768,7 +642,9 @@ export class TTSEngine {
     const speed = Math.max(0.25, Math.min(4.0, request.speed || request.speakingRate || 1.0));
     const model = request.model || 'tts-1';
 
-    const url = 'https://api.openai.com/v1/audio/speech';
+    const resolvedBase = (baseUrl || 'http://localhost:20128').replace(/\/+$/, '');
+    const url = `${resolvedBase}/v1/audio/speech`;
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -1251,3 +1127,4 @@ export class TTSEngine {
 
 // Export singleton instance
 export const ttsEngine = new TTSEngine();
+

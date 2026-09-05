@@ -1,3 +1,4 @@
+﻿import { getOmniRouteConfig } from '@/lib/keys';
 import { Scene, ScriptAnalysis } from "./types";
 
 const SYSTEM_PROMPT =
@@ -36,7 +37,8 @@ export class SceneMatcher {
     const passes = splitIntoPasses(script);
     const scenes: Scene[] = [];
 
-    const apiKey = process.env.OPENAI_API_KEY;
+    const omniConfig = await getOmniRouteConfig();
+    const apiKey = omniConfig.apiKey || 'omniroute-key';
     if (!apiKey) {
       throw new Error("OPENAI_API_KEY is not set. Cannot perform scene matching.");
     }
@@ -46,11 +48,11 @@ export class SceneMatcher {
 ${passes.length > 1 ? `This is part ${index + 1} of ${passes.length} of a longer script; cover only the text below.` : ''}
 
 For each scene give:
-1. text — the words spoken during it, taken verbatim from the narration
-2. keywords — 3-5 English stock-footage search terms
-3. description — what is shown on screen
-4. duration — seconds, estimated from the spoken length
-5. emotion — the tone
+1. text â€” the words spoken during it, taken verbatim from the narration
+2. keywords â€” 3-5 English stock-footage search terms
+3. description â€” what is shown on screen
+4. duration â€” seconds, estimated from the spoken length
+5. emotion â€” the tone
 
 Every word of the narration must appear in exactly one scene, in order.
 
@@ -60,7 +62,7 @@ ${pass}
 Return ONLY valid JSON, no markdown:
 {"scenes":[{"text":"...","keywords":["..."],"description":"...","duration":5,"emotion":"educational"}]}`;
 
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      const res = await fetch("http://localhost:20128/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -115,3 +117,5 @@ Return ONLY valid JSON, no markdown:
 }
 
 export const sceneMatcher = new SceneMatcher();
+
+

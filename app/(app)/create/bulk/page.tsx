@@ -2,6 +2,14 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { WorkflowHeader } from "@/components/create/ui/WorkflowHeader"
+import { VoiceSelector } from "@/components/create/ui/VoiceSelector"
+import { AspectRatioSelector } from "@/components/create/ui/AspectRatioSelector"
+import { MockModeToggle } from "@/components/create/ui/MockModeToggle"
+import { GenerateButton } from "@/components/create/ui/GenerateButton"
+import { ErrorAlert } from "@/components/create/ui/ErrorAlert"
+import { SettingsCard } from "@/components/create/ui/SettingsCard"
+
 import {
   Calendar,
   Loader2,
@@ -75,23 +83,11 @@ export default function BulkPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6 max-w-5xl mx-auto w-full">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <Calendar className="h-6 w-6 text-emerald-500" />
-          Bulk Content Planner
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Generate 7 to 30 days of high-retention video content, hooks, scripts, and schedules in a single batch.
-        </p>
-      </div>
+      <WorkflowHeader icon={Calendar} title="Bulk Content Planner" description="Generate 7 to 30 days of high-retention video content, hooks, scripts, and schedules in a single batch." />
 
       <div className="grid gap-6 md:grid-cols-[2fr_1fr]">
         <div className="space-y-6">
-          {error && (
-            <div className="rounded-md border border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
+          {error && <ErrorAlert message={error} />}
 
           <form onSubmit={handleGenerate} className="space-y-6">
             <div className="space-y-2">
@@ -181,33 +177,13 @@ export default function BulkPage() {
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={loading || !niche.trim()}
-              className="flex w-full items-center justify-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-700 px-4 py-3 text-sm font-medium text-white shadow transition-colors disabled:opacity-50"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Generating Content Plan...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4" />
-                  Generate {contentCount}-Day Bulk Content Plan
-                </>
-              )}
-            </button>
+            <GenerateButton loading={loading} disabled={!niche.trim()} text={`Generate ${contentCount}-Day Bulk Content Plan`} loadingText="Generating Content Plan..." />
           </form>
         </div>
 
         <div className="space-y-6">
           {/* Settings Sidebar */}
-          <div className="rounded-xl border bg-card p-5 shadow-sm">
-            <h3 className="font-semibold mb-4 text-sm flex items-center gap-2">
-              <Settings2 className="h-4 w-4 text-emerald-500" />
-              Calendar Settings
-            </h3>
+          <SettingsCard icon={Settings2} title="Calendar Settings">
 
             <div className="space-y-4">
               <div className="space-y-2">
@@ -228,67 +204,17 @@ export default function BulkPage() {
 
               <div className="space-y-2">
                 <label className="text-xs font-medium text-muted-foreground">Aspect Ratio</label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setAspectRatio("9:16")}
-                    className={`px-2 py-1.5 text-xs rounded border transition-colors ${
-                      aspectRatio === "9:16" ? "bg-primary text-primary-foreground border-primary" : "bg-transparent hover:bg-muted"
-                    }`}
-                  >
-                    9:16 (Shorts)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAspectRatio("16:9")}
-                    className={`px-2 py-1.5 text-xs rounded border transition-colors ${
-                      aspectRatio === "16:9" ? "bg-primary text-primary-foreground border-primary" : "bg-transparent hover:bg-muted"
-                    }`}
-                  >
-                    16:9 (YT)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAspectRatio("1:1")}
-                    className={`px-2 py-1.5 text-xs rounded border transition-colors ${
-                      aspectRatio === "1:1" ? "bg-primary text-primary-foreground border-primary" : "bg-transparent hover:bg-muted"
-                    }`}
-                  >
-                    1:1 (Insta)
-                  </button>
-                </div>
+                <AspectRatioSelector value={aspectRatio} onChange={setAspectRatio} />
               </div>
 
               <div className="space-y-2">
                 <label className="text-xs font-medium text-muted-foreground">Narrator Voice</label>
-                <select
-                  value={voice}
-                  onChange={(e) => setVoice(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                >
-                  <option value="alloy">Alloy (Authoritative Neutral)</option>
-                  <option value="echo">Echo (Warm Conversational)</option>
-                  <option value="fable">Fable (Expressive Storyteller)</option>
-                  <option value="onyx">Onyx (Deep Professional)</option>
-                  <option value="nova">Nova (High-Energy Dynamic)</option>
-                  <option value="shimmer">Shimmer (Clear & Polished)</option>
-                </select>
+                <VoiceSelector value={voice} onChange={setVoice} />
               </div>
 
-              <div className="pt-2 border-t flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-medium">Dry Run / Test Mode</div>
-                  <div className="text-[11px] text-muted-foreground">Generate full batch plan without API fees</div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={mock}
-                  onChange={(e) => setMock(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                />
-              </div>
+              <MockModeToggle checked={mock} onChange={setMock} />
             </div>
-          </div>
+          </SettingsCard>
 
           {/* Omnichannel Batch Card */}
           <div className="rounded-xl border bg-card p-5 shadow-sm space-y-3">

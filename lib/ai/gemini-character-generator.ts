@@ -166,20 +166,10 @@ export class GeminiCharacterGenerator {
     const customDescription = options.customDescription || (archetype === 'custom' ? 'Custom persona with expressive line-art gestures' : undefined);
     const characterId = `char_${archetype.replace(/\s+/g, '_')}_${Date.now()}`;
 
-    // 1. Check for live Gemini API Key if mock is not explicitly requested
-    let geminiApiKey: string | undefined;
+    // 1. Check for live API generation if mock is not explicitly requested
     if (!options.mock) {
-      geminiApiKey =
-        process.env.GEMINI_API_KEY ||
-        process.env.GOOGLE_API_KEY ||
-        process.env.GOOGLE_AI_KEY ||
-        (await getApiKey('gemini', 'GEMINI_API_KEY'));
-    }
-
-    if (geminiApiKey && !options.mock) {
       try {
-        const liveSheet = await this.generateWithGeminiApi(
-          geminiApiKey,
+        const liveSheet = await this.generateWithOmniroute(
           archetype,
           customDescription,
           style,
@@ -189,7 +179,7 @@ export class GeminiCharacterGenerator {
           return liveSheet;
         }
       } catch (err: any) {
-        console.warn(`[GeminiCharacterGenerator] Live Gemini API call failed (${err?.message || err}). Falling back to deterministic vector generator.`);
+        console.warn(`[GeminiCharacterGenerator] Live Omniroute API call failed (${err?.message || err}). Falling back to deterministic vector generator.`);
       }
     }
 
@@ -198,10 +188,9 @@ export class GeminiCharacterGenerator {
   }
 
   /**
-   * Calls Google Gemini REST API to construct structured character reference sheet descriptors
+   * Calls Omniroute REST API to construct structured character reference sheet descriptors
    */
-  private async generateWithGeminiApi(
-    apiKey: string,
+  private async generateWithOmniroute(
     archetype: WhiteboardArchetype,
     customDescription: string | undefined,
     style: WhiteboardStyle,
@@ -230,25 +219,24 @@ Return a strictly valid JSON object with the following schema:
   }
 }`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const url = `http://localhost:20128/v1/chat/completions`;
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.2,
-        },
+        model: 'gemini-1.5-flash',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.2,
+        response_format: { type: 'json_object' }
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`Gemini API returned status ${response.status}`);
+      throw new Error(`Omniroute API returned status ${response.status}`);
     }
 
     const data = await response.json();
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const rawText = data?.choices?.[0]?.message?.content;
     if (!rawText) return null;
 
     const parsed = JSON.parse(rawText);
