@@ -1,7 +1,7 @@
-# BRIEFING — 2026-09-05T03:15:47+05:30
+# BRIEFING — 2026-09-06T06:30:34+05:30
 
 ## Mission
-Sentinel monitoring and lifecycle management for Settings page OmniRoute refactoring in Clipped application.
+Sentinel monitoring and lifecycle management for Video Creation Flow Viewport Optimization, Global Render Queue, and Media Pipeline Fixes in Clipped.
 
 ## 🔒 My Identity
 - Archetype: sentinel
@@ -10,6 +10,12 @@ Sentinel monitoring and lifecycle management for Settings page OmniRoute refacto
 - Victory Auditor: to be spawned on victory claim
 - Cron 1 (Progress): task-44 (active, */8 * * * *)
 - Cron 2 (Liveness): task-46 (active, */10 * * * *)
+- Orchestrator (Current): 50fedb7f-cf54-4629-8507-bc9a5d2995bf
+- Cron 1 (Progress - Current): task-44 (active, */8 * * * *)
+- Cron 2 (Liveness - Current): task-46 (active, */10 * * * *)
+- Resumed at: 2026-09-06T07:03:20+05:30 (server restart recovery)
+- Cron 1 (Progress - Revived): task-171 (active, */8 * * * *)
+- Cron 2 (Liveness - Revived): task-173 (active, */10 * * * *)
 
 ## 🔒 Key Constraints
 - No technical decisions — relay only
@@ -19,7 +25,7 @@ Sentinel monitoring and lifecycle management for Settings page OmniRoute refacto
 - You MUST NOT write code, analyze problems, or make any technical decisions. Keep your context ultra-light.
 
 ## User Context
-- **Last user request**: Refactor Settings page of Clipped to exclusively support a single OmniRoute/OpenRouter configuration (remove individual provider settings, update backend API route /api/settings/keys, update engine files lib/engine/llm.ts and lib/engine/tts.ts).
+- **Last user request**: Refactor video creation flow for compact viewport, implement global render queue with corrected navigation, and resolve critical media pipeline bugs (prioritize voice TTS edge free bug, subtitles styling, external provider settings reflection).
 - **Pending clarifications**: none
 - **Delivered results**: none for current task
 

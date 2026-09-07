@@ -1,26 +1,21 @@
 # Progress
 
 ## Current Status
-Last visited: 2026-09-04T22:15:00Z
-- [x] Initialized BRIEFING.md and DISPATCH.md for OmniRoute refactoring
-- [x] Survey codebase across UI, API, and Engine (3 Explorers completed)
-- [x] Decomposed milestones and updated PROJECT.md
-- [x] Milestone 1: Backend Storage & API keys route refactor [completed by worker_m1]
-- [ ] Milestone 2: Engine integrations update (llm.ts, tts.ts) [in-progress]
-- [ ] Milestone 3: Settings UI overhaul (OmniRoute panel, remove legacy providers) [in-progress]
-- [ ] Milestone 4: E2E Verification, Reviewers, Challengers & Forensic Integrity Audit
-- [ ] Sentinel Report & Final Handoff
+Last visited: 2026-09-06T07:20:00+05:30
+- [x] Initialized orchestrator for Video Creation Flow Viewport, Global Render Queue, and Media Pipeline Fixes
+- [x] Completed Survey Phase with 3 Explorers (UI, Queue, Media Pipeline)
+- [x] Formulated PROJECT.md with architecture, feature inventory, milestones, and interface contracts
+- [x] Milestone 1: Voiceover Edge TTS Fix & Audio Pipeline (PASSED GATE)
+- [x] Milestone 2 Iteration 1 Gate: Reviewers & Challenger 1 flagged FFmpeg filter splitting and syntax glitches
+- [ ] Milestone 2 Iteration 2: Remediation Worker running (d6a498d7) to fix cmd.videoFilters, rgba boxColor, subtitleY boundary, and GenerateButton syntax
 
 ## Iteration Status
-Current iteration: 3 / 32
+Current iteration: 2 / 32
 
 ## Milestones
-- [x] Survey Phase: Codebase inspection across R1, R2, R3
-- [x] Milestone 1: Backend API storage (/api/settings/keys & lib/keys.ts)
-- [ ] Milestone 2: Engine integrations (lib/engine/llm.ts, lib/engine/tts.ts)
-- [ ] Milestone 3: Settings UI overhaul (SettingsPage & components)
-- [ ] Milestone 4: E2E Testing & Acceptance Criteria Verification
-- [ ] Forensic Audit & Handoff
-
-## Retrospective
-- Mission started: Clipped Settings page OmniRoute refactoring.
+- [x] Milestone 0: Survey & Exploration
+- [x] Milestone 1: Voice TTS Edge Free Bug & Audio Pipeline Fix (PASSED)
+- [ ] Milestone 2: Subtitle Effects & External Provider Settings Reflection (IN_PROGRESS)
+- [ ] Milestone 3: Global Render Queue & Navigation Routing
+- [ ] Milestone 4: UI Viewport Optimization for /create Flow
+- [ ] Milestone 5: E2E Integration Verification & Forensic Integrity Audit

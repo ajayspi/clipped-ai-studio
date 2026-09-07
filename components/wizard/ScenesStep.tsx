@@ -1,5 +1,5 @@
 "use client"
-
+import { useState } from 'react'
 import { useWizardStore, Beat } from './wizard-store'
 import { Image as ImageIcon, Video, Clock, GripVertical } from 'lucide-react'
 import {
@@ -21,6 +21,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 function SortableBeat({ beat, index }: { beat: Beat; index: number }) {
+  const w = useWizardStore()
   const {
     attributes,
     listeners,
@@ -33,6 +34,36 @@ function SortableBeat({ beat, index }: { beat: Beat; index: number }) {
     transform: CSS.Transform.toString(transform),
     transition,
   };
+
+  const [loadingMedia, setLoadingMedia] = useState(false)
+
+  const handleSearch = async () => {
+    const query = window.prompt("Enter new search keyword for this scene:", beat.keywords.join(" "))
+    if (!query) return;
+
+    setLoadingMedia(true)
+    try {
+      const res = await fetch("/api/v1/source", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ beatId: beat.id, keywords: query.split(" "), workflowType: w.workflowType })
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.candidates && data.candidates.length > 0) {
+          const updatedBeats = w.beats.map(b => b.id === beat.id ? { ...b, candidates: data.candidates } : b)
+          w.set('beats', updatedBeats)
+        } else {
+          alert("No media found for that keyword.")
+        }
+      }
+    } catch (err) {
+      console.error(err)
+      alert("Failed to search media")
+    } finally {
+      setLoadingMedia(false)
+    }
+  }
 
   return (
     <div ref={setNodeRef} style={style} className="flex gap-4 p-4 border rounded-lg bg-card group relative">
@@ -69,7 +100,12 @@ function SortableBeat({ beat, index }: { beat: Beat; index: number }) {
       
       <div className="w-48 shrink-0 flex flex-col gap-2">
          <div className="aspect-video bg-muted rounded-md border flex items-center justify-center relative overflow-hidden group/thumb">
-           {beat.candidates && beat.candidates.length > 0 ? (
+           {loadingMedia ? (
+             <div className="flex flex-col items-center justify-center space-y-2 opacity-50">
+               <Video className="w-6 h-6 animate-pulse" />
+               <span className="text-[10px]">Searching...</span>
+             </div>
+           ) : beat.candidates && beat.candidates.length > 0 ? (
              beat.candidates[0].url.endsWith('.mp4') ? (
                <video src={beat.candidates[0].url} className="w-full h-full object-cover" muted loop autoPlay playsInline />
              ) : (
@@ -79,7 +115,10 @@ function SortableBeat({ beat, index }: { beat: Beat; index: number }) {
              <Video className="w-6 h-6 text-muted-foreground opacity-50" />
            )}
            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center">
-             <button className="text-xs font-medium text-white px-3 py-1 bg-primary rounded hover:bg-primary/90 shadow-md">
+             <button 
+               onClick={handleSearch}
+               className="text-xs font-medium text-white px-3 py-1 bg-primary rounded hover:bg-primary/90 shadow-md transition-transform active:scale-95"
+             >
                Change Asset
              </button>
            </div>

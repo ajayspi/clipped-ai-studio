@@ -1,4 +1,5 @@
-﻿import { getOmniRouteConfig } from '@/lib/keys';
+import { getOmniRouteConfig } from '@/lib/keys';
+import { complete, parseJson } from '@/lib/engine/llm';
 import {
   DramaCharacter,
   DramaEpisode,
@@ -45,10 +46,9 @@ export class DramaOrchestrator {
 
     console.log(`[DramaOrchestrator] Generating ${episodesCount}-episode series in genre: ${genre} with ${normalizedCharacters.length} characters`);
 
-    // 3. Attempt live LLM generation if OPENAI_API_KEY is available
+    // 3. Attempt live LLM generation when OmniRoute is configured
     const omniConfig = await getOmniRouteConfig();
-    const apiKey = omniConfig.apiKey || 'omniroute-key';
-    if (apiKey) {
+    if (omniConfig.isConfigured && omniConfig.apiKey) {
       try {
         const liveResult = await this.generateWithLLM(
           genre,
@@ -56,8 +56,7 @@ export class DramaOrchestrator {
           episodesCount,
           request.script,
           aspectRatio,
-          visualStyle,
-          apiKey
+          visualStyle
         );
         if (liveResult) {
           return liveResult;
@@ -87,40 +86,18 @@ export class DramaOrchestrator {
     episodesCount: number,
     seedScript?: string,
     aspectRatio?: string,
-    visualStyle?: string,
-    apiKey?: string
+    visualStyle?: string
   ): Promise<DramaSeriesResponse | null> {
     const prompt = buildDramaSeriesPrompt(genre, characters, episodesCount, seedScript);
 
-    const res = await fetch('http://localhost:20128/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        response_format: { type: 'json_object' },
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You are a professional television showrunner. Create engaging multi-episode micro-drama series with strict character visual anchor consistency. Always return valid JSON.',
-          },
-          { role: 'user', content: prompt },
-        ],
-      }),
-    });
-
-    if (!res.ok) {
-      throw new Error(`OpenAI API error: ${res.status} ${res.statusText}`);
-    }
-
-    const data = await res.json();
-    const content = data?.choices?.[0]?.message?.content;
+    const content = await complete({
+      system: 'You are a professional television showrunner. Create engaging multi-episode micro-drama series with strict character visual anchor consistency. Always return valid JSON.',
+      user: prompt,
+      json: true,
+    }, undefined, 'auto');
     if (!content) return null;
 
-    const parsed = JSON.parse(content);
+    const parsed = parseJson<Record<string, any>>(content);
     const dramaTitle = parsed.dramaTitle || `${genre.toUpperCase()} Series: Secrets Revealed`;
     const rawEpisodes = Array.isArray(parsed.episodes) ? parsed.episodes : [];
 

@@ -1,4 +1,5 @@
 ﻿import { getOmniRouteConfig } from '@/lib/keys';
+import { complete, parseJson } from '@/lib/engine/llm';
 import {
   BulkPlanRequest,
   BulkPlanResponse,
@@ -38,9 +39,10 @@ export class BulkPlanner {
     console.log(`[BulkPlanner] Generating ${contentCount}-day content plan for niche: "${niche}" across platforms: ${platforms.join(', ')}`);
 
     const omniConfig = await getOmniRouteConfig();
-    const apiKey = omniConfig.apiKey || 'omniroute-key';
-
     try {
+      if (!omniConfig.isConfigured || !omniConfig.apiKey) {
+        return this.generateDryRun(niche, contentCount, cadence, platforms, visualStyle, voice, aspectRatio);
+      }
       const response = await this.generateWithOpenAI(
         niche,
         contentCount,
@@ -49,7 +51,6 @@ export class BulkPlanner {
         visualStyle,
         voice,
         aspectRatio,
-        apiKey
       );
       if (response && response.success && response.items && response.items.length > 0) {
         return response;
@@ -73,39 +74,15 @@ export class BulkPlanner {
     platforms: string[],
     visualStyle: string,
     voice: string,
-    aspectRatio: string,
-    apiKey: string
+    aspectRatio: string
   ): Promise<BulkPlanResponse> {
     const prompt = buildBulkPlanPrompt(niche, contentCount, cadence, platforms, visualStyle);
-    const authHeader = apiKey ? `Bearer ${apiKey}` : 'Bearer dummy';
-
-    const res = await fetch('http://localhost:20128/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': authHeader,
-      },
-      body: JSON.stringify({
-        model: 'auto', // Route through OmniRoute
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPTS.BULK_CONTENT_PLANNER },
-          { role: 'user', content: prompt },
-        ],
-      }),
-    });
-
-    if (!res.ok) {
-      throw new Error(`OmniRoute API Error: ${res.status} ${res.statusText}`);
-    }
-
-    const data = await res.json();
-    const content = data?.choices?.[0]?.message?.content;
+    const content = await complete({ system: SYSTEM_PROMPTS.BULK_CONTENT_PLANNER, user: prompt, json: true }, undefined, 'auto');
     if (!content) {
-      throw new Error('No content returned from OpenAI');
+      throw new Error('No content returned from OmniRoute');
     }
 
-    const parsed = JSON.parse(content);
+    const parsed = parseJson<Record<string, any>>(content);
     const planTitle = parsed.planTitle || `${contentCount}-Day ${niche} Content Plan`;
 
     const rawItems: any[] = Array.isArray(parsed.items) ? parsed.items : [];

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Settings, Sparkles, RefreshCw, Key } from "lucide-react";
+import { Settings, Sparkles, RefreshCw, Key, ListVideo } from "lucide-react";
 import { useApiKeys } from "@/components/create/useApiKeys";
 import { WORKFLOWS } from "@/components/create/workflow-definitions";
 import { MissionPromptBar } from "@/components/create/MissionPromptBar";
@@ -40,6 +40,14 @@ export default function CreateHubPage() {
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             <span className="hidden sm:inline">Refresh Keys</span>
           </button>
+
+          <Link
+            href="/queue"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-border/50 bg-card/70 hover:bg-accent/60 text-xs font-medium text-foreground transition-all backdrop-blur-md shadow-sm hover:border-primary/40"
+          >
+            <ListVideo className="w-3.5 h-3.5 text-orange-500" />
+            <span>Render Queue</span>
+          </Link>
 
           <Link
             href="/settings"

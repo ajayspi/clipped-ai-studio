@@ -2,8 +2,9 @@ import React from "react"
 import { Sidebar } from "@/components/sidebar"
 import { MobileNav } from "@/components/MobileNav"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Video, Sparkles, Activity } from "lucide-react"
+import { Video, Sparkles, Activity, ListVideo } from "lucide-react"
 import Link from "next/link"
+import { RenderQueueIndicator } from "@/components/RenderQueueIndicator"
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -61,6 +62,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <Sparkles className="w-3.5 h-3.5" />
               <span>Create Video</span>
             </Link>
+            <RenderQueueIndicator />
             <ThemeToggle />
           </div>
         </header>

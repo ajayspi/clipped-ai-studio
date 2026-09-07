@@ -95,3 +95,19 @@ CREATE TABLE settings (
 CREATE TRIGGER update_settings_modtime 
 BEFORE UPDATE ON settings 
 FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+
+-- 7. scheduled_posts (planner and publishing queue)
+CREATE TABLE scheduled_posts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    job_id UUID REFERENCES render_jobs(id) ON DELETE CASCADE,
+    platforms JSONB NOT NULL DEFAULT '[]'::jsonb,
+    caption TEXT,
+    scheduled_for TIMESTAMP WITH TIME ZONE NOT NULL,
+    status TEXT DEFAULT 'pending',
+    result_urls JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX idx_scheduled_posts_status_time
+    ON scheduled_posts(status, scheduled_for);

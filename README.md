@@ -34,3 +34,12 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Media Pipeline Configuration
+
+Clipped relies on an intelligent cascading media pipeline for generation:
+- **Text & LLM Engine**: Powered exclusively by the OmniRoute local gateway.
+- **Stock Media**: Falls back gracefully across Openverse (keyless), Pexels, Pixabay, and Pollinations. Openverse attribution and license metadata is automatically preserved.
+- **AI Media Generation**: Video and high-fidelity image generation utilizes [fal.ai](https://fal.ai/). A free trial is available, which transitions to a paid tier depending on usage.
+
+**Important Note on Media URLs**: Generated media URLs from services like fal.ai and Pollinations may expire. The built-in orchestrator downloads these URLs to durable storage prior to the final video rendering pipeline.

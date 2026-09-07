@@ -19,7 +19,7 @@ export function GenerateButton({
     <button
       type="submit"
       disabled={loading || disabled}
-      className={lex w-full items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-medium shadow transition-colors disabled:opacity-50 }
+      className={`flex w-full items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-medium shadow transition-colors disabled:opacity-50 ${className}`}
     >
       {loading ? (
         <>

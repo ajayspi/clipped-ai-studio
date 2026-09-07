@@ -6,6 +6,7 @@ import {
   useVideoConfig,
   Img,
   Video,
+  Audio,
 } from 'remotion';
 
 interface Beat {
@@ -15,12 +16,14 @@ interface Beat {
   clipUrl?: string; // background video/image
   imageUrl?: string; 
   videoUrl?: string;
+  audioUrl?: string;
   selectedVideo?: { url?: string; thumbnail?: string };
 }
 
 interface MainCompositionProps {
   beats: Beat[];
   burnSubtitles?: boolean;
+  audioUrl?: string;
   subtitleStyle?: {
     y?: number;
     color?: string;
@@ -40,35 +43,50 @@ interface MainCompositionProps {
 export const MainComposition: React.FC<MainCompositionProps> = ({
   beats,
   burnSubtitles = true,
+  audioUrl,
   subtitleStyle = {},
 }) => {
   const { fps } = useVideoConfig();
+  const frame = useCurrentFrame();
 
-  // Calculate start frame for each beat
-  let currentFrame = 0;
-  const beatsWithTiming = beats.map((beat) => {
+  // Calculate start frame for each beat immutably
+  const beatsWithTiming = beats.reduce((acc, beat) => {
     const durationInFrames = Math.max(1, Math.round(beat.duration * fps));
-    const startFrame = currentFrame;
-    currentFrame += durationInFrames;
-    return {
-      ...beat,
-      startFrame,
-      durationInFrames,
-    };
-  });
+    const startFrame = acc.length > 0 ? acc[acc.length - 1].startFrame + acc[acc.length - 1].durationInFrames : 0;
+    acc.push({ ...beat, startFrame, durationInFrames });
+    return acc;
+  }, [] as (Beat & { startFrame: number; durationInFrames: number })[]);
 
   return (
     <AbsoluteFill style={{ backgroundColor: 'black' }}>
+      {/* Top-level composition audio if provided */}
+      {audioUrl && <Audio src={audioUrl} />}
+
       {beatsWithTiming.map((beat, index) => {
-        // Resolve media URL from various possible properties
-        const mediaUrl =
-          beat.clipUrl ||
-          beat.videoUrl ||
-          beat.selectedVideo?.url ||
-          beat.imageUrl ||
-          beat.selectedVideo?.thumbnail;
+        // Prefer video over image
+        const isVideoAsset = !!(beat.videoUrl || (beat.clipUrl && (beat.clipUrl.endsWith('.mp4') || beat.clipUrl.endsWith('.webm'))));
+        const mediaUrl = beat.videoUrl || beat.clipUrl || beat.imageUrl || beat.selectedVideo?.url || beat.selectedVideo?.thumbnail;
           
-        const isVideo = mediaUrl?.toLowerCase().endsWith('.mp4') || mediaUrl?.toLowerCase().endsWith('.webm');
+        // Deterministic Ken Burns logic for images
+        // We use the beat index to alternate scale/pan directions
+        const progress = frame / beat.durationInFrames;
+        
+        let scale = 1;
+        let translateX = 0;
+        let translateY = 0;
+        
+        if (!isVideoAsset && mediaUrl) {
+          // Subtle zoom in (1 -> 1.1) or zoom out (1.1 -> 1)
+          const zoomType = index % 2 === 0 ? 'in' : 'out';
+          scale = zoomType === 'in' ? 1 + (0.1 * progress) : 1.1 - (0.1 * progress);
+          
+          // Subtle pan
+          const panDir = index % 4;
+          if (panDir === 1) translateX = progress * 2; // pan right
+          else if (panDir === 2) translateX = -progress * 2; // pan left
+          else if (panDir === 3) translateY = progress * 2; // pan down
+          // panDir === 0 -> static pan
+        }
 
         return (
           <Sequence
@@ -76,14 +94,27 @@ export const MainComposition: React.FC<MainCompositionProps> = ({
             from={beat.startFrame}
             durationInFrames={beat.durationInFrames}
           >
-            <AbsoluteFill>
+            <AbsoluteFill style={{ overflow: 'hidden' }}>
               {/* Media Background */}
-              {mediaUrl && isVideo ? (
+              {mediaUrl && isVideoAsset ? (
                 <Video src={mediaUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : mediaUrl ? (
-                <Img src={mediaUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <Img 
+                  src={mediaUrl} 
+                  style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    objectFit: 'cover',
+                    transform: `scale(${scale}) translate(${translateX}%, ${translateY}%)`
+                  }} 
+                />
               ) : (
                 <AbsoluteFill style={{ backgroundColor: '#222' }} />
+              )}
+
+              {/* Beat Voiceover Audio */}
+              {beat.audioUrl && (
+                <Audio src={beat.audioUrl} />
               )}
 
               {/* Subtitles Overlay */}
@@ -105,23 +136,24 @@ export const MainComposition: React.FC<MainCompositionProps> = ({
                   <p
                     style={{
                       color: subtitleStyle.color || '#ffffff',
-                      fontSize: `${subtitleStyle.size || 5}rem`,
+                      fontSize: `${(subtitleStyle.size || 5) * 1.5}vw`,
+                      lineHeight: '1.2',
                       textAlign: 'center',
                       fontFamily: 'sans-serif',
-                      fontWeight: 'bold',
+                      fontWeight: '900',
                       textTransform: subtitleStyle.uppercase ? 'uppercase' : 'none',
                       maxWidth: `${subtitleStyle.maxWidth || 80}%`,
                       WebkitTextStroke: subtitleStyle.outlineWidth
-                        ? `${subtitleStyle.outlineWidth}px ${subtitleStyle.outlineColor || '#000'}`
+                        ? `${(subtitleStyle.outlineWidth / 3)}vw ${subtitleStyle.outlineColor || '#000'}`
                         : 'none',
                       textShadow: subtitleStyle.glow
-                        ? `0 0 10px ${subtitleStyle.glowColor || 'rgba(255,255,255,0.5)'}`
+                        ? `0 0 ${(subtitleStyle.size || 5)}vw ${subtitleStyle.glowColor || 'rgba(255,255,255,0.5)'}`
                         : 'none',
                       backgroundColor: subtitleStyle.isBox
                         ? subtitleStyle.boxColor || 'rgba(0,0,0,0.5)'
                         : 'transparent',
-                      padding: subtitleStyle.isBox ? '10px 20px' : '0',
-                      borderRadius: subtitleStyle.isBox ? '8px' : '0',
+                      padding: subtitleStyle.isBox ? '2vw 4vw' : '0',
+                      borderRadius: subtitleStyle.isBox ? '1vw' : '0',
                       margin: 0,
                     }}
                   >

@@ -5,7 +5,8 @@ import {
   WhiteboardStyle,
 } from '@/lib/engine/types';
 import { supabase } from '@/lib/db';
-import { getApiKey } from '@/lib/keys';
+import { getOmniRouteConfig } from '@/lib/keys';
+import { parseJson } from '@/lib/engine/llm';
 
 export interface GenerateSheetOptions {
   archetype?: WhiteboardArchetype | string;
@@ -219,10 +220,15 @@ Return a strictly valid JSON object with the following schema:
   }
 }`;
 
-    const url = `http://localhost:20128/v1/chat/completions`;
+    const config = await getOmniRouteConfig();
+    if (!config.apiKey) throw new Error('OmniRoute API key is not configured');
+    const url = `${config.baseUrl.replace(/\/+$/, '').replace(/\/v1$/i, '')}/v1/chat/completions`;
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${config.apiKey}`,
+      },
       body: JSON.stringify({
         model: 'gemini-1.5-flash',
         messages: [{ role: 'user', content: prompt }],
@@ -239,7 +245,7 @@ Return a strictly valid JSON object with the following schema:
     const rawText = data?.choices?.[0]?.message?.content;
     if (!rawText) return null;
 
-    const parsed = JSON.parse(rawText);
+    const parsed = parseJson<Record<string, any>>(rawText);
     const poses: Record<string, CharacterPose> = {};
 
     POSE_DEFINITIONS.forEach((def) => {

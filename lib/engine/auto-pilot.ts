@@ -1,4 +1,4 @@
-﻿import { getOmniRouteConfig } from '@/lib/keys';
+import { getOmniRouteConfig } from '@/lib/keys';
 import {
   AutoPilotConfig,
   AutoPilotResponse,
@@ -176,11 +176,10 @@ export class AutoPilot {
     sourceStrategy: string
   ): Promise<{ topic: string; script: string; hook: string }> {
     const omniConfig = await getOmniRouteConfig();
-    const apiKey = omniConfig.apiKey || 'omniroute-key';
 
-    if (apiKey) {
+    if (omniConfig.isConfigured && omniConfig.apiKey) {
       try {
-        const liveResult = await this.synthesizeWithOpenAI(niche, sourceStrategy, apiKey);
+        const liveResult = await this.synthesizeWithOpenAI(niche, sourceStrategy);
         if (liveResult) return liveResult;
       } catch (err: any) {
         console.warn(`[AutoPilot] Live OpenAI synthesis failed (${err?.message || err}). Falling back to deterministic synthesis.`);
@@ -196,8 +195,7 @@ export class AutoPilot {
    */
   private async synthesizeWithOpenAI(
     niche: string,
-    sourceStrategy: string,
-    apiKey: string
+    sourceStrategy: string
   ): Promise<{ topic: string; script: string; hook: string } | null> {
     const prompt = `Synthesize a viral, timely short video script for niche: "${niche}" using source strategy: "${sourceStrategy}".
 Requirements:
@@ -212,29 +210,9 @@ Return valid JSON:
   "script": "..."
 }`;
 
-    const res = await fetch('http://localhost:20128/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPTS.AUTOPILOT_SYNTHESIS },
-          { role: 'user', content: prompt },
-        ],
-      }),
-    });
-
-    if (!res.ok) return null;
-
-    const data = await res.json();
-    const content = data?.choices?.[0]?.message?.content;
-    if (!content) return null;
-
-    const parsed = JSON.parse(content);
+    const { complete, parseJson } = await import('@/lib/engine/llm');
+    const content = await complete({ system: SYSTEM_PROMPTS.AUTOPILOT_SYNTHESIS, user: prompt, json: true }, undefined, 'auto');
+    const parsed = parseJson<{ topic?: string; hook?: string; script?: string }>(content, {});
     return {
       topic: parsed.topic || `Latest Breakthroughs in ${niche}`,
       hook: parsed.hook || `Did you hear about the massive shift happening in ${niche}?`,

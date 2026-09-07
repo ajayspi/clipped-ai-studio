@@ -1,39 +1,49 @@
-# Gate Status — Milestone 7: Targeted Deployment Configurations
+# Gate Status — Video Creation Flow, Render Queue & Media Pipeline Fixes
 
-## Gate — Milestone 7 Deployment Configurations
+## Gate — Milestone 1: Voiceover Edge TTS Fix & Audio Pipeline (Priority R3.1)
 | Agent | Role | Verdict | Source |
 |-------|------|---------|--------|
-| worker_m7a | Docker Environment Worker | DONE (All configs created & verified) | handoff.md |
-| worker_m7b | Google Colab Worker | DONE (Notebook created & verified) | handoff.md |
-| worker_m7c | Oracle Cloud Script Worker | DONE (Script created & verified) | handoff.md |
-| reviewer_m7_1 | Docker & Colab Reviewer | APPROVE | handoff.md |
-| reviewer_m7_2 | Oracle Cloud & Integration Reviewer | APPROVE | handoff.md |
-| challenger_m7_1 | Docker & Colab Stress Challenger | APPROVE | handoff.md |
-| challenger_m7_2 | Oracle Script & Regression Challenger | APPROVE | handoff.md |
-| auditor_m7 | Forensic Integrity Auditor | CLEAN | handoff.md |
+| worker_m1_voice_audio | teamwork_preview_worker | DONE (16/16 unit tests passing, clean tsc) | handoff.md |
+| reviewer_m1_voice_1 | teamwork_preview_reviewer | APPROVE | handoff.md |
+| reviewer_m1_voice_2 | teamwork_preview_reviewer | APPROVE | handoff.md |
+| challenger_m1_voice_1 | teamwork_preview_challenger | APPROVE (Adversarial stress suite passed) | handoff.md |
+| challenger_m1_voice_2 | teamwork_preview_challenger | APPROVE (Remotion audio & FFmpeg mux passed) | handoff.md |
+| auditor_m1_voice | teamwork_preview_auditor | CLEAN (Zero integrity violations) | handoff.md |
 
-Gate Result: **PASS**
+
+## Gate — Milestone 2: Subtitle Effects & Voice Settings Reflection (Iteration 1)
+| Agent | Role | Verdict | Source |
+|-------|------|---------|--------|
+| worker_m2_subtitles_keys | teamwork_preview_worker | DONE (20/20 unit tests passed) | handoff.md |
+| reviewer_m2_subtitles_1 | teamwork_preview_reviewer | REQUEST_CHANGES (FFmpeg spaces crash, key contamination) | handoff.md |
+| reviewer_m2_subtitles_2 | teamwork_preview_reviewer | REQUEST_CHANGES (FFmpeg spaces crash, cmd.videoFilters needed) | handoff.md |
+| challenger_m2_subtitles_1 | teamwork_preview_challenger | REJECT (FFmpeg rgba comma crash, subtitleY boundary bug) | handoff.md |
+| challenger_m2_subtitles_2 | teamwork_preview_challenger | APPROVE (Voice keys resolution 39/39 passed) | handoff.md |
+| auditor_m2_subtitles | teamwork_preview_auditor | CLEAN (Integrity verified) | handoff.md |
+
+Gate Result: **FAIL** (Reviewers REQUEST_CHANGES & Challenger 1 REJECT: FFmpeg drawtext option splitting crash on spaces, rgba() comma syntax error, subtitleY: 0 boundary override, key cross-contamination in render worker)
 
 ---
 
-## Detailed Verification Summary
-1. **Local Docker Environment (`Dockerfile` & `docker-compose.yml`)**:
-   - Multi-stage `Dockerfile` (`base`, `deps`, `builder`, `runner`) on `node:20-alpine` with `libc6-compat`, `ffmpeg`, `procps`, `tzdata`, and `pnpm@11.24.0` via corepack.
-   - Standalone Next.js builder copying `/app/.next/standalone`, `/app/public`, and `/app/.next/static` to non-root `nextjs:nodejs` (UID 1001) runner container with `HOSTNAME="0.0.0.0"`, `PORT=3000`, and HTTP healthcheck.
-   - `docker-compose.yml` with `postgres:16-alpine` (auto-loading `./schema.sql` into `/docker-entrypoint-initdb.d/`), `pg_isready` healthcheck, persistent volume `postgres_data`, and `web` container starting after `postgres` is healthy on `clipped-network`.
-   - Supporting `.dockerignore`, `.env.docker`, and `next.config.ts` (`output: "standalone"`).
-2. **Google Colab Notebook (`deployment/colab/clipped-studio.ipynb`)**:
-   - Strictly compliant Jupyter Notebook v4 JSON format (`nbformat: 4`, `nbformat_minor: 4`, `accelerator: "GPU"` / T4 metadata).
-   - 8-cell end-to-end pipeline: Diagnostics -> System dependencies (Node 20, pnpm 11, FFmpeg, localtunnel) -> Workspace resolution -> `.env.local` interactive form (with `ENABLE_DRY_RUN_MODE = True` and dynamic 32-byte NextAuth secret) -> `pnpm install` -> Background Next.js server with `/api/health` polling readiness -> Localtunnel password discovery (`https://loca.lt/mytunnelpassword`) -> Complete markdown usage guide with `admin@clipped.ai`/`admin`.
-3. **Oracle Cloud Setup Script (`deployment/oracle/setup.sh`)**:
-   - `#!/usr/bin/env bash` with `set -euo pipefail` fail-fast error handling and `trap 'error_handler $? $LINENO' ERR`.
-   - Dual-OS support for Oracle Linux 8/9 (`dnf`) and Ubuntu 20.04/22.04 LTS (`apt`), with privilege and user home abstraction.
-   - Complete installation of Node.js 20 LTS (NodeSource), pnpm (Corepack / npm fallback), Docker CE & Docker Compose v2, FFmpeg (distro package with static JohnVanSickle binary fallback for `x86_64` and `aarch64` Ampere A1).
-   - NVIDIA / CUDA & `nvidia-container-toolkit` hardware auto-detection for A100 GPU compute.
-   - Firewall port rules (80, 443, 3000) for `firewalld`, `ufw`, and `iptables`/`netfilter-persistent`.
-   - Production systemd service template `/etc/systemd/system/clipped.service`.
-   - Post-install version checks, public IP query, and OCI VCN Ingress Rules guidance.
-4. **Master Regression Test Suite**:
-   - Full master test runner (`tests/e2e/standalone-runner.js`) executed with 100% pass rate (138/138 tests passing across Tiers 1–7 and API routes).
-5. **Forensic Integrity Audit**:
-   - `auditor_m7` confirmed binary verdict `CLEAN` across all deployment artifacts with zero integrity violations or stubbed bypasses.
+## Detailed Milestone 1 Verification Summary
+1. **Edge TTS Voice Catalog Resolution (`lib/engine/tts.ts`)**:
+   - `resolveKeylessVoice()` correctly maps catalog `free-*` voice IDs (`free-en-us`, `free-en-in`, `free-hi-in`, `free-ta-in`, `free-te-in`, `free-kn-in`, `free-bn-in`, `free-mr-in`) to valid Microsoft Edge Neural voices.
+2. **Three-Tier Fallback Cascade & Timeout Resilience**:
+   - Level 1: Edge TTS with 5000ms `Promise.race` timeout guard to prevent WebSocket hangs.
+   - Level 2: Google Translate TTS REST endpoint (`synthesizeWithGoogleTranslateRest`) with sentence chunking (<=180 chars).
+   - Level 3: Deterministic in-memory synthetic WAV generator (`generateSyntheticWavBuffer`) producing valid 24kHz PCM WAV.
+   - Voice synthesis is guaranteed to never return empty/silent audio or throw unhandled exceptions.
+3. **Render Worker Data URI Decoding & Audio Muxing (`scripts/render-worker.ts`)**:
+   - `downloadFile()` intercepts `data:` URIs, safely decoding base64 directly to disk buffers without calling Node.js `fetch()`.
+   - FFmpeg explicitly maps `-map 0:v:0`, `-map 1:a:0`, `-c:a aac -b:a 192k` with an `anullsrc=r=44100:cl=stereo` fallback, ensuring all clips have an active audio stream and concatenated output is audible.
+4. **Remotion Composition Audio (`remotion/Composition.tsx`)**:
+   - Imports `Audio` from `'remotion'` and renders `<Audio src={beat.audioUrl} />` in beat sequences and top-level composition.
+5. **Independent Test Suites Passed**:
+   - `tests/unit/test-tts-pipeline.js`: 16/16 assertions passing.
+   - `tests/adversarial-m1-voice.test.js`: Adversarial stress tests passing.
+   - `tests/adversarial-m1-audio.js`: 15/15 Remotion audio checks passing.
+   - `test-edge-tts.js`: Output verified.
+   - `npx tsc --noEmit`: 0 TypeScript errors.
+6. **Forensic Integrity Audit**:
+   - Binary verdict: **CLEAN**. Genuine logic confirmed across all files.
+

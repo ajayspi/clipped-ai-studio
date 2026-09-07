@@ -138,3 +138,44 @@ Update the engine files (e.g., `lib/engine/llm.ts`, `lib/engine/tts.ts`) to fetc
 - [ ] Sending a POST request to `/api/settings/keys` with OmniRoute credentials successfully saves the keys.
 - [ ] Sending a GET request to `/api/settings/keys` successfully retrieves the saved OmniRoute credentials and contains no legacy provider keys.
 - [ ] Code search confirms no active references to `OPENAI_API_KEY` remain in the API settings storage logic.
+
+## Follow-up — 2026-09-06T06:30:34+05:30
+
+# Teamwork Project Prompt — Draft
+
+> Requested team: The full agent team
+
+Refactor the video creation flow for a compact viewport, implement a global render queue with corrected navigation, and resolve critical media pipeline bugs (subtitles, voiceover generation, and settings reflection). Note: Prioritize fixing the voice TTS edge free bug immediately.
+
+Working directory: c:\Users\vigilare\.gemini\antigravity\scratch\clipped-omni-router
+Integrity mode: development
+
+## Requirements
+
+### R1. UI Viewport Optimization
+Redesign the `/create` flow screens (specifically Voice, Subtitles, and other settings-heavy steps) to be compact. All options per screen must fit within the visible viewport to eliminate vertical scrolling. Build reusable UI components using the existing Shadcn/Tailwind design system to achieve this professional layout.
+
+### R2. Global Render Queue & Navigation
+Implement a global "Render Queue" indicator visible on every page. When a user submits a video for rendering, navigate them to a dedicated Queue page that displays all processing and queued videos, along with a button to "Go to Story Maker" to create another video. Fix the top "Create Video" navigation link so it correctly routes to the Story Maker page.
+
+### R3. Media Pipeline Bug Fixes
+Resolve three issues in the media generation pipeline:
+1. Subtitle effects selected in the UI are not being applied to the final rendered video.
+2. Voiceover generation is missing/failing to produce audio in the final video. (FIX THIS ONE FIRST/IMMEDIATELY!)
+3. The recently added voice settings (external provider API keys) are not reflecting or being utilized during voice generation.
+
+## Acceptance Criteria
+
+### UI and Navigation
+- [ ] An independent agent-as-judge confirms that the `/create` flow steps fit entirely within a standard 1080p browser viewport without vertical scrolling.
+- [ ] An independent agent-as-judge verifies that the global Render Queue indicator is visible across the app, and submitting a render redirects to the Queue page.
+- [ ] The top "Create Video" button successfully navigates to the `/create` story maker page.
+
+### Media Pipeline
+- [ ] A programmatic test script or independent agent verifies that selected subtitle styles are accurately passed to and rendered by the backend engine.
+- [ ] A programmatic test script confirms that voiceover audio is successfully generated, attached to the video payload, and plays in the final output.
+- [ ] A programmatic test script verifies that custom external API keys saved in settings are actively retrieved and used during the voice generation process.
+
+## Resume Request — 2026-09-06T07:03:20+05:30
+
+The server restarted and all subagents and tasks were stopped. You were currently in the middle of executing the project. The last update from Sentinel was that Milestone 1 (Voiceover Fix) passed adversarial verification and you were advancing to Milestone 2 (Subtitle Effects and External Voice Settings). Please resume execution immediately from where you left off. Restart the orchestrator and any necessary workers.

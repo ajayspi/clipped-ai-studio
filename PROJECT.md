@@ -1,133 +1,149 @@
-# Project: Clipped Application — Settings Page OmniRoute Refactoring
+# Project: Clipped Application — Viewport Optimization, Global Render Queue & Media Pipeline Fixes
 
 ## Architecture
-Refactoring the Clipped application Settings and AI/voice infrastructure to exclusively support a unified OmniRoute/OpenRouter gateway, deprecating all individual AI provider panels, storage keys, and hardcoded credentials.
+Refactoring the `/create` video creation workflow for zero-scroll 1080p viewport compliance, establishing a global render queue indicator and dedicated queue management page, and fixing critical media pipeline bugs (Edge TTS keyless voiceover synthesis, subtitle effects rendering in video output, and external voice API keys reflection).
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │                                    CLIENT LAYER                                        │
-│  - Settings Page (app/(app)/settings/page.tsx): Single OmniRoute Configuration Panel    │
-│    * Endpoint URL input (with default http://localhost:20128/v1 and presets)           │
-│    * API Key input (with visibility toggle)                                            │
-│    * Save Configuration & Test Connection buttons (with latency & model feedback)      │
-│    * Removed: Azure, OpenAI, ElevenLabs, Gemini, Grok, Groq, custom provider modal     │
-│  - Retained: Supabase Database Panel, Brand Kits, Workspaces, Analytics                │
+│  - Navigation Shell (app/(app)/layout.tsx):                                            │
+│    * Top "Create Video" button routed to /create/stories (Story Maker)                 │
+│    * Global Render Queue indicator in Desktop Header, Mobile Header, and Sidebar       │
+│  - Dedicated Queue Page (app/(app)/queue/page.tsx):                                    │
+│    * Live status cards for pending/generating/processing/completed jobs                │
+│    * Real-time progress bars, logs drawer, and "Go to Story Maker" quick action button │
+│  - Creation Wizard (/create/stories & components/wizard/):                             │
+│    * Viewport-constrained container: h-[calc(100vh-4.25rem)] overflow-hidden           │
+│    * SubtitlesStep: compact master toggle, 52px preset cards, removed duplicate preview│
+│    * VoiceStep: horizontal provider segmented tabs, 40px compact voice cards, inline strip│
+│    * ScenesStep: scroll-capped container with 66px compact beat cards                  │
+│    * ScriptStep: 120px compact textarea; RenderStep: compact review grid               │
+│    * Render submission: redirects to /queue?jobId=${data.jobId}                        │
 └──────────────────────────────────────────┬─────────────────────────────────────────────┘
                                            │
 ┌──────────────────────────────────────────▼─────────────────────────────────────────────┐
 │                                 API & STORAGE LAYER                                    │
-│  - Backend Settings Keys Route (app/api/settings/keys/route.ts):                       │
-│    * GET: Returns exclusively OmniRoute credentials (endpointUrl, maskedApiKey)       │
-│           Strictly 0 legacy provider keys returned                                     │
-│    * POST: Accepts, validates (HTTP/HTTPS), and stores OmniRoute credentials           │
-│            Rejects legacy provider submissions with 400 Bad Request                    │
-│    * Zero references to OPENAI_API_KEY or PROVIDER_ENV_MAP in settings storage logic   │
-│  - Settings Connection Test Route (app/api/settings/keys/check/route.ts):              │
-│    * Directly tests OmniRoute GET /v1/models with latency & model enumeration          │
-│  - Centralized Credential Resolver (lib/keys.ts):                                      │
-│    * getOmniRouteConfig(): In-memory cached lookup from Supabase settings with env fallback│
+│  - Workflow Generation Route (app/api/workflows/generate/route.ts):                    │
+│    * Preserves full subtitle styling (burnSubtitles, colors, preset, size, Y) in logs  │
+│    * Captures selected voice and voiceProvider in render_jobs record                   │
+│  - Settings Keys API (app/api/settings/keys/route.ts):                                 │
+│    * Standardizes external voice keys (elevenlabs, google_tts, azure_speech, openai)   │
+│  - Jobs Polling API (app/api/jobs/route.ts):                                           │
+│    * Returns live queued, processing, completed, and failed counts for global indicator │
 └──────────────────────────────────────────┬─────────────────────────────────────────────┘
                                            │
 ┌──────────────────────────────────────────▼─────────────────────────────────────────────┐
 │                                    ENGINE LAYER                                        │
-│  - Unified LLM Engine (lib/engine/llm.ts & lib/ai/llm.ts):                             │
-│    * Fetches OmniRoute credentials dynamically via getOmniRouteConfig()                │
-│    * Dispatches chat completions to ${endpointUrl}/v1/chat/completions with Auth header│
-│    * Exports complete() and safe parseJson()                                           │
-│  - TTS Engine (lib/engine/tts.ts):                                                     │
-│    * OmniRoute promoted to primary TTS provider calling ${endpointUrl}/v1/audio/speech │
-│    * Removed mandatory OPENAI_API_KEY / AZURE_SPEECH_KEY constraints                   │
-│  - Engine Orchestrators (auto-pilot, drama, bulk-planner, scene-matcher, etc.):         │
-│    * Consolidated to use unified LLM engine without ad-hoc OPENAI_API_KEY checks       │
+│  - Voice Synthesis Engine (lib/engine/tts.ts):                                         │
+│    * Edge TTS Free fix: handles WebSocket errors, fallback to Google Translate TTS REST│
+│    * Catalog alignment: recognizes free-* voice IDs without defaulting to US voice     │
+│    * External provider reflection: checks settings table for user API keys (Azure, etc.)│
+│  - Render Worker Pipeline (scripts/render-worker.ts):                                  │
+│    * Native data: URI decoding into audio buffers (eliminates fetch() failure)         │
+│    * Subtitle burning: burns configured subtitle styles/presets via FFmpeg drawtext    │
+│    * Guaranteed audio track: merges synthesized voiceover into output video            │
+│  - Remotion Preview (remotion/Composition.tsx):                                        │
+│    * Imports Audio from 'remotion' and renders voiceover tracks during live preview    │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Feature Inventory
 | # | Feature | Description | Milestone | Source |
 |---|---------|-------------|-----------|--------|
-| 1 | OmniRoute Credential Resolver | `lib/keys.ts::getOmniRouteConfig()` with Supabase settings query & env fallback | M1 | R2, R3 |
-| 2 | Backend Keys GET Endpoint | `app/api/settings/keys/route.ts` returning ONLY OmniRoute credentials | M1 | R2, AC |
-| 3 | Backend Keys POST Endpoint | `app/api/settings/keys/route.ts` validating & saving OmniRoute credentials | M1 | R2, AC |
-| 4 | Legacy Key Storage Elimination | Complete removal of `OPENAI_API_KEY` & `PROVIDER_ENV_MAP` in storage logic | M1 | R2, AC |
-| 5 | OmniRoute Connection Probe | `app/api/settings/keys/check/route.ts` testing `${endpointUrl}/v1/models` | M1 | R1, R2 |
-| 6 | Unified Engine LLM Facade | `lib/engine/llm.ts` & `lib/ai/llm.ts` calling OmniRoute with Auth header | M2 | R3 |
-| 7 | OmniRoute TTS Integration | `lib/engine/tts.ts` promoting OmniRoute to primary speech synthesis | M2 | R3 |
-| 8 | Engine Deprecated Key Cleanup | Remove `OPENAI_API_KEY` requirements from orchestrators & callers | M2 | R3 |
-| 9 | Settings Page OmniRoute Panel | Single OmniRoute configuration panel in `app/(app)/settings/page.tsx` | M3 | R1, AC |
-| 10 | Individual Provider Removal | Complete removal of Azure, OpenAI, ElevenLabs, Gemini panels & modals | M3 | R1, AC |
-| 11 | Settings UI Render Integrity | Zero crash, full Shadcn UI compliance, visual feedback | M3 | AC |
-| 12 | Programmatic Backend Tests | Automated test suite for GET, POST, validation, and legacy key absence | M4 | AC |
-| 13 | E2E System Verification | Full verification across UI render, backend storage, and engine pipeline | M4 | AC |
-| 14 | Forensic Integrity Audit | Independent binary integrity audit verifying genuine implementation | M4 | Audit |
+| 1 | Edge TTS Free Voiceover Synthesis Fix | Fix WebSocket timeout/errors, voice catalog matching (`free-`), and robust fallback | M1 | R3.1, Survey |
+| 2 | Render Worker Audio Attachment | Native base64 data URI handling and guaranteed FFmpeg audio track integration | M1 | R3.1, Survey |
+| 3 | Remotion Live Preview Audio | Render `<Audio />` in `remotion/Composition.tsx` for live voiceover playback | M1 | R3.1, Survey |
+| 4 | Subtitle Styling Payload Preservation | Capture all subtitle parameters in `POST /api/workflows/generate` | M2 | R3.2, Survey |
+| 5 | Subtitle Rendering in Render Worker | Burn styled subtitles in FFmpeg render worker using configured presets and colors | M2 | R3.2, Survey |
+| 6 | External Voice Settings & Key Reflection | Fetch and utilize external provider API keys (Azure, ElevenLabs, etc.) in `tts.ts` | M2 | R3.3, Survey |
+| 7 | Top Navigation Route Correction | Route "Create Video" button in `app/(app)/layout.tsx` to `/create/stories` | M3 | R2, Survey |
+| 8 | Dedicated Render Queue Page | Build `app/(app)/queue/page.tsx` with live progress and "Go to Story Maker" button | M3 | R2, Survey |
+| 9 | Post-Submission Queue Navigation | Redirect `/create` wizard submissions to `/queue?jobId=${jobId}` | M3 | R2, Survey |
+| 10 | Global Render Queue Indicator | Global Zustand store and indicator across Desktop Header, Mobile Header, and Sidebar | M3 | R2, Survey |
+| 11 | Viewport Shell Constraint | Constrain `CreationWizard.tsx` to `h-[calc(100vh-4.25rem)] overflow-hidden` | M4 | R1, Survey |
+| 12 | Compact Subtitles Step | Remove duplicate sandbox/phone mockup; implement 52px preset cards and compact styling | M4 | R1, Survey |
+| 13 | Compact Voice Step | Horizontal provider segmented tabs, 40px compact voice cards, inline audio strip | M4 | R1, Survey |
+| 14 | Compact Scenes & Script Steps | Scroll-capped beat container (66px cards) and compact script textarea | M4 | R1, Survey |
+| 15 | E2E System Verification | Automated and programmatic validation of viewport, queue, and media pipeline | M5 | AC, Survey |
+| 16 | Forensic Integrity Audit | Independent binary integrity audit verifying genuine implementation with zero mocking | M5 | Audit |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| 1 | Backend Storage & API Keys Route | Refactor `lib/keys.ts`, `app/api/settings/keys/route.ts`, and `check/route.ts` to exclusively support OmniRoute | none | DONE |
-| 2 | Engine Integration Updates | Create `lib/engine/llm.ts`, update `lib/ai/llm.ts`, `lib/engine/tts.ts`, and clean up engine caller key dependencies | M1 | IN_PROGRESS |
-| 3 | Settings UI Overhaul | Refactor `app/(app)/settings/page.tsx` to remove all individual provider panels and add single OmniRoute panel | M1 | IN_PROGRESS |
-| 4 | E2E Verification & Forensic Audit | Comprehensive test execution, acceptance criteria validation, and forensic integrity audit | M1, M2, M3 | PLANNED |
+| 1 | Voiceover Edge TTS Fix & Audio Pipeline | Fix Edge TTS free synthesis, data URI decoding, render worker audio stream, and Remotion Audio | none | DONE |
+| 2 | Subtitle Effects & Voice Settings Reflection | Preserve subtitle payload in API, burn subtitles in render worker, and utilize external provider keys in `tts.ts` | M1 | IN_PROGRESS |
+| 3 | Global Render Queue & Navigation Routing | Route top button to `/create/stories`, build dedicated `/queue` page, add global indicator, and redirect submissions | none | PLANNED |
+| 4 | UI Viewport Optimization for /create Flow | Compact CreationWizard container, SubtitlesStep, VoiceStep, ScenesStep, and ScriptStep for zero-scroll 1080p | M3 | PLANNED |
+| 5 | E2E Integration Verification & Forensic Audit | Comprehensive programmatic verification of all acceptance criteria and binary integrity audit | M1, M2, M3, M4 | PLANNED |
 
 ## Interface Contracts
 
-### 1. OmniRoute Credential Resolver (`lib/keys.ts`)
+### 1. Voice Synthesis Engine (`lib/engine/tts.ts`)
 ```ts
-export interface OmniRouteConfig {
-  baseUrl: string; // e.g. "http://localhost:20128" or "https://openrouter.ai/api"
-  apiKey: string;  // e.g. "sk-..."
-  isConfigured: boolean;
-  source: 'database' | 'environment' | 'default';
+export interface TTSRequest {
+  text: string;
+  provider?: 'omniroute' | 'keyless' | 'azure' | 'elevenlabs' | 'google' | 'openai';
+  voiceId?: string;
+  speed?: number;
 }
 
-export async function getOmniRouteConfig(): Promise<OmniRouteConfig>;
+export interface TTSResult {
+  audioUrl: string; // http(s) URL or valid base64 data URI
+  duration: number; // in seconds
+  providerUsed: string;
+  audioBuffer?: Buffer;
+}
 ```
 
-### 2. Backend Settings API (`app/api/settings/keys/route.ts`)
-- **`GET /api/settings/keys`**:
-  - Response:
-    ```json
-    {
-      "omniroute": {
-        "endpointUrl": "http://localhost:20128/v1",
-        "maskedApiKey": "sk-••••••••1234",
-        "isConfigured": true,
-        "source": "database"
-      },
-      "keys": {
-        "omniroute": {
-          "endpointUrl": "http://localhost:20128/v1",
-          "maskedApiKey": "sk-••••••••1234",
-          "isConfigured": true
-        }
-      }
-    }
-    ```
-  - Strictly **no** legacy keys: `openai`, `azure_speech`, `elevenlabs`, `gemini`, etc.
-- **`POST /api/settings/keys`**:
-  - Request: `{ endpointUrl: string, apiKey: string }` or `{ provider: "omniroute", endpointUrl: string, apiKey: string }`
-  - Validation: `endpointUrl` must be a valid `http://` or `https://` URL.
-  - Rejection: Requests specifying legacy providers (e.g. `provider: "openai"`) return HTTP 400.
-  - Response: `{ success: true, omniroute: { isConfigured: true } }`
+### 2. Workflow Generation Payload (`app/api/workflows/generate/route.ts`)
+```ts
+export interface GenerateWorkflowRequest {
+  workflow: string;
+  script: string;
+  voice?: string;
+  voiceProvider?: string;
+  burnSubtitles?: boolean;
+  subtitlePreset?: string;
+  subtitleColor?: string;
+  subtitleHighlightColor?: string;
+  subtitleGlow?: boolean;
+  subtitleGlowColor?: string;
+  subtitleOutline?: boolean;
+  subtitleOutlineWidth?: number;
+  subtitleBox?: boolean;
+  subtitleBoxColor?: string;
+  subtitleSize?: number;
+  subtitleY?: number;
+}
+```
 
-### 3. OmniRoute Connection Check API (`app/api/settings/keys/check/route.ts`)
-- **`POST /api/settings/keys/check`**:
-  - Request: `{ endpointUrl?: string, apiKey?: string }`
-  - Response: `{ success: boolean, latencyMs: number, models?: string[], error?: string }`
-
-### 4. Engine LLM & TTS Integration
-- **`lib/engine/llm.ts`**:
-  - `complete(request: { system: string; user: string; maxTokens?: number; json?: boolean }, model?: string): Promise<string>`
-  - Uses `getOmniRouteConfig()`, sends `POST ${baseUrl}/v1/chat/completions` with `Authorization: Bearer ${apiKey}`.
-  - `parseJson<T>(content: string, fallback: T): T`
-- **`lib/engine/tts.ts`**:
-  - Provider `'omniroute'` sends `POST ${baseUrl}/v1/audio/speech` with `Authorization: Bearer ${apiKey}`.
+### 3. Global Queue Store & Jobs Response (`app/api/jobs/route.ts`)
+```ts
+export interface JobsResponse {
+  success: boolean;
+  jobs: RenderJob[];
+  queued: RenderJob[];
+  completed: RenderJob[];
+  failed: RenderJob[];
+  counts: {
+    total: number;
+    queued: number;
+    completed: number;
+    failed: number;
+  };
+}
+```
 
 ## Code Layout
-- `lib/keys.ts` — Centralized API key and OmniRoute credential resolver
-- `app/api/settings/keys/route.ts` — Settings keys GET and POST handlers
-- `app/api/settings/keys/check/route.ts` — OmniRoute health check / model probe
-- `lib/engine/llm.ts` — Unified LLM engine facade
-- `lib/ai/llm.ts` — Core LLM completion implementation
-- `lib/engine/tts.ts` — Text-to-speech engine with primary OmniRoute provider
-- `app/(app)/settings/page.tsx` — Settings page with single OmniRoute panel
-- `tests/e2e/omniroute-verification.ts` — Automated verification runner for acceptance criteria
+- `lib/engine/tts.ts` — Voiceover TTS synthesis engine (Edge TTS, fallback REST, external providers)
+- `scripts/render-worker.ts` — Video rendering worker (data URI audio handling, subtitle burning)
+- `remotion/Composition.tsx` — Remotion composition with `<Audio />` playback
+- `app/api/workflows/generate/route.ts` — Workflow submission endpoint capturing subtitle styles & voice
+- `app/api/jobs/route.ts` — Queue jobs query endpoint
+- `app/(app)/layout.tsx` — App layout shell with top "Create Video" link and global queue indicator
+- `app/(app)/queue/page.tsx` — Dedicated Queue page with live jobs and "Go to Story Maker"
+- `components/wizard/CreationWizard.tsx` — Compact container shell and post-submission redirect
+- `components/wizard/VoiceStep.tsx` — Compact voice selector step
+- `components/wizard/SubtitlesStep.tsx` — Compact subtitle style selector step
+- `components/wizard/ScenesStep.tsx` — Compact scenes step with scroll-capped container
+- `components/wizard/ScriptStep.tsx` — Compact script textarea step

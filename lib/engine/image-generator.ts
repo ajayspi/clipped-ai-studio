@@ -1,4 +1,5 @@
 import { Scene } from './types';
+import { getApiKey } from '@/lib/keys';
 
 export interface ImageGenerationOptions {
   model?: 'flux-dev' | 'flux-schnell' | 'sdxl';
@@ -12,7 +13,7 @@ export class ImageGenerator {
    * Generates images for a list of scenes using Fal.ai Flux API (or similar)
    */
   async generateForScenes(scenes: Scene[], options: ImageGenerationOptions = {}): Promise<Scene[]> {
-    const apiKey = process.env.FAL_API_KEY; // Using Fal.ai as the default for Flux
+    const apiKey = await getApiKey('fal', 'FAL_API_KEY'); // Using Fal.ai as the default for Flux
     const model = options.model || 'flux-schnell';
     const aspectRatio = options.aspectRatio || '16:9';
 
@@ -30,6 +31,7 @@ export class ImageGenerator {
     }
 
     const updatedScenes = [...scenes];
+    const { submitAndWait } = await import('../media/fal-client');
 
     // In a production app, we would fire these off in parallel with Promise.all
     // But to respect rate limits, we'll do them sequentially or in small batches
@@ -42,37 +44,31 @@ export class ImageGenerator {
           ? `${scene.description}, in the style of ${options.style}, ${baseStyle}`
           : `${scene.description}, ${baseStyle}`;
 
-        const res = await fetch(`https://fal.run/fal-ai/${model}`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Key ${apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+        const falJob = await submitAndWait({
+          model: `fal-ai/${model}`,
+          input: {
             prompt: prompt,
             image_size: aspectRatio === '16:9' ? 'landscape_16_9' : aspectRatio === '9:16' ? 'portrait_9_16' : 'square',
             num_inference_steps: model === 'flux-schnell' ? 4 : 28,
             guidance_scale: 3.5,
             num_images: 1,
             enable_safety_checker: true
-          }),
-        });
+          }
+        }, apiKey);
 
-        if (!res.ok) {
-          throw new Error(`Image Gen API failed: ${res.statusText}`);
-        }
-
-        const data = await res.json();
-        
-        if (data.images && data.images.length > 0) {
-          const imageUrl = data.images[0].url;
+        if (falJob.status === 'completed' && falJob.asset) {
+          const imageUrl = falJob.asset.url;
           scene.selectedVideo = {
-            id: `fal-img-${Date.now()}`,
+            id: falJob.asset.id,
             url: imageUrl,
             title: scene.description.substring(0, 50),
             platform: 'openverse', // Reusing the type, represents static image
           };
+          scene.imageUrl = imageUrl;
+          scene.mediaAsset = falJob.asset;
           console.log(`Successfully generated image: ${imageUrl}`);
+        } else {
+          throw new Error(`Image Gen API failed: ${falJob.error}`);
         }
       } catch (error) {
         console.error(`Failed to generate image for scene:`, error);

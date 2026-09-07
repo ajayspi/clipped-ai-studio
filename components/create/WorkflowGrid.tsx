@@ -13,10 +13,10 @@ interface WorkflowGridProps {
 
 const CATEGORIES = [
   { id: "all", label: "All Workflows" },
-  { id: "avatar-wb", label: "Avatars & Whiteboards" },
-  { id: "ai-video", label: "AI Generative" },
+  { id: "automation", label: "Planning & Automation" },
   { id: "stock", label: "Stock Footage" },
-  { id: "automation", label: "Automation & Series" },
+  { id: "ai-video", label: "AI Generative" },
+  { id: "avatar-wb", label: "Avatars & Whiteboards" },
 ];
 
 export function WorkflowGrid({

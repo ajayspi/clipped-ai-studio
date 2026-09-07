@@ -102,7 +102,7 @@ export async function getOmniRouteConfig(bypassCache = false): Promise<OmniRoute
     process.env.OMNIROUTE_KEY
   )?.trim();
 
-  const DEFAULT_URL = 'http://localhost:20128';
+  const DEFAULT_URL = 'http://127.0.0.1:20128';
 
   let baseUrl: string;
   let apiKey: string;
@@ -126,7 +126,8 @@ export async function getOmniRouteConfig(bypassCache = false): Promise<OmniRoute
     source = 'default';
   }
 
-  baseUrl = baseUrl.replace(/\/+$/, '');
+  // Keep one canonical gateway origin; API paths add /v1 themselves.
+  baseUrl = baseUrl.replace(/\/+$/, '').replace(/\/v1$/i, '');
 
   const resolved: OmniRouteConfig = {
     baseUrl,

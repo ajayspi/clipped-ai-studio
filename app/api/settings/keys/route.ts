@@ -26,12 +26,10 @@ function isValidHttpUrl(urlString: string): boolean {
   }
 }
 
-const LEGACY_PROVIDERS = new Set([
-  'openai', 'gemini', 'anthropic', 'openrouter', 'fal', 'grok', 'groq',
-  'deepseek', 'mistral', 'cerebras', 'github_models', 'ollama',
-  'pexels', 'pixabay', 'kling', 'luma', 'huggingface',
-  'azure', 'azure_speech', 'azure_region', 'elevenlabs', 'google_tts',
-  'deepgram', 'suno', 'heygen', 'did'
+const SUPPORTED_EXTERNAL_PROVIDERS = new Set([
+  'pexels', 'pixabay', 'coverr', 'fal', 'huggingface', 'aihorde',
+  'heygen', 'did', 'deepgram', 'elevenlabs', 'google_tts', 'azure_speech',
+  'kling', 'luma', 'ideogram', 'bytez',
 ]);
 
 async function upsertSettingRow(provider: string, apiKey: string, baseUrl?: string, name?: string) {
@@ -115,17 +113,34 @@ export async function GET() {
 
   let updatedAt: string | null = null;
   let isActive = true;
+  const externalKeys: Record<string, Record<string, unknown>> = {};
 
   try {
     const dbClient = supabaseAdmin || supabase;
-    const { data: row } = await dbClient
+    let { data: rows } = await dbClient
       .from('settings')
-      .select('updated_at, is_active')
-      .eq('provider', 'omniroute')
-      .limit(1)
-      .maybeSingle();
+      .select('provider, api_key, updated_at, is_active, base_url')
+      .in('provider', Array.from(SUPPORTED_EXTERNAL_PROVIDERS).concat('omniroute'));
 
-    if (row) {
+    if (!rows) {
+      const fallback = await dbClient
+        .from('settings')
+        .select('provider, api_key, updated_at, is_active')
+        .in('provider', Array.from(SUPPORTED_EXTERNAL_PROVIDERS).concat('omniroute'));
+      rows = fallback.data;
+    }
+
+    for (const row of rows || []) {
+      if (row.provider !== 'omniroute') {
+        externalKeys[row.provider] = {
+          maskedApiKey: maskKey(row.api_key || ''),
+          isConfigured: Boolean(row.api_key),
+          isActive: row.is_active !== false,
+          updatedAt: row.updated_at || null,
+          baseUrl: row.base_url || undefined,
+        };
+        continue;
+      }
       if (row.updated_at) updatedAt = row.updated_at;
       if (row.is_active !== undefined && row.is_active !== null) isActive = row.is_active;
     }
@@ -181,9 +196,10 @@ export async function GET() {
         updatedAt,
         source,
       },
+      ...externalKeys,
     },
     customProviders: [],
-    availableCategories: ['AI Gateway'],
+    availableCategories: ['AI Gateway', 'Stock Media', 'AI Models', 'Voice & Audio', 'Local Workers'],
   });
 }
 
@@ -196,12 +212,39 @@ export async function POST(req: Request) {
     if (provider && typeof provider === 'string') {
       const cleanP = provider.toLowerCase().trim().replace(/^api_/, '');
       const isOmni = cleanP === 'omniroute' || cleanP === 'omniroute_endpoint_url' || cleanP === 'omniroute_api_key';
-      if (!isOmni || LEGACY_PROVIDERS.has(cleanP)) {
+      if (!isOmni && !SUPPORTED_EXTERNAL_PROVIDERS.has(cleanP)) {
         return NextResponse.json(
-          { error: 'Individual AI providers are deprecated. Only OmniRoute configuration is supported.' },
+          { error: `Unsupported provider. Use OmniRoute or one of: ${Array.from(SUPPORTED_EXTERNAL_PROVIDERS).join(', ')}` },
           { status: 400 }
         );
       }
+
+    }
+
+    const cleanProvider = typeof provider === 'string'
+      ? provider.toLowerCase().trim().replace(/^api_/, '')
+      : '';
+
+    if (cleanProvider && SUPPORTED_EXTERNAL_PROVIDERS.has(cleanProvider)) {
+      const rawExternalKey = body.apiKey !== undefined ? body.apiKey : body.key;
+      if (typeof rawExternalKey !== 'string' || !rawExternalKey.trim()) {
+        return NextResponse.json({ error: 'apiKey is required for this provider' }, { status: 400 });
+      }
+
+      const savedSetting = await upsertSettingRow(
+        cleanProvider,
+        rawExternalKey.trim(),
+        typeof body.baseUrl === 'string' ? body.baseUrl.trim() : undefined,
+        cleanProvider,
+      );
+
+      return NextResponse.json({
+        success: true,
+        provider: cleanProvider,
+        setting: savedSetting,
+        maskedApiKey: maskKey(rawExternalKey.trim()),
+        isConfigured: true,
+      });
     }
 
     const rawEndpointUrl = (

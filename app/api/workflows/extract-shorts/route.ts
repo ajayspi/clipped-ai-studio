@@ -44,6 +44,8 @@ export async function POST(req: Request) {
         id: jobId,
         status: 'processing',
         progress: 0,
+        workflow_type: 'extract-shorts',
+        title: `Extract Shorts from ${sourceType}`,
         logs: JSON.stringify({
           workflow: 'extract-shorts',
           input: {

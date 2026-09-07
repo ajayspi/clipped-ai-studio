@@ -275,6 +275,11 @@ export default function SettingsPage() {
     message: string;
   } | null>(null);
 
+  // ── External Providers State ──────────────────────────────────────────────
+  const [externalKeys, setExternalKeys] = useState<Record<string, { maskedApiKey: string; isConfigured: boolean }>>({});
+  const [editingExternal, setEditingExternal] = useState<Record<string, string>>({});
+  const [savingExternal, setSavingExternal] = useState<Record<string, boolean>>({});
+
   // ── Voice Catalog State ───────────────────────────────────────────────────
   const [voiceFilter, setVoiceFilter] = useState<string>("All");
   const [voiceSearch, setVoiceSearch] = useState<string>("");
@@ -359,6 +364,16 @@ export default function SettingsPage() {
       setIsConfigured(Boolean(data.isConfigured || data.omniroute?.isConfigured));
       setMaskedApiKey(data.maskedApiKey || data.omniroute?.maskedApiKey || "");
       setOmniSource(data.source || data.omniroute?.source || "default");
+
+      if (data.keys) {
+        const extKeys: Record<string, { maskedApiKey: string; isConfigured: boolean }> = {};
+        for (const [key, val] of Object.entries(data.keys)) {
+          if (!key.startsWith('omniroute')) {
+             extKeys[key] = val as any;
+          }
+        }
+        setExternalKeys(extKeys);
+      }
     } catch (err) {
       console.error("Failed to load OmniRoute keys", err);
     } finally {
@@ -436,6 +451,45 @@ export default function SettingsPage() {
       });
     } finally {
       setSavingOmni(false);
+    }
+  }
+
+  async function handleSaveExternalKey(provider: string) {
+    const val = editingExternal[provider];
+    if (!val || !val.trim()) return;
+    
+    setSavingExternal(prev => ({ ...prev, [provider]: true }));
+    setOmniFeedback(null);
+    try {
+      const res = await fetch("/api/settings/keys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider,
+          apiKey: val.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `Failed to save ${provider}`);
+
+      setOmniFeedback({
+        type: "success",
+        message: `${provider.toUpperCase()} API key saved successfully!`,
+      });
+      
+      setExternalKeys(prev => ({
+        ...prev,
+        [provider]: { maskedApiKey: data.maskedApiKey, isConfigured: true }
+      }));
+      setEditingExternal(prev => ({ ...prev, [provider]: "" }));
+    } catch (err: any) {
+      setOmniFeedback({
+        type: "error",
+        message: err.message || `Failed to save ${provider} key`,
+      });
+    } finally {
+      setSavingExternal(prev => ({ ...prev, [provider]: false }));
     }
   }
 
@@ -1019,6 +1073,63 @@ export default function SettingsPage() {
                           )}
                         </div>
                       )}
+                      
+                      {/* ════════════════════════════════════════════════════════════════
+                          External / Direct Providers (Fallback)
+                          ════════════════════════════════════════════════════════════════ */}
+                      <div className="pt-6 border-t border-border/40 mt-6">
+                        <div className="mb-4">
+                          <h3 className="text-sm font-semibold flex items-center gap-2">
+                            <Code2 className="w-4 h-4 text-emerald-400" />
+                            Direct External API Keys (Optional)
+                          </h3>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            By default, all models route through OmniRoute. You can configure direct keys below (e.g. Ideogram, Fal) to bypass the router for specific models, or if you prefer using direct provider endpoints.
+                          </p>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {["fal", "ideogram", "bytez", "kling", "luma", "pexels", "pixabay", "coverr"].map(provider => {
+                            const info = externalKeys[provider];
+                            const isSaving = savingExternal[provider];
+                            const editVal = editingExternal[provider] ?? "";
+                            
+                            return (
+                              <div key={provider} className="p-4 rounded-xl border border-border/50 bg-muted/10 space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                                    {provider === 'ideogram' ? <ImageIcon className="w-3.5 h-3.5 text-pink-400" /> : <Server className="w-3.5 h-3.5 text-blue-400" />}
+                                    {provider}
+                                  </label>
+                                  {info?.isConfigured && (
+                                    <span className="text-[10px] font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                      <CheckCircle2 className="w-3 h-3" /> Configured
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="password"
+                                    placeholder={info?.isConfigured ? `Set: ${info.maskedApiKey}` : "sk-..."}
+                                    value={editVal}
+                                    onChange={(e) => setEditingExternal(prev => ({...prev, [provider]: e.target.value}))}
+                                    className="flex h-9 flex-1 rounded-md border border-input bg-background px-3 py-1 font-mono text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSaveExternalKey(provider)}
+                                    disabled={!editVal.trim() || isSaving}
+                                    className="inline-flex items-center justify-center rounded-md text-xs font-medium bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-3 disabled:opacity-50"
+                                  >
+                                    {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Save"}
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      
                     </div>
                   </div>
                 </div>

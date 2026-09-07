@@ -1,4 +1,5 @@
 import {
+  AVATAR_PRESETS,
   AspectRatio,
   AvatarConfig,
   AvatarGenerationRequest,
@@ -35,57 +36,6 @@ export interface AvatarJobState {
   createdAt: string;
   updatedAt: string;
 }
-
-export const AVATAR_PRESETS: AvatarPreset[] = [
-  {
-    id: 'sarah_presenter',
-    name: 'Sarah (Presenter)',
-    previewUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
-    gender: 'female',
-    style: 'photorealistic',
-    supportedProviders: ['heygen', 'did', 'liveportrait', 'remotion-pip'],
-  },
-  {
-    id: 'marcus_tech',
-    name: 'Marcus (Tech Anchor)',
-    previewUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80',
-    gender: 'male',
-    style: 'photorealistic',
-    supportedProviders: ['heygen', 'did', 'liveportrait', 'remotion-pip'],
-  },
-  {
-    id: 'alex_casual',
-    name: 'Alex (Creator)',
-    previewUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=500&auto=format&fit=crop&q=80',
-    gender: 'neutral',
-    style: 'photorealistic',
-    supportedProviders: ['heygen', 'did', 'liveportrait', 'remotion-pip'],
-  },
-  {
-    id: 'emma_anime',
-    name: 'Emma (Anime Style)',
-    previewUrl: 'https://image.pollinations.ai/prompt/cute%20anime%20girl%20presenter%20vtuber%20colorful%20hair%20studio%20lighting?width=512&height=512&nologo=true',
-    gender: 'female',
-    style: 'anime',
-    supportedProviders: ['liveportrait', 'remotion-pip'],
-  },
-  {
-    id: 'david_3d',
-    name: 'David (3D Animated)',
-    previewUrl: 'https://image.pollinations.ai/prompt/pixar%20style%203d%20male%20character%20host%20friendly%20smile%20render?width=512&height=512&nologo=true',
-    gender: 'male',
-    style: '3d_animated',
-    supportedProviders: ['liveportrait', 'remotion-pip'],
-  },
-  {
-    id: 'elena_executive',
-    name: 'Elena (Executive)',
-    previewUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=500&auto=format&fit=crop&q=80',
-    gender: 'female',
-    style: 'photorealistic',
-    supportedProviders: ['heygen', 'did', 'liveportrait', 'remotion-pip'],
-  },
-];
 
 const DEFAULT_PRESET = AVATAR_PRESETS[0];
 
@@ -431,3 +381,4 @@ export class AvatarOrchestrator {
 }
 
 export const avatarOrchestrator = new AvatarOrchestrator();
+

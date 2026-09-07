@@ -86,7 +86,9 @@ export async function complete(
   model?: string
 ): Promise<string> {
   const config = await getOmniRouteConfig();
-  const baseUrl = (config.baseUrl || 'http://localhost:20128').replace(/\/+$/, '');
+  const baseUrl = (config.baseUrl || 'http://127.0.0.1:20128')
+    .replace(/\/+$/, '')
+    .replace(/\/v1$/i, '');
   const apiKey = config.apiKey || '';
 
   const headers: Record<string, string> = {
@@ -111,17 +113,25 @@ export async function complete(
     ],
   };
 
+  // Race the fetch against a hard timeout so a stalled upstream provider
+  // (OmniRoute connected but waiting) doesn't block the pipeline forever.
+  const TIMEOUT_MS = 12_000; // 12 s — fast enough for fallback, generous for good providers
+
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000);
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-    const response = await fetch(`${baseUrl}/v1/chat/completions`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
+    let response: Response;
+    try {
+      response = await fetch(`${baseUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => '');
@@ -135,6 +145,10 @@ export async function complete(
     }
     return request.json ? '{}' : '';
   } catch (err: any) {
+    if ((err as any)?.name === 'AbortError') {
+      console.warn(`[OmniRoute LLM] Request aborted after ${TIMEOUT_MS}ms timeout — using fallback.`);
+      throw new Error(`OmniRoute completion timed out after ${TIMEOUT_MS}ms`);
+    }
     console.warn(`[OmniRoute LLM] Offline or request failed (${err?.message || err}).`);
     throw new Error(`OmniRoute completion failed: ${err?.message || err}`);
   }

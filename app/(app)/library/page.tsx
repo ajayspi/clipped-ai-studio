@@ -90,7 +90,7 @@ export default function LibraryPage() {
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderColor, setNewFolderColor] = useState("#8b5cf6");
   const [creatingFolder, setCreatingFolder] = useState(false);
-  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -208,7 +208,9 @@ export default function LibraryPage() {
               title="Refresh"
             >
               <RefreshCw className="w-3 h-3" />
-              <span className="hidden sm:inline">Refreshed {lastRefreshed.toLocaleTimeString()}</span>
+              <span className="hidden sm:inline">
+                {lastRefreshed ? `Refreshed ${lastRefreshed.toLocaleTimeString()}` : "Refreshing..."}
+              </span>
             </button>
           </p>
         </div>
