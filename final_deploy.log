@@ -1,0 +1,157 @@
+Reading package lists... 0%Reading package lists... 100%Reading package lists... Done
+Building dependency tree... 0%Building dependency tree... 0%Building dependency tree... 50%Building dependency tree... 50%Building dependency tree... Done
+Reading state information... 0% Reading state information... 0%Reading state information... Done
+Package 'npm' is not installed, so not removed
+The following packages will be REMOVED:
+  nodejs
+0 upgraded, 0 newly installed, 1 to remove and 6 not upgraded.
+After this operation, 196 MB disk space will be freed.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 150206 files and directories currently installed.)
+Removing nodejs (20.20.2-1nodesource1) ...
+Processing triggers for man-db (2.12.0-4build2) ...
+[38;5;79m2026-09-08 02:29:14 - Installing pre-requisites[0m
+[33m0% [Working][0m            Hit:1 http://mirrors.linode.com/ubuntu noble InRelease
+[33m0% [Connecting to security.ubuntu.com (185.125.190.82)][0m                                                       Hit:2 http://mirrors.linode.com/ubuntu noble-updates InRelease
+                                                       Hit:3 http://mirrors.linode.com/ubuntu noble-backports InRelease
+[33m0% [Connecting to security.ubuntu.com (185.125.190.82)][0m[33m0% [Connecting to security.ubuntu.com (185.125.190.82)][0m[33m                                                       0% [Waiting for headers] [Waiting for headers][0m                                              Get:4 http://security.ubuntu.com/ubuntu noble-security InRelease [126 kB]
+[33m0% [4 InRelease 14.2 kB/126 kB 11%] [Waiting for headers][0m                                                         Hit:5 https://deb.nodesource.com/node_20.x nodistro InRelease
+[33m                                                         0% [4 InRelease 14.2 kB/126 kB 11%][0m[33m0% [4 InRelease 14.2 kB/126 kB 11%][0m[33m0% [4 InRelease 14.2 kB/126 kB 11%][0m[33m                                   0% [Working][0m[33m60% [Working][0m             Get:6 http://security.ubuntu.com/ubuntu noble-security/main amd64 Components [46.3 kB]
+[33m61% [6 Components-amd64 2,659 B/46.3 kB 6%][0m[33m                                           75% [Working][0m[33m75% [6 Components-amd64 store 0 B] [Waiting for headers][0m[33m                                                        75% [Waiting for headers][0m                         Get:7 http://security.ubuntu.com/ubuntu noble-security/universe amd64 Components [76.2 kB]
+[33m76% [7 Components-amd64 2,658 B/76.2 kB 3%][0m[33m                                           100% [Working][0m[33m100% [7 Components-amd64 store 0 B][0m[33m                                   100% [Working][0m              Fetched 249 kB in 1s (186 kB/s)
+Reading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 3%Reading package lists... 3%Reading package lists... 5%Reading package lists... 5%Reading package lists... 5%Reading package lists... 5%Reading package lists... 5%Reading package lists... 5%Reading package lists... 43%Reading package lists... 43%Reading package lists... 59%Reading package lists... 59%Reading package lists... 60%Reading package lists... 60%Reading package lists... 60%Reading package lists... 60%Reading package lists... 64%Reading package lists... 64%Reading package lists... 66%Reading package lists... 66%Reading package lists... 70%Reading package lists... 70%Reading package lists... 74%Reading package lists... 74%Reading package lists... 79%Reading package lists... 79%Reading package lists... 79%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 84%Reading package lists... 84%Reading package lists... 86%Reading package lists... 86%Reading package lists... 90%Reading package lists... 90%Reading package lists... 93%Reading package lists... 93%Reading package lists... 97%Reading package lists... 97%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
+Building dependency tree... 0%Building dependency tree... 0%Building dependency tree... 0%Building dependency tree... 50%Building dependency tree... 50%Building dependency tree... Done
+Reading state information... 0% Reading state information... 0%Reading state information... Done
+6 packages can be upgraded. Run 'apt list --upgradable' to see them.
+Reading package lists... 0%Reading package lists... 100%Reading package lists... Done
+Building dependency tree... 0%Building dependency tree... 0%Building dependency tree... 50%Building dependency tree... 50%Building dependency tree... Done
+Reading state information... 0% Reading state information... 0%Reading state information... Done
+apt-transport-https is already the newest version (2.8.3).
+ca-certificates is already the newest version (20260601~24.04.1).
+curl is already the newest version (8.5.0-2ubuntu10.13).
+gnupg is already the newest version (2.4.4-2ubuntu17.6).
+0 upgraded, 0 newly installed, 0 to remove and 6 not upgraded.
+[33m0% [Working][0m            Hit:1 http://mirrors.linode.com/ubuntu noble InRelease
+[33m0% [Waiting for headers] [Connecting to security.ubuntu.com (91.189.91.81)] [Co[0m                                                                               Hit:2 http://mirrors.linode.com/ubuntu noble-updates InRelease
+                                                                               Hit:3 http://mirrors.linode.com/ubuntu noble-backports InRelease
+[33m0% [Connecting to security.ubuntu.com (91.189.91.81)] [Connected to deb.nodesou[0m                                                                               Hit:4 https://deb.nodesource.com/node_20.x nodistro InRelease
+[33m                                                                               0% [Connecting to security.ubuntu.com (91.189.91.81)][0m[33m0% [Connecting to security.ubuntu.com (91.189.91.81)][0m[33m                                                     0% [Waiting for headers][0m[33m0% [Waiting for headers][0m[33m0% [Waiting for headers][0m                        Hit:5 http://security.ubuntu.com/ubuntu noble-security InRelease
+[33m                        0% [Working][0m[33m20% [Working][0m             Reading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 3%Reading package lists... 3%Reading package lists... 5%Reading package lists... 5%Reading package lists... 5%Reading package lists... 5%Reading package lists... 5%Reading package lists... 5%Reading package lists... 43%Reading package lists... 43%Reading package lists... 59%Reading package lists... 59%Reading package lists... 60%Reading package lists... 60%Reading package lists... 60%Reading package lists... 60%Reading package lists... 64%Reading package lists... 64%Reading package lists... 66%Reading package lists... 66%Reading package lists... 70%Reading package lists... 70%Reading package lists... 74%Reading package lists... 74%Reading package lists... 75%Reading package lists... 79%Reading package lists... 79%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 81%Reading package lists... 84%Reading package lists... 84%Reading package lists... 86%Reading package lists... 86%Reading package lists... 90%Reading package lists... 90%Reading package lists... 93%Reading package lists... 93%Reading package lists... 97%Reading package lists... 97%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
+Building dependency tree... 0%Building dependency tree... 0%Building dependency tree... 0%Building dependency tree... 50%Building dependency tree... 50%Building dependency tree... Done
+Reading state information... 0% Reading state information... 0%Reading state information... Done
+6 packages can be upgraded. Run 'apt list --upgradable' to see them.
+[1;34m2026-09-08 02:29:21 - Repository configured successfully.[0m
+[38;5;79m2026-09-08 02:29:21 - To install Node.js, run: apt install nodejs -y[0m
+[38;5;79m2026-09-08 02:29:21 - You can use N|solid Runtime as a node.js alternative[0m
+[1;32m2026-09-08 02:29:21 - To install N|solid Runtime, run: apt install nsolid -y 
+[0m
+Reading package lists... 0%Reading package lists... 100%Reading package lists... Done
+Building dependency tree... 0%Building dependency tree... 0%Building dependency tree... 50%Building dependency tree... 50%Building dependency tree... Done
+Reading state information... 0% Reading state information... 0%Reading state information... Done
+git is already the newest version (1:2.43.0-1ubuntu7.3).
+curl is already the newest version (8.5.0-2ubuntu10.13).
+unzip is already the newest version (6.0-28ubuntu4.1).
+caddy is already the newest version (2.6.2-6ubuntu0.24.04.3).
+ffmpeg is already the newest version (7:6.1.1-3ubuntu5).
+chromium-browser is already the newest version (2:1snap1-0ubuntu2).
+The following NEW packages will be installed:
+  nodejs
+0 upgraded, 1 newly installed, 0 to remove and 6 not upgraded.
+Need to get 0 B/32.2 MB of archives.
+After this operation, 196 MB of additional disk space will be used.
+Selecting previously unselected package nodejs.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 144843 files and directories currently installed.)
+Preparing to unpack .../nodejs_20.20.2-1nodesource1_amd64.deb ...
+Unpacking nodejs (20.20.2-1nodesource1) ...
+Setting up nodejs (20.20.2-1nodesource1) ...
+Processing triggers for man-db (2.12.0-4build2) ...
+Scanning processes... [                                                        ]Scanning processes... [                                                        ]Scanning processes... [                                                        ]Scanning processes... [=                                                       ]Scanning processes... [=                                                       ]Scanning processes... [=                                                       ]Scanning processes... [==                                                      ]Scanning processes... [==                                                      ]Scanning processes... [===                                                     ]Scanning processes... [===                                                     ]Scanning processes... [===                                                     ]Scanning processes... [====                                                    ]Scanning processes... [====                                                    ]Scanning processes... [====                                                    ]Scanning processes... [=====                                                   ]Scanning processes... [=====                                                   ]Scanning processes... [======                                                  ]Scanning processes... [======                                                  ]Scanning processes... [======                                                  ]Scanning processes... [=======                                                 ]Scanning processes... [=======                                                 ]Scanning processes... [========                                                ]Scanning processes... [========                                                ]Scanning processes... [========                                                ]Scanning processes... [=========                                               ]Scanning processes... [=========                                               ]Scanning processes... [=========                                               ]Scanning processes... [==========                                              ]Scanning processes... [==========                                              ]Scanning processes... [===========                                             ]Scanning processes... [===========                                             ]Scanning processes... [===========                                             ]Scanning processes... [============                                            ]Scanning processes... [============                                            ]Scanning processes... [=============                                           ]Scanning processes... [=============                                           ]Scanning processes... [=============                                           ]Scanning processes... [==============                                          ]Scanning processes... [==============                                          ]Scanning processes... [==============                                          ]Scanning processes... [===============                                         ]Scanning processes... [===============                                         ]Scanning processes... [================                                        ]Scanning processes... [================                                        ]Scanning processes... [================                                        ]Scanning processes... [=================                                       ]Scanning processes... [=================                                       ]Scanning processes... [==================                                      ]Scanning processes... [==================                                      ]Scanning processes... [==================                                      ]Scanning processes... [===================                                     ]Scanning processes... [===================                                     ]Scanning processes... [===================                                     ]Scanning processes... [====================                                    ]Scanning processes... [====================                                    ]Scanning processes... [=====================                                   ]Scanning processes... [=====================                                   ]Scanning processes... [=====================                                   ]Scanning processes... [======================                                  ]Scanning processes... [======================                                  ]Scanning processes... [=======================                                 ]Scanning processes... [=======================                                 ]Scanning processes... [=======================                                 ]Scanning processes... [========================                                ]Scanning processes... [========================                                ]Scanning processes... [========================                                ]Scanning processes... [=========================                               ]Scanning processes... [=========================                               ]Scanning processes... [==========================                              ]Scanning processes... [==========================                              ]Scanning processes... [==========================                              ]Scanning processes... [===========================                             ]Scanning processes... [===========================                             ]Scanning processes... [============================                            ]Scanning processes... [============================                            ]Scanning processes... [============================                            ]Scanning processes... [=============================                           ]Scanning processes... [=============================                           ]Scanning processes... [=============================                           ]Scanning processes... [==============================                          ]Scanning processes... [==============================                          ]Scanning processes... [===============================                         ]Scanning processes... [===============================                         ]Scanning processes... [===============================                         ]Scanning processes... [================================                        ]Scanning processes... [================================                        ]Scanning processes... [================================                        ]Scanning processes... [=================================                       ]Scanning processes... [=================================                       ]Scanning processes... [==================================                      ]Scanning processes... [==================================                      ]Scanning processes... [==================================                      ]Scanning processes... [===================================                     ]Scanning processes... [===================================                     ]Scanning processes... [====================================                    ]Scanning processes... [====================================                    ]Scanning processes... [====================================                    ]Scanning processes... [=====================================                   ]Scanning processes... [=====================================                   ]Scanning processes... [=====================================                   ]Scanning processes... [======================================                  ]Scanning processes... [======================================                  ]Scanning processes... [=======================================                 ]Scanning processes... [=======================================                 ]Scanning processes... [=======================================                 ]Scanning processes... [========================================                ]Scanning processes... [========================================                ]Scanning processes... [=========================================               ]Scanning processes... [=========================================               ]Scanning processes... [=========================================               ]Scanning processes... [==========================================              ]Scanning processes... [==========================================              ]Scanning processes... [==========================================              ]Scanning processes... [===========================================             ]Scanning processes... [===========================================             ]Scanning processes... [============================================            ]Scanning processes... [============================================            ]Scanning processes... [============================================            ]Scanning processes... [=============================================           ]Scanning processes... [=============================================           ]Scanning processes... [==============================================          ]Scanning processes... [==============================================          ]Scanning processes... [==============================================          ]Scanning processes... [===============================================         ]Scanning processes... [===============================================         ]Scanning processes... [===============================================         ]Scanning processes... [================================================        ]Scanning processes... [================================================        ]Scanning processes... [=================================================       ]Scanning processes... [=================================================       ]Scanning processes... [=================================================       ]Scanning processes... [==================================================      ]Scanning processes... [==================================================      ]Scanning processes... [===================================================     ]Scanning processes... [===================================================     ]Scanning processes... [===================================================     ]Scanning processes... [====================================================    ]Scanning processes... [====================================================    ]Scanning processes... [====================================================    ]Scanning processes... [=====================================================   ]Scanning processes... [=====================================================   ]Scanning processes... [======================================================  ]Scanning processes... [======================================================  ]Scanning processes... [======================================================  ]Scanning processes... [======================================================= ]Scanning processes... [======================================================= ]Scanning processes... [========================================================]Scanning processes...                                                           
+Scanning candidates... [                                                       ]Scanning candidates... [===========                                            ]Scanning candidates... [======================                                 ]Scanning candidates... [=================================                      ]Scanning candidates... [============================================           ]Scanning candidates... [=======================================================]Scanning candidates...                                                          
+Scanning linux images... [                                                     ]Scanning linux images... [=============                                        ]Scanning linux images... [==========================                           ]Scanning linux images... [=======================================              ]Scanning linux images... [=====================================================]Scanning linux images...                                                        
+
+Pending kernel upgrade!
+Running kernel version:
+  6.8.0-134-generic
+Diagnostics:
+  The currently running kernel version is not the expected kernel version
+6.8.0-139-generic.
+
+Restarting the system to load the new kernel will not be handled automatically,
+so you should consider rebooting.
+
+Restarting services...
+
+Service restarts being deferred:
+ /etc/needrestart/restart.d/dbus.service
+ systemctl restart getty@tty1.service
+ systemctl restart serial-getty@ttyS0.service
+ systemctl restart systemd-logind.service
+ systemctl restart unattended-upgrades.service
+
+No containers need to be restarted.
+
+No user sessions are running outdated binaries.
+
+No VM guests are running outdated hypervisor (qemu) binaries on this host.
+[1G[0K⠙[1G[0K⠹[1G[0K⠸[1G[0K⠼[1G[0K⠴[1G[0K⠦[1G[0K⠧[1G[0K⠇[1G[0K⠏[1G[0K⠋[1G[0K⠙[1G[0K⠹[1G[0K⠸[1G[0K⠼[1G[0K⠴[1G[0K⠦[1G[0K⠧[1G[0K⠇[1G[0K⠏[1G[0K⠋[1G[0K⠙[1G[0K⠹[1G[0K⠸[1G[0K⠼[1G[0K⠴[1G[0K⠦[1G[0K⠧[1G[0K⠇[1G[0K⠏[1G[0K⠋[1G[0K⠙[1G[0K⠹[1G[0K⠸[1G[0K⠼[1G[0K⠴[1G[0K⠦[1G[0K⠧[1G[0K⠇[1G[0K⠏[1G[0K⠋[1G[0K⠙[1G[0K⠹[1G[0K⠸[1G[0K⠼[1G[0K⠴[1G[0K⠦[1G[0K⠧[1G[0K⠇[1G[0K⠏[1G[0K⠋[1G[0K⠙[1G[0K⠹[1G[0K⠸[1G[0K⠼[1G[0K⠴[1G[0K⠦[1G[0K⠧[1G[0K⠇[1G[0K⠏[1G[0K⠋[1G[0K⠙[1G[0K⠹[1G[0K⠸[1G[0K⠼[1G[0K⠴[1G[0K⠦[1G[0K⠧[1G[0K⠇[1G[0K⠏[1G[0K⠋[1G[0K⠙[1G[0K⠹[1G[0K⠸[1G[0K⠼[1G[0K⠴[1G[0K⠦[1G[0K⠧[1G[0K⠇[1G[0K⠏[1G[0K⠋[1G[0K⠙[1G[0K⠹[1G[0K⠸[1G[0K⠼[1G[0K⠴[1G[0K⠦[1G[0K⠧[1G[0K⠇[1G[0K⠏[1G[0K⠋[1G[0K⠙[1G[0K⠹[1G[0K⠸[1G[0K⠼[1G[0K⠴[1G[0K⠦[1G[0K⠧[1G[0K⠇[1G[0K⠏[1G[0K⠋[1G[0K⠙[1G[0K⠹[1G[0K⠸[1G[0K⠼[1G[0K⠴[1G[0K⠦[1G[0K⠧[1G[0K
+added 162 packages in 9s
+[1G[0K⠧[1G[0K
+[1G[0K⠧[1G[0K32 packages are looking for funding
+[1G[0K⠧[1G[0K  run `npm fund` for details
+[1G[0K⠧[1G[0K[1mnpm[22m [96mnotice[39m
+[1mnpm[22m [96mnotice[39m New [31mmajor[39m version of npm available! [31m10.8.2[39m -> [34m12.0.2[39m
+[1mnpm[22m [96mnotice[39m Changelog: [34mhttps://github.com/npm/cli/releases/tag/v12.0.2[39m
+[1mnpm[22m [96mnotice[39m To update run: [4mnpm install -g npm@12.0.2[24m
+[1mnpm[22m [96mnotice[39m
+[1G[0K⠧[1G[0KAlready on 'feature/update-talkbyte-2026'
+Your branch is up to date with 'origin/feature/update-talkbyte-2026'.
+From https://github.com/ajayspi/Talkbyte
+ * branch            feature/update-talkbyte-2026 -> FETCH_HEAD
+Already up to date.
+
+                        -------------
+
+__/\\\\\\\\\\\\\____/\\\\____________/\\\\____/\\\\\\\\\_____
+ _\/\\\/////////\\\_\/\\\\\\________/\\\\\\__/\\\///////\\\___
+  _\/\\\_______\/\\\_\/\\\//\\\____/\\\//\\\_\///______\//\\\__
+   _\/\\\\\\\\\\\\\/__\/\\\\///\\\/\\\/_\/\\\___________/\\\/___
+    _\/\\\/////////____\/\\\__\///\\\/___\/\\\________/\\\//_____
+     _\/\\\_____________\/\\\____\///_____\/\\\_____/\\\//________
+      _\/\\\_____________\/\\\_____________\/\\\___/\\\/___________
+       _\/\\\_____________\/\\\_____________\/\\\__/\\\\\\\\\\\\\\\_
+        _\///______________\///______________\///__\///////////////__
+
+
+                          Runtime Edition
+
+        PM2 is a Production Process Manager for Node.js applications
+                     with a built-in Load Balancer.
+
+                Start and Daemonize any application:
+                $ pm2 start app.js
+
+                Load Balance 4 instances of api.js:
+                $ pm2 start api.js -i 4
+
+                Monitor in production:
+                $ pm2 monitor
+
+                Make pm2 auto-boot at server restart:
+                $ pm2 startup
+
+                To go further checkout:
+                http://pm2.io/
+
+
+                        -------------
+
+[32m[PM2] [39mSpawning PM2 daemon with pm2_home=/root/.pm2
+[32m[PM2] [39mPM2 Successfully daemonized
+[31m[PM2][ERROR] [39mProcess or Namespace talkbyte not found
+[32m[PM2] [39mStarting /usr/bin/serve in fork_mode (1 instance)
+[32m[PM2] [39mDone.
+[90m┌────┬──────────┬──────────┬──────┬───────────┬──────────┬──────────┐[39m
+[90m│[39m[1m[36m id [39m[22m[90m│[39m[1m[36m name     [39m[22m[90m│[39m[1m[36m mode     [39m[22m[90m│[39m[1m[36m ↺    [39m[22m[90m│[39m[1m[36m status    [39m[22m[90m│[39m[1m[36m cpu      [39m[22m[90m│[39m[1m[36m memory   [39m[22m[90m│[39m
+[90m├────┼──────────┼──────────┼──────┼───────────┼──────────┼──────────┤[39m
+[90m│[39m[1m[36m [1m[36m0[39m[36m[22m[1m  [39m[22m[90m│[39m serve    [90m│[39m [7m[1mfork[22m[27m     [90m│[39m 0    [90m│[39m [32m[1monline[22m[39m    [90m│[39m 0%       [90m│[39m 29.1mb   [90m│[39m
+[90m└────┴──────────┴──────────┴──────┴───────────┴──────────┴──────────┘[39m
+\nEXIT STATUS: 0\n
