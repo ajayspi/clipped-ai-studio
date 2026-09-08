@@ -43,3 +43,11 @@ Clipped relies on an intelligent cascading media pipeline for generation:
 - **AI Media Generation**: Video and high-fidelity image generation utilizes [fal.ai](https://fal.ai/). A free trial is available, which transitions to a paid tier depending on usage.
 
 **Important Note on Media URLs**: Generated media URLs from services like fal.ai and Pollinations may expire. The built-in orchestrator downloads these URLs to durable storage prior to the final video rendering pipeline.
+
+## Documentation & Development Journal
+
+- **Master System Architecture**: [`docs/PROJECT_GIST.md`](file:///docs/PROJECT_GIST.md)
+- **Master Daily Changelog**: [`daily_documentation.md`](file:///daily_documentation.md)
+- **Chronological Devlogs**: [`docs/devlogs/`](file:///docs/devlogs/INDEX.md)
+- **Persistent Memory Protocol**: [`.agents/rules/daily-documentation.md`](file:///.agents/rules/daily-documentation.md)
+
