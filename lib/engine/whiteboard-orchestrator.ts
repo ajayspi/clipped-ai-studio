@@ -217,14 +217,14 @@ export class WhiteboardOrchestrator {
       jobState.logs.push(`[100%] Whiteboard video generation complete! Duration: ${totalDuration.toFixed(1)}s`);
       jobState.updatedAt = new Date().toISOString();
 
-      // Persist to Supabase render_jobs if table available
+      // Persist to Supabase render_jobs so the FFmpeg worker picks it up
       try {
         await supabase.from('render_jobs').upsert({
           id: jobId,
           user_id: null,
-          status: 'completed',
-          progress: 100,
-          video_url: videoUrl,
+          status: 'pending',
+          progress: 10,
+          logs: JSON.stringify({ beats: storyboard }),
           config: {
             workflow: 'whiteboard',
             prompt,

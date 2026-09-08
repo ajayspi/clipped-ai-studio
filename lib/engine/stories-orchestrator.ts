@@ -1,3 +1,5 @@
+import { getOmniRouteConfig } from '@/lib/keys';
+import { complete, parseJson } from '@/lib/engine/llm';
 import {
   StorySeriesRequest,
   StorySeriesResponse,
@@ -35,9 +37,8 @@ export class StoriesOrchestrator {
 
     console.log(`[StoriesOrchestrator] Generating ${partsCount}-part story series for topic: "${topic}" (${storyType})`);
 
-    const apiKey = process.env.OPENAI_API_KEY;
-
-    if (apiKey) {
+    const omniConfig = await getOmniRouteConfig();
+    if (omniConfig.isConfigured && omniConfig.apiKey) {
       try {
         const response = await this.generateWithOpenAI(
           topic,
@@ -46,8 +47,7 @@ export class StoriesOrchestrator {
           visualStyle,
           includeHooks,
           voice,
-          aspectRatio,
-          apiKey
+          aspectRatio
         );
         if (response && response.success && response.parts && response.parts.length > 0) {
           return response;
@@ -73,38 +73,16 @@ export class StoriesOrchestrator {
     visualStyle: string,
     includeHooks: boolean,
     voice: string,
-    aspectRatio: string,
-    apiKey: string
+    aspectRatio: string
   ): Promise<StorySeriesResponse> {
     const prompt = buildStoryPartsPrompt(topic, storyType, partsCount, visualStyle);
 
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPTS.STORY_SERIES },
-          { role: 'user', content: prompt },
-        ],
-      }),
-    });
-
-    if (!res.ok) {
-      throw new Error(`OpenAI API Error: ${res.status} ${res.statusText}`);
-    }
-
-    const data = await res.json();
-    const content = data?.choices?.[0]?.message?.content;
+    const content = await complete({ system: SYSTEM_PROMPTS.STORY_SERIES, user: prompt, json: true }, undefined, 'auto');
     if (!content) {
-      throw new Error('No content returned from OpenAI');
+      throw new Error('No content returned from OmniRoute');
     }
 
-    const parsed = JSON.parse(content);
+    const parsed = parseJson<Record<string, any>>(content);
     const seriesTitle = parsed.seriesTitle || `${topic} (${storyType.toUpperCase()} Series)`;
 
     const rawParts: any[] = Array.isArray(parsed.parts) ? parsed.parts : [];
@@ -335,3 +313,5 @@ export class StoriesOrchestrator {
 }
 
 export const storiesOrchestrator = new StoriesOrchestrator();
+
+

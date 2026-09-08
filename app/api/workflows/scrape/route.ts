@@ -47,7 +47,11 @@ RAW WEBPAGE TEXT:
 ${cleanText}
 `;
 
-    const script = await complete(prompt, 'openai', 'gpt-4o');
+    const script = await complete({
+      system: 'You are a precise short-form video scriptwriter.',
+      user: prompt,
+      maxTokens: 1200,
+    }, undefined, 'gpt-4o');
 
     if (!script) {
       throw new Error('Failed to generate script from URL');

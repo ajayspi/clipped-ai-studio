@@ -1,16 +1,23 @@
-# Progress — Worker M2 (Milestone 2: Automatic Mission Mode & Progress View)
+# Progress — Milestone 2: Engine Integration Updates
 
-Last visited: 2026-09-01T13:46:30Z
+Last visited: 2026-09-04T22:03:00Z
 
 ## Status
-- [x] Read DISPATCH.md and Explorer Reports (m2_1, m2_2, m2_3)
-- [x] Initialized BRIEFING.md and progress.md
-- [ ] Inspect existing codebase files (`lib/engine/*`, `components/create/*`, `components/wizard/*`, `app/api/*`)
-- [ ] Implement `lib/engine/mission-orchestrator.ts` with full 5-stage pipeline and resilient fallbacks
-- [ ] Implement `app/api/workflows/mission/route.ts` with POST and GET handlers
-- [ ] Update `components/create/MissionPromptBar.tsx`
-- [ ] Implement `app/(app)/create/mission/[id]/page.tsx` and supporting visualizer/preview components
-- [ ] Create `tests/e2e/test-mission-mode.js` (30 test cases across 6 suites)
-- [ ] Update `tests/e2e/standalone-runner.js` with Tier 10
-- [ ] Run test suites and verify 100% passing
-- [ ] Write handoff.md and report to parent
+Starting Milestone 2 tasks.
+
+## Checklist
+- [ ] Read ORIGINAL_REQUEST.md, handoff.md, analysis.md, PROJECT.md
+- [ ] Inspect existing `lib/ai/llm.ts`, `lib/keys.ts`, `lib/engine/tts.ts`
+- [ ] Create `lib/engine/llm.ts`
+- [ ] Update `lib/ai/llm.ts`
+- [ ] Update `lib/engine/tts.ts`
+- [ ] Update engine orchestrators:
+  - [ ] `lib/engine/auto-pilot.ts`
+  - [ ] `lib/engine/drama-orchestrator.ts`
+  - [ ] `lib/engine/bulk-planner.ts`
+  - [ ] `lib/engine/scene-matcher.ts`
+  - [ ] `lib/engine/stories-orchestrator.ts`
+  - [ ] `lib/engine/shorts-extractor.ts`
+  - [ ] `lib/ai/gemini-character-generator.ts`
+- [ ] Verification script and build verification
+- [ ] Handoff report and completion message

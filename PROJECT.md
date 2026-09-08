@@ -1,118 +1,149 @@
-# Project: Clipped AI Studio — Final Product Package
+# Project: Clipped Application — Viewport Optimization, Global Render Queue & Media Pipeline Fixes
 
 ## Architecture
-Clipped is a full-stack Next.js 15 (React 19) AI video generation platform powered by Remotion, multi-provider LLMs/TTS/Video models, Supabase PostgreSQL, and automated social publishing.
+Refactoring the `/create` video creation workflow for zero-scroll 1080p viewport compliance, establishing a global render queue indicator and dedicated queue management page, and fixing critical media pipeline bugs (Edge TTS keyless voiceover synthesis, subtitle effects rendering in video output, and external voice API keys reflection).
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │                                    CLIENT LAYER                                        │
-│  - App Shell, Header, Sidebar, Dynamic Supabase Context Provider                       │
-│  - Creation Hub & Workflows (/create, /create/*)                                       │
-│  - Subtitles Configuration with Glassmorphism & Visual Depth (R3)                      │
-│  - Settings (/settings) with Custom Supabase Panel (R1) & Voice Previews (R2)          │
-│  - Workspaces & Folder Organization (R4.3)                                             │
-│  - Analytics Dashboard & API Cost Estimation (R4.5)                                    │
-│  - Brand Kit & Watermark Configuration (R4.2)                                          │
+│  - Navigation Shell (app/(app)/layout.tsx):                                            │
+│    * Top "Create Video" button routed to /create/stories (Story Maker)                 │
+│    * Global Render Queue indicator in Desktop Header, Mobile Header, and Sidebar       │
+│  - Dedicated Queue Page (app/(app)/queue/page.tsx):                                    │
+│    * Live status cards for pending/generating/processing/completed jobs                │
+│    * Real-time progress bars, logs drawer, and "Go to Story Maker" quick action button │
+│  - Creation Wizard (/create/stories & components/wizard/):                             │
+│    * Viewport-constrained container: h-[calc(100vh-4.25rem)] overflow-hidden           │
+│    * SubtitlesStep: compact master toggle, 52px preset cards, removed duplicate preview│
+│    * VoiceStep: horizontal provider segmented tabs, 40px compact voice cards, inline strip│
+│    * ScenesStep: scroll-capped container with 66px compact beat cards                  │
+│    * ScriptStep: 120px compact textarea; RenderStep: compact review grid               │
+│    * Render submission: redirects to /queue?jobId=${data.jobId}                        │
 └──────────────────────────────────────────┬─────────────────────────────────────────────┘
                                            │
 ┌──────────────────────────────────────────▼─────────────────────────────────────────────┐
-│                                 API & ENGINE LAYER                                     │
-│  - Dynamic Supabase SSR Client & Connection Diagnostics (/api/settings/supabase/test)  │
-│  - Voice Engine (Azure TTS, OpenAI TTS, Keyless Fallback) & Preview API (/api/tts/*)   │
-│  - Developer REST API (/api/v1/generate, /api/v1/jobs/[id]) & HMAC Webhooks (R4.4)     │
-│  - Social Publishing Engine (YouTube Shorts, TikTok, Instagram) & Export (R4.1)        │
-│  - Cost Estimator & Usage Tracking Engine (lib/engine/cost-estimator.ts)               │
-│  - Remotion Composition (Subtitles, Neon Glows, Watermark Overlay) & Render Worker     │
+│                                 API & STORAGE LAYER                                    │
+│  - Workflow Generation Route (app/api/workflows/generate/route.ts):                    │
+│    * Preserves full subtitle styling (burnSubtitles, colors, preset, size, Y) in logs  │
+│    * Captures selected voice and voiceProvider in render_jobs record                   │
+│  - Settings Keys API (app/api/settings/keys/route.ts):                                 │
+│    * Standardizes external voice keys (elevenlabs, google_tts, azure_speech, openai)   │
+│  - Jobs Polling API (app/api/jobs/route.ts):                                           │
+│    * Returns live queued, processing, completed, and failed counts for global indicator │
 └──────────────────────────────────────────┬─────────────────────────────────────────────┘
                                            │
 ┌──────────────────────────────────────────▼─────────────────────────────────────────────┐
-│                            PERSISTENCE & INFRASTRUCTURE                                │
-│  - Dynamic Supabase Instance (LocalStorage + Cookies + Fallback)                       │
-│  - Tables: users, videos, render_jobs, api_credits, settings, scheduled_posts,         │
-│            workspaces, campaigns                                                       │
-│  - Opaque-Box Automated Test Suite (tests/e2e/standalone-runner.js)                    │
+│                                    ENGINE LAYER                                        │
+│  - Voice Synthesis Engine (lib/engine/tts.ts):                                         │
+│    * Edge TTS Free fix: handles WebSocket errors, fallback to Google Translate TTS REST│
+│    * Catalog alignment: recognizes free-* voice IDs without defaulting to US voice     │
+│    * External provider reflection: checks settings table for user API keys (Azure, etc.)│
+│  - Render Worker Pipeline (scripts/render-worker.ts):                                  │
+│    * Native data: URI decoding into audio buffers (eliminates fetch() failure)         │
+│    * Subtitle burning: burns configured subtitle styles/presets via FFmpeg drawtext    │
+│    * Guaranteed audio track: merges synthesized voiceover into output video            │
+│  - Remotion Preview (remotion/Composition.tsx):                                        │
+│    * Imports Audio from 'remotion' and renders voiceover tracks during live preview    │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Feature Inventory
 | # | Feature | Description | Milestone | Source |
 |---|---------|-------------|-----------|--------|
-| 1 | Custom Supabase UI | Settings panel for NEXT_PUBLIC_SUPABASE_URL & ANON_KEY | M1 | R1 |
-| 2 | Dynamic Client Routing | SupabaseProvider + localStorage + SSR cookies for dynamic DB | M1 | R1 |
-| 3 | Supabase Test Probe | POST /api/settings/supabase/test for latency & schema checks | M1 | R1 |
-| 4 | Azure TTS Integration | Azure Cognitive Speech REST synthesis in TTSEngine | M2 | R2 |
-| 5 | Free/Keyless Voice APIs | Google Translate TTS, Web Speech, in-memory synth | M2 | R2 |
-| 6 | Voice Audio Previews | Play/Pause preview buttons next to voice models with sample audio | M2 | R2 |
-| 7 | Modern Subtitles UI | Glassmorphism, backdrop-blur, shadows, visual depth | M3 | R3 |
-| 8 | Subtitle Style Presets | 6 presets: Hormozi Pop, Cyber Neon, Minimalist, Cinematic, etc. | M3 | R3 |
-| 9 | Subtitle Position Selector | 3-segment smartphone mockup selector + live preview sandbox | M3 | R3 |
-| 10 | One-Click Export & Publish | Direct publish to YouTube Shorts / TikTok mocks + export API | M4 | R4.1 |
-| 11 | Custom Branding & Watermark | Watermark overlay in Remotion (5 anchors, scale, opacity, badge) | M4 | R4.2 |
-| 12 | Project Workspaces | Folders & campaigns organization, workspaces table & UI filter | M4 | R4.3 |
-| 13 | Developer API & Webhooks | /api/v1/generate, /api/v1/jobs/[id], HMAC signed webhooks | M4 | R4.4 |
-| 14 | Advanced Analytics Dashboard | API usage tracking, multi-provider cost estimation model | M4 | R4.5 |
-| 15 | Standalone Test Suite | Automated opaque-box tests covering all R1-R4 criteria | M5 | Acceptance Criteria |
+| 1 | Edge TTS Free Voiceover Synthesis Fix | Fix WebSocket timeout/errors, voice catalog matching (`free-`), and robust fallback | M1 | R3.1, Survey |
+| 2 | Render Worker Audio Attachment | Native base64 data URI handling and guaranteed FFmpeg audio track integration | M1 | R3.1, Survey |
+| 3 | Remotion Live Preview Audio | Render `<Audio />` in `remotion/Composition.tsx` for live voiceover playback | M1 | R3.1, Survey |
+| 4 | Subtitle Styling Payload Preservation | Capture all subtitle parameters in `POST /api/workflows/generate` | M2 | R3.2, Survey |
+| 5 | Subtitle Rendering in Render Worker | Burn styled subtitles in FFmpeg render worker using configured presets and colors | M2 | R3.2, Survey |
+| 6 | External Voice Settings & Key Reflection | Fetch and utilize external provider API keys (Azure, ElevenLabs, etc.) in `tts.ts` | M2 | R3.3, Survey |
+| 7 | Top Navigation Route Correction | Route "Create Video" button in `app/(app)/layout.tsx` to `/create/stories` | M3 | R2, Survey |
+| 8 | Dedicated Render Queue Page | Build `app/(app)/queue/page.tsx` with live progress and "Go to Story Maker" button | M3 | R2, Survey |
+| 9 | Post-Submission Queue Navigation | Redirect `/create` wizard submissions to `/queue?jobId=${jobId}` | M3 | R2, Survey |
+| 10 | Global Render Queue Indicator | Global Zustand store and indicator across Desktop Header, Mobile Header, and Sidebar | M3 | R2, Survey |
+| 11 | Viewport Shell Constraint | Constrain `CreationWizard.tsx` to `h-[calc(100vh-4.25rem)] overflow-hidden` | M4 | R1, Survey |
+| 12 | Compact Subtitles Step | Remove duplicate sandbox/phone mockup; implement 52px preset cards and compact styling | M4 | R1, Survey |
+| 13 | Compact Voice Step | Horizontal provider segmented tabs, 40px compact voice cards, inline audio strip | M4 | R1, Survey |
+| 14 | Compact Scenes & Script Steps | Scroll-capped beat container (66px cards) and compact script textarea | M4 | R1, Survey |
+| 15 | E2E System Verification | Automated and programmatic validation of viewport, queue, and media pipeline | M5 | AC, Survey |
+| 16 | Forensic Integrity Audit | Independent binary integrity audit verifying genuine implementation with zero mocking | M5 | Audit |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| 1 | Custom Supabase Connection | Settings panel, dynamic context, cookies, connection probe test | none | PLANNED |
-| 2 | Voice API Expansion & Previews | Azure TTS, Free/Keyless, Preview API, Play/Pause UI in Settings & Wizard | none | PLANNED |
-| 3 | Modernize Subtitles UI | SubtitlesStep redesign, glassmorphism, 6 presets, position selector, Remotion styling | none | PLANNED |
-| 4 | Premium Package Features | Social Export, Branding & Watermarks, Workspaces, Developer API/Webhooks, Analytics | M1, M2, M3 | PLANNED |
-| 5 | E2E Testing & Verification | Comprehensive test runner for R1-R4 acceptance criteria | M1, M2, M3, M4 | PLANNED |
-| 6 | Forensic Audit & Packaging | Integrity verification, build validation, and final presentation | M5 | PLANNED |
+| 1 | Voiceover Edge TTS Fix & Audio Pipeline | Fix Edge TTS free synthesis, data URI decoding, render worker audio stream, and Remotion Audio | none | DONE |
+| 2 | Subtitle Effects & Voice Settings Reflection | Preserve subtitle payload in API, burn subtitles in render worker, and utilize external provider keys in `tts.ts` | M1 | IN_PROGRESS |
+| 3 | Global Render Queue & Navigation Routing | Route top button to `/create/stories`, build dedicated `/queue` page, add global indicator, and redirect submissions | none | PLANNED |
+| 4 | UI Viewport Optimization for /create Flow | Compact CreationWizard container, SubtitlesStep, VoiceStep, ScenesStep, and ScriptStep for zero-scroll 1080p | M3 | PLANNED |
+| 5 | E2E Integration Verification & Forensic Audit | Comprehensive programmatic verification of all acceptance criteria and binary integrity audit | M1, M2, M3, M4 | PLANNED |
 
 ## Interface Contracts
 
-### 1. Supabase Dynamic Client Context
-- `lib/supabase/context.tsx`:
-  - `useSupabase()`: returns `{ supabase, config, setCustomConfig, resetToDefault, testConnection }`
-  - `clipped_custom_supabase_config` in `localStorage`
-  - `clipped_custom_supabase_url`, `clipped_custom_supabase_anon_key` in `document.cookie`
-- `app/api/settings/supabase/test/route.ts`:
-  - Request: `{ url: string, anonKey: string }`
-  - Response: `{ success: boolean, reachable: boolean, latencyMs: number, schema: { isHealthy: boolean, tables: Record<string, { exists: boolean }> } }`
+### 1. Voice Synthesis Engine (`lib/engine/tts.ts`)
+```ts
+export interface TTSRequest {
+  text: string;
+  provider?: 'omniroute' | 'keyless' | 'azure' | 'elevenlabs' | 'google' | 'openai';
+  voiceId?: string;
+  speed?: number;
+}
 
-### 2. TTS Voice Preview & Synthesis
-- `lib/engine/tts.ts`:
-  - Providers: `'azure' | 'elevenlabs' | 'openai' | 'google' | 'coqui' | 'keyless' | 'mock' | 'auto'`
-  - `synthesize(request: TTSRequest): Promise<TTSResponse>`
-- `app/api/tts/preview/route.ts`:
-  - Request: `{ text?: string, voiceId: string, provider?: string, language?: string, speed?: number }`
-  - Response: `{ success: boolean, audioUrl: string, audioBase64: string, duration: number, providerUsed: string, voiceId: string }`
+export interface TTSResult {
+  audioUrl: string; // http(s) URL or valid base64 data URI
+  duration: number; // in seconds
+  providerUsed: string;
+  audioBuffer?: Buffer;
+}
+```
 
-### 3. Remotion Composition & Watermark
-- `remotion/Composition.tsx`:
-  - `WatermarkConfig`: `{ url?: string, position?: 'top-left'|'top-right'|'bottom-left'|'bottom-right'|'center', opacity?: number, scale?: number, margin?: number, handle?: string }`
-  - `SubtitleStyleConfig`: `{ preset: string, color: string, highlightColor?: string, outlineColor: string, outlineWidth: number, fontSize: number, yPosition: number, showBox: boolean, boxColor: string, boxOpacity?: number, neonGlow?: boolean, uppercase: boolean, maxWidth: number }`
+### 2. Workflow Generation Payload (`app/api/workflows/generate/route.ts`)
+```ts
+export interface GenerateWorkflowRequest {
+  workflow: string;
+  script: string;
+  voice?: string;
+  voiceProvider?: string;
+  burnSubtitles?: boolean;
+  subtitlePreset?: string;
+  subtitleColor?: string;
+  subtitleHighlightColor?: string;
+  subtitleGlow?: boolean;
+  subtitleGlowColor?: string;
+  subtitleOutline?: boolean;
+  subtitleOutlineWidth?: number;
+  subtitleBox?: boolean;
+  subtitleBoxColor?: string;
+  subtitleSize?: number;
+  subtitleY?: number;
+}
+```
 
-### 4. Developer API & Webhooks
-- `app/api/v1/generate/route.ts`:
-  - Request: `{ prompt: string, workflow?: string, aspectRatio?: string, voice?: string, burnSubtitles?: boolean, watermarkUrl?: string, webhookUrl?: string, metadata?: Record<string, any> }`
-  - Response: `{ success: true, jobId: string, status: "processing", createdAt: string, statusUrl: string }`
-- `app/api/v1/jobs/[id]/route.ts`:
-  - Response: `{ jobId: string, status: string, progress: number, videoUrl?: string, duration?: number, costEstimation?: { totalCostUsd: number, llmTokens: number, ttsCharacters: number } }`
-
-### 5. Workspaces & Analytics
-- `app/api/workspaces/route.ts`:
-  - `GET`: Returns list of workspaces with video counts.
-  - `POST`: `{ name: string, color?: string, icon?: string, description?: string }`
-- `lib/engine/cost-estimator.ts`:
-  - `calculateVideoCost(params: VideoCostParams): VideoCostBreakdown`
-  - `getAggregatedAnalytics(): AnalyticsSummary`
+### 3. Global Queue Store & Jobs Response (`app/api/jobs/route.ts`)
+```ts
+export interface JobsResponse {
+  success: boolean;
+  jobs: RenderJob[];
+  queued: RenderJob[];
+  completed: RenderJob[];
+  failed: RenderJob[];
+  counts: {
+    total: number;
+    queued: number;
+    completed: number;
+    failed: number;
+  };
+}
+```
 
 ## Code Layout
-- `app/(app)/settings/page.tsx` — Settings page with Supabase Connection & Voice Catalog tabs
-- `app/(app)/analytics/page.tsx` — Analytics and cost estimations dashboard
-- `app/(app)/library/page.tsx` — Video library with workspaces filter and one-click export
-- `components/wizard/SubtitlesStep.tsx` — Modernized Subtitles UI
-- `components/wizard/VoiceStep.tsx` — Voice Step with audio previews
-- `lib/supabase/context.tsx` — Dynamic Supabase React Context
-- `lib/supabase/client.ts` — Dynamic Browser SSR client
-- `lib/supabase/server.ts` — Dynamic Server SSR client with cookie inspection
-- `lib/engine/tts.ts` — Expanded TTS engine (Azure + Keyless + OpenAI)
-- `lib/engine/cost-estimator.ts` — Cost calculation engine
-- `lib/engine/webhook-dispatcher.ts` — HMAC webhook dispatcher
-- `remotion/Composition.tsx` — Remotion composition with watermark & neon subtitle support
-- `tests/e2e/standalone-runner.js` — Automated test suite for R1-R4
+- `lib/engine/tts.ts` — Voiceover TTS synthesis engine (Edge TTS, fallback REST, external providers)
+- `scripts/render-worker.ts` — Video rendering worker (data URI audio handling, subtitle burning)
+- `remotion/Composition.tsx` — Remotion composition with `<Audio />` playback
+- `app/api/workflows/generate/route.ts` — Workflow submission endpoint capturing subtitle styles & voice
+- `app/api/jobs/route.ts` — Queue jobs query endpoint
+- `app/(app)/layout.tsx` — App layout shell with top "Create Video" link and global queue indicator
+- `app/(app)/queue/page.tsx` — Dedicated Queue page with live jobs and "Go to Story Maker"
+- `components/wizard/CreationWizard.tsx` — Compact container shell and post-submission redirect
+- `components/wizard/VoiceStep.tsx` — Compact voice selector step
+- `components/wizard/SubtitlesStep.tsx` — Compact subtitle style selector step
+- `components/wizard/ScenesStep.tsx` — Compact scenes step with scroll-capped container
+- `components/wizard/ScriptStep.tsx` — Compact script textarea step

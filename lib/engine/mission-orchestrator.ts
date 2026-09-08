@@ -562,6 +562,12 @@ Return ONLY a valid JSON object:
     const orientation = aspectRatio === '16:9' ? 'landscape' : aspectRatio === '1:1' ? 'square' : 'portrait';
     const samplePool = DRY_RUN_SAMPLE_VIDEOS[orientation] || DRY_RUN_SAMPLE_VIDEOS.portrait;
 
+    let selectSceneMedia: any = null;
+    try {
+      const ms = await import('../media/media-selector');
+      selectSceneMedia = ms.selectSceneMedia;
+    } catch (e) {}
+
     const enrichedScenes: Scene[] = [];
 
     for (let i = 0; i < scenes.length; i++) {
@@ -579,11 +585,35 @@ Return ONLY a valid JSON object:
             scene.selectedVideo = best;
             scene.videoUrl = best.url;
             scene.imageUrl = best.thumbnail || thumbUrl;
-            enrichedScenes.push(scene);
-            continue;
           }
         } catch (err) {
           // Fallback to next tier
+        }
+
+        if (selectSceneMedia) {
+          try {
+            const asset = await selectSceneMedia(scene, { allowGenerated: true, aspectRatio });
+            scene.mediaAsset = asset;
+            if (asset.kind === 'video') {
+              scene.videoUrl = asset.url;
+              if (!scene.selectedVideo) {
+                scene.selectedVideo = { id: asset.id, url: asset.url, title: 'Video Asset', platform: asset.provider };
+              }
+            } else if (asset.kind === 'image') {
+              scene.imageUrl = asset.url;
+              // Clear selectedVideo if it's just an image and we want Remotion to render the image
+              if (!scene.videoUrl && !scene.selectedVideo?.url) {
+                // Keep it clean for the image renderer
+              }
+            }
+          } catch (err) {
+            console.error('selectSceneMedia error:', err);
+          }
+        }
+
+        if (scene.mediaAsset || scene.selectedVideo) {
+          enrichedScenes.push(scene);
+          continue;
         }
       }
 

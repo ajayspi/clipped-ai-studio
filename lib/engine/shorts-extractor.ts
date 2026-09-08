@@ -1,3 +1,5 @@
+import { getOmniRouteConfig } from '@/lib/keys';
+import { complete, parseJson } from '@/lib/engine/llm';
 import {
   ExtractedClip,
   ShortsExtractionRequest,
@@ -28,30 +30,36 @@ export class ShortsExtractor {
     console.log(`[ShortsExtractor] Extracting ${clipCount} clips using strategy: ${strategy} from source: ${sourceType}`);
 
     // 2. Determine raw transcript content and original duration
-    let rawTranscript = hasTranscript ? request.transcript!.trim() : '';
-    let originalDuration = 600; // Default 10 minutes (600s)
-
-    if (hasVideoUrl && !hasTranscript) {
-      // Synthesize an authentic transcript from video metadata / URL topic
-      rawTranscript = this.synthesizeTranscriptFromUrl(request.videoUrl!);
-      originalDuration = 900; // 15 mins
-    } else if (hasTranscript) {
-      // Estimate duration from word count or timestamps
-      const wordCount = rawTranscript.split(/\s+/).length;
-      originalDuration = Math.max(60, Math.round((wordCount / 140) * 60));
-    }
+      let rawTranscript = hasTranscript ? request.transcript!.trim() : '';
+      let originalDuration = 600; // Default 10 minutes (600s)
+  
+      if (hasVideoUrl && !hasTranscript) {
+        try {
+          const { YoutubeTranscript } = require('youtube-transcript');
+          const transcripts = await YoutubeTranscript.fetchTranscript(request.videoUrl!);
+          rawTranscript = transcripts.map((t: any) => `[${new Date(t.offset * 1000).toISOString().substr(11, 8)}] ${t.text}`).join('\n');
+          originalDuration = transcripts.length > 0 ? (transcripts[transcripts.length - 1].offset + transcripts[transcripts.length - 1].duration) : 600;
+        } catch (e) {
+          console.warn('[ShortsExtractor] Failed to fetch real YT transcript, falling back to synthesis.', e);
+          rawTranscript = this.synthesizeTranscriptFromUrl(request.videoUrl!);
+          originalDuration = 900; // 15 mins
+        }
+      } else if (hasTranscript) {
+        // Estimate duration from word count or timestamps
+        const wordCount = rawTranscript.split(/\s+/).length;
+        originalDuration = Math.max(60, Math.round((wordCount / 140) * 60));
+      }
 
     // 3. Attempt live LLM extraction if OPENAI_API_KEY is available
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (apiKey && rawTranscript.length > 50) {
+    const omniConfig = await getOmniRouteConfig();
+    if (omniConfig.isConfigured && omniConfig.apiKey && rawTranscript.length > 50) {
       try {
         const liveResult = await this.extractWithLLM(
           rawTranscript,
           clipCount,
           strategy,
           originalDuration,
-          request.videoUrl,
-          apiKey
+          request.videoUrl
         );
         if (liveResult) {
           return liveResult;
@@ -82,40 +90,18 @@ export class ShortsExtractor {
     clipCount: number,
     strategy: string,
     originalDuration: number,
-    videoUrl?: string,
-    apiKey?: string
+    videoUrl?: string
   ): Promise<ShortsExtractionResponse | null> {
     const prompt = buildShortsExtractionPrompt(transcript, clipCount, strategy);
 
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        response_format: { type: 'json_object' },
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You are an elite viral video editor. Analyze long-form video transcripts and extract the most compelling, high-retention short clips. Ensure every viralScore is between 70 and 99. Always return valid JSON.',
-          },
-          { role: 'user', content: prompt },
-        ],
-      }),
-    });
-
-    if (!res.ok) {
-      throw new Error(`OpenAI API error: ${res.status} ${res.statusText}`);
-    }
-
-    const data = await res.json();
-    const content = data?.choices?.[0]?.message?.content;
+    const content = await complete({
+      system: 'You are an elite viral video editor. Analyze long-form video transcripts and extract the most compelling, high-retention short clips. Ensure every viralScore is between 70 and 99. Always return valid JSON.',
+      user: prompt,
+      json: true,
+    }, undefined, 'auto');
     if (!content) return null;
 
-    const parsed = JSON.parse(content);
+    const parsed = parseJson<Record<string, any>>(content);
     const rawClips = Array.isArray(parsed.clips) ? parsed.clips : [];
     if (rawClips.length === 0) return null;
 
@@ -314,3 +300,5 @@ export class ShortsExtractor {
 }
 
 export const shortsExtractor = new ShortsExtractor();
+
+

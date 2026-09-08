@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { after } from 'next/server';
 import { missionOrchestrator } from '@/lib/engine/mission-orchestrator';
 
 export async function POST(req: Request) {
@@ -25,8 +26,10 @@ export async function POST(req: Request) {
       mock: Boolean(mock),
     });
 
-    // 2. Fire Background Orchestration Task
-    setTimeout(async () => {
+    // 2. Fire Background Orchestration Task (after response is sent)
+    // after() is the proper Next.js API for post-response background work —
+    // unlike setTimeout, it keeps the process alive on Node.js until the mission completes.
+    after(async () => {
       try {
         await missionOrchestrator.executeMission(jobId, {
           prompt: cleanPrompt,
@@ -38,7 +41,7 @@ export async function POST(req: Request) {
       } catch (err) {
         console.error(`[API /api/workflows/mission] Background mission error for ${jobId}:`, err);
       }
-    }, 0);
+    });
 
     // 3. Return immediate response
     return NextResponse.json({

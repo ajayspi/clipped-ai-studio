@@ -2,6 +2,14 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { WorkflowHeader } from "@/components/create/ui/WorkflowHeader"
+import { VoiceSelector } from "@/components/create/ui/VoiceSelector"
+import { AspectRatioSelector } from "@/components/create/ui/AspectRatioSelector"
+import { MockModeToggle } from "@/components/create/ui/MockModeToggle"
+import { GenerateButton } from "@/components/create/ui/GenerateButton"
+import { ErrorAlert } from "@/components/create/ui/ErrorAlert"
+import { SettingsCard } from "@/components/create/ui/SettingsCard"
+
 import {
   Bot,
   Loader2,
@@ -319,35 +327,7 @@ export default function AutoPilotPage() {
 
             <div className="space-y-2">
               <label className="text-xs font-medium text-muted-foreground">Aspect Ratio</label>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setAspectRatio("9:16")}
-                  className={`px-2 py-1.5 text-xs rounded border transition-colors ${
-                    aspectRatio === "9:16" ? "bg-primary text-primary-foreground border-primary" : "bg-transparent hover:bg-muted"
-                  }`}
-                >
-                  9:16 (Shorts)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAspectRatio("16:9")}
-                  className={`px-2 py-1.5 text-xs rounded border transition-colors ${
-                    aspectRatio === "16:9" ? "bg-primary text-primary-foreground border-primary" : "bg-transparent hover:bg-muted"
-                  }`}
-                >
-                  16:9 (YT)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAspectRatio("1:1")}
-                  className={`px-2 py-1.5 text-xs rounded border transition-colors ${
-                    aspectRatio === "1:1" ? "bg-primary text-primary-foreground border-primary" : "bg-transparent hover:bg-muted"
-                  }`}
-                >
-                  1:1 (Insta)
-                </button>
-              </div>
+              <AspectRatioSelector value={aspectRatio} onChange={setAspectRatio} />
             </div>
 
             <div className="space-y-2">

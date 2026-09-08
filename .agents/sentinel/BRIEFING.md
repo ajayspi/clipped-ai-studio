@@ -1,40 +1,42 @@
-# BRIEFING — 2026-09-03T05:07:30+05:30
+# BRIEFING — 2026-09-06T06:30:34+05:30
 
 ## Mission
-Sentinel monitoring and lifecycle management for Clipped AI video platform final packaging (Custom Supabase Connection UI, Voice API Expansion & Previews, Modernized Subtitles UI, and 5 major features: Social Export, Branding, Workspaces, Webhooks, Analytics).
+Sentinel monitoring and lifecycle management for Video Creation Flow Viewport Optimization, Global Render Queue, and Media Pipeline Fixes in Clipped.
 
 ## 🔒 My Identity
 - Archetype: sentinel
-- Working directory: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\sentinel
-- Orchestrator: 58bf8ebf-cc1c-40e7-ad9f-4ed62d754cbb
-- Victory Auditor: 57b9c3e1-f6ff-48de-a836-1a6052d7b677
-- Cron 1 (Progress): cancelled
-- Cron 2 (Liveness): cancelled
+- Working directory: C:\Users\vigilare\.gemini\antigravity\scratch\clipped-omni-router\.agents\sentinel
+- Orchestrator: ff4c3bf1-5754-474e-a782-3fbe0b4f7fd2
+- Victory Auditor: to be spawned on victory claim
+- Cron 1 (Progress): task-44 (active, */8 * * * *)
+- Cron 2 (Liveness): task-46 (active, */10 * * * *)
+- Orchestrator (Current): 50fedb7f-cf54-4629-8507-bc9a5d2995bf
+- Cron 1 (Progress - Current): task-44 (active, */8 * * * *)
+- Cron 2 (Liveness - Current): task-46 (active, */10 * * * *)
+- Resumed at: 2026-09-06T07:03:20+05:30 (server restart recovery)
+- Cron 1 (Progress - Revived): task-171 (active, */8 * * * *)
+- Cron 2 (Liveness - Revived): task-173 (active, */10 * * * *)
 
 ## 🔒 Key Constraints
 - No technical decisions — relay only
 - Victory Audit is MANDATORY before reporting completion
 - Route per Routing Decision Table: General -> teamwork_preview_orchestrator
 - Two monitoring crons (Progress Reporting */8 and Liveness */10)
+- You MUST NOT write code, analyze problems, or make any technical decisions. Keep your context ultra-light.
 
 ## User Context
-- **Last user request**: Finalizing Clipped AI video platform: Custom Supabase Connection UI (R1), Voice API expansion & previews (R2), Modernize Subtitles UI (R3), 5 major features (R4: Social Export, Branding, Workspaces, Webhooks, Analytics).
+- **Last user request**: Refactor video creation flow for compact viewport, implement global render queue with corrected navigation, and resolve critical media pipeline bugs (prioritize voice TTS edge free bug, subtitles styling, external provider settings reflection).
 - **Pending clarifications**: none
-- **Delivered results**:
-  - Library & Planner UI seeding and glassmorphism sidebar (Milestone 1)
-  - Create section API status indicators, automatic mission mode, avatar-to-video & whiteboard animation (Milestone 2)
-  - Final Product Package (Custom Supabase Connection UI, Voice API Expansion & Previews, Modernized Subtitles UI, and 5 Package Features: Social Export, Branding, Workspaces, Webhooks, Analytics) (Milestone 3 / Final)
+- **Delivered results**: none for current task
 
 ## Project Status
-- **Phase**: complete
+- **Phase**: in progress
 
 ## Victory Audit Status
-- **Triggered**: yes
-- **Verdict**: VICTORY CONFIRMED
+- **Triggered**: no
+- **Verdict**: pending
 - **Retry count**: 0
 
 ## Artifact Index
-- C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\ORIGINAL_REQUEST.md — Authoritative user request
-- C:\Users\vigilare\.gemini\antigravity\scratch\clipped\ORIGINAL_REQUEST.md — Project root user request
-- C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\victory_auditor_pkg\handoff.md — Independent Victory Audit Report
-- C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\orchestrator_final_package_gen2\handoff.md — Orchestrator Handoff
+- C:\Users\vigilare\.gemini\antigravity\scratch\clipped-omni-router\.agents\ORIGINAL_REQUEST.md — Authoritative user request
+- C:\Users\vigilare\.gemini\antigravity\scratch\clipped-omni-router\ORIGINAL_REQUEST.md — Project root user request

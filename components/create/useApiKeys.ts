@@ -50,26 +50,10 @@ async function fetchKeysFromApi(): Promise<ApiKeysMap> {
 }
 
 export function useApiKeys() {
-  const [keys, setKeys] = useState<ApiKeysMap>(() => {
-    if (memoryCache) return memoryCache;
-    if (typeof window !== "undefined") {
-      try {
-        const cached = localStorage.getItem(CACHE_KEY);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (parsed?.keys && typeof parsed.keys === "object") {
-            memoryCache = parsed.keys;
-            return parsed.keys;
-          }
-        }
-      } catch {
-        // Ignore JSON parse errors
-      }
-    }
-    return {};
-  });
-
-  const [loading, setLoading] = useState<boolean>(() => Object.keys(keys).length === 0);
+  // Keep the first render identical on the server and client. Browser cache
+  // hydration belongs in the effect below, after React has hydrated the tree.
+  const [keys, setKeys] = useState<ApiKeysMap>({});
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -86,6 +70,22 @@ export function useApiKeys() {
   }, []);
 
   useEffect(() => {
+    if (memoryCache) {
+      setKeys(memoryCache);
+    } else {
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed?.keys && typeof parsed.keys === "object") {
+            memoryCache = parsed.keys;
+            setKeys(parsed.keys);
+          }
+        }
+      } catch {
+        // Ignore JSON parse errors
+      }
+    }
     refresh();
   }, [refresh]);
 

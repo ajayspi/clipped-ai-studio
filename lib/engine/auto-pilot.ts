@@ -1,3 +1,4 @@
+import { getOmniRouteConfig } from '@/lib/keys';
 import {
   AutoPilotConfig,
   AutoPilotResponse,
@@ -95,7 +96,7 @@ export class AutoPilot {
           videoUrl: initialJobResult.videoUrl,
           duration: initialJobResult.duration,
         } : undefined,
-        isDryRun: !Boolean(process.env.OPENAI_API_KEY),
+        isDryRun: false, // OmniRoute always active
         configuredAt: new Date().toISOString(),
       },
     };
@@ -174,11 +175,11 @@ export class AutoPilot {
     niche: string,
     sourceStrategy: string
   ): Promise<{ topic: string; script: string; hook: string }> {
-    const apiKey = process.env.OPENAI_API_KEY;
+    const omniConfig = await getOmniRouteConfig();
 
-    if (apiKey) {
+    if (omniConfig.isConfigured && omniConfig.apiKey) {
       try {
-        const liveResult = await this.synthesizeWithOpenAI(niche, sourceStrategy, apiKey);
+        const liveResult = await this.synthesizeWithOpenAI(niche, sourceStrategy);
         if (liveResult) return liveResult;
       } catch (err: any) {
         console.warn(`[AutoPilot] Live OpenAI synthesis failed (${err?.message || err}). Falling back to deterministic synthesis.`);
@@ -194,8 +195,7 @@ export class AutoPilot {
    */
   private async synthesizeWithOpenAI(
     niche: string,
-    sourceStrategy: string,
-    apiKey: string
+    sourceStrategy: string
   ): Promise<{ topic: string; script: string; hook: string } | null> {
     const prompt = `Synthesize a viral, timely short video script for niche: "${niche}" using source strategy: "${sourceStrategy}".
 Requirements:
@@ -210,29 +210,9 @@ Return valid JSON:
   "script": "..."
 }`;
 
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPTS.AUTOPILOT_SYNTHESIS },
-          { role: 'user', content: prompt },
-        ],
-      }),
-    });
-
-    if (!res.ok) return null;
-
-    const data = await res.json();
-    const content = data?.choices?.[0]?.message?.content;
-    if (!content) return null;
-
-    const parsed = JSON.parse(content);
+    const { complete, parseJson } = await import('@/lib/engine/llm');
+    const content = await complete({ system: SYSTEM_PROMPTS.AUTOPILOT_SYNTHESIS, user: prompt, json: true }, undefined, 'auto');
+    const parsed = parseJson<{ topic?: string; hook?: string; script?: string }>(content, {});
     return {
       topic: parsed.topic || `Latest Breakthroughs in ${niche}`,
       hook: parsed.hook || `Did you hear about the massive shift happening in ${niche}?`,
@@ -295,3 +275,5 @@ Return valid JSON:
 }
 
 export const autoPilot = new AutoPilot();
+
+

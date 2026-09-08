@@ -17,7 +17,7 @@ import {
   Layers,
   Upload,
 } from "lucide-react";
-import { AVATAR_PRESETS } from "@/lib/engine/avatar-orchestrator";
+import { AvatarProvider, AVATAR_PRESETS } from "@/lib/engine/types";
 
 const VOICES = [
   { id: "nova", label: "Nova (Warm & Engaging)", gender: "Female", accent: "American" },

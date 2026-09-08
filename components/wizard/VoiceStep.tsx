@@ -103,6 +103,7 @@ export function VoiceStep() {
           provider: voiceItem.provider,
           language: voiceItem.language,
           speed: w.voiceSpeed || 1.0,
+          volume: w.voiceVolume || 100,
         }),
       });
 
@@ -143,64 +144,59 @@ export function VoiceStep() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Voiceover Section */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Volume2 className="w-5 h-5 text-primary" />
+            <h3 className="text-base font-semibold flex items-center gap-2">
+              <Volume2 className="w-4 h-4 text-primary" />
               Voiceover Engine & Model
             </h3>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-[11px] text-muted-foreground mt-0.5">
               Select your AI synthesis provider and test speech voices in real-time.
             </p>
           </div>
 
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
-            <Sparkles className="w-3 h-3" /> Real-Time Preview
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">
+            <Sparkles className="w-2.5 h-2.5" /> Real-Time Preview
           </span>
         </div>
 
-        {/* Provider Selector */}
-        <div className="space-y-2">
-          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
-            Synthesis Provider
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-            {Object.keys(ALL_VOICE_OPTIONS).map((providerName) => {
-              const isSelected = w.voiceService === providerName;
-              return (
-                <button
-                  key={providerName}
-                  type="button"
-                  onClick={() => handleProviderChange(providerName)}
-                  className={`flex flex-col items-center justify-center p-3 rounded-lg border text-xs font-medium transition-all text-center gap-1 ${
-                    isSelected
-                      ? 'border-primary bg-primary/10 text-primary shadow-sm font-semibold'
-                      : 'border-input bg-card hover:bg-muted text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <span>{providerName}</span>
-                  {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
-                </button>
-              );
-            })}
-          </div>
+        {/* Provider Selector — Compact horizontal pills */}
+        <div className="flex flex-wrap gap-1.5">
+          {Object.keys(ALL_VOICE_OPTIONS).map((providerName) => {
+            const isSelected = w.voiceService === providerName;
+            return (
+              <button
+                key={providerName}
+                type="button"
+                onClick={() => handleProviderChange(providerName)}
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+                  isSelected
+                    ? 'bg-primary text-primary-foreground shadow-sm font-semibold'
+                    : 'border border-input bg-card hover:bg-muted text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {providerName}
+                {isSelected && <span className="w-1 h-1 rounded-full bg-primary-foreground" />}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Voice Cards Grid with Interactive Audio Preview */}
-        <div className="space-y-2 pt-2">
+        {/* Voice Cards — Scrollable grid, max 3 rows visible */}
+        <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
+            <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               Available Voices ({availableVoices.length})
             </label>
             {previewError && (
-              <span className="text-xs text-red-500 font-medium">{previewError}</span>
+              <span className="text-[10px] text-red-500 font-medium">{previewError}</span>
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin">
             {availableVoices.map((voiceItem) => {
               const isSelected = w.voice === voiceItem.id;
               const isLoading = loadingVoiceId === voiceItem.id;
@@ -210,33 +206,29 @@ export function VoiceStep() {
                 <div
                   key={voiceItem.id}
                   onClick={() => w.set('voice', voiceItem.id)}
-                  className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-all ${
+                  className={`p-2.5 rounded-lg border flex items-center justify-between gap-2 cursor-pointer transition-all ${
                     isSelected
                       ? 'border-primary bg-primary/5 shadow-sm ring-1 ring-primary'
                       : 'border-border bg-card hover:border-muted-foreground/30 hover:bg-muted/30'
                   }`}
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm text-foreground truncate">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-xs text-foreground truncate">
                         {voiceItem.name}
                       </span>
                       {isSelected && (
-                        <span className="w-4 h-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
-                          <Check className="w-2.5 h-2.5" />
+                        <span className="w-3.5 h-3.5 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
+                          <Check className="w-2 h-2" />
                         </span>
                       )}
                     </div>
-
-                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border">
+                    <div className="flex flex-wrap items-center gap-1 mt-1">
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-muted text-muted-foreground border">
                         {voiceItem.providerLabel}
                       </span>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border">
-                        <Globe className="w-2.5 h-2.5" /> {voiceItem.language}
-                      </span>
-                      <span className="inline-flex items-center capitalize px-2 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border">
-                        {voiceItem.gender}
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium bg-muted text-muted-foreground border">
+                        <Globe className="w-2 h-2" /> {voiceItem.language}
                       </span>
                     </div>
                   </div>
@@ -250,20 +242,20 @@ export function VoiceStep() {
                     }}
                     disabled={isLoading}
                     title={isPlaying ? 'Pause Sample Preview' : 'Play Sample Preview'}
-                    className={`w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0 ${
+                    className={`w-7 h-7 rounded-full flex items-center justify-center transition-all shrink-0 ${
                       isPlaying
-                        ? 'bg-primary text-primary-foreground shadow-md ring-2 ring-primary ring-offset-2 animate-pulse'
+                        ? 'bg-primary text-primary-foreground shadow-md animate-pulse'
                         : isSelected
                         ? 'bg-primary/20 text-primary hover:bg-primary hover:text-primary-foreground'
                         : 'bg-muted text-muted-foreground hover:bg-primary/20 hover:text-primary'
                     }`}
                   >
                     {isLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="w-3 h-3 animate-spin" />
                     ) : isPlaying ? (
-                      <Pause className="w-4 h-4 fill-current" />
+                      <Pause className="w-3 h-3 fill-current" />
                     ) : (
-                      <Play className="w-4 h-4 fill-current ml-0.5" />
+                      <Play className="w-3 h-3 fill-current ml-0.5" />
                     )}
                   </button>
                 </div>
@@ -272,45 +264,74 @@ export function VoiceStep() {
           </div>
         </div>
 
-        {/* Speed / Rate Setting */}
-        <div className="p-4 rounded-lg bg-muted/30 border space-y-2">
-          <div className="flex justify-between items-center text-xs">
-            <span className="font-medium text-foreground">Speech Speed / Pace Rate</span>
-            <span className="font-mono text-primary font-semibold">{w.voiceSpeed || 1.0}x</span>
+        {/* Speech Rate & Volume — Side by side */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="p-3 rounded-lg bg-muted/30 border space-y-1.5">
+            <div className="flex justify-between items-center text-xs">
+              <span className="font-medium text-foreground">Speech Rate (1.0 means 1x speed)</span>
+              <span className="font-mono text-primary font-semibold text-[11px]">{w.voiceSpeed || 1.0}</span>
+            </div>
+            <input
+              type="range"
+              min="0.75"
+              max="1.5"
+              step="0.05"
+              value={w.voiceSpeed || 1.0}
+              onChange={(e) => w.set('voiceSpeed', parseFloat(e.target.value))}
+              className="w-full accent-primary cursor-pointer"
+            />
           </div>
-          <input
-            type="range"
-            min="0.75"
-            max="1.5"
-            step="0.05"
-            value={w.voiceSpeed || 1.0}
-            onChange={(e) => w.set('voiceSpeed', parseFloat(e.target.value))}
-            className="w-full accent-primary cursor-pointer"
-          />
+
+          <div className="p-3 rounded-lg bg-muted/30 border space-y-1.5">
+            <div className="flex justify-between items-center text-xs">
+              <span className="font-medium text-foreground">Speech Volume (1.0 represents 100%)</span>
+              <span className="font-mono text-primary font-semibold text-[11px]">{(w.voiceVolume / 100).toFixed(1)}</span>
+            </div>
+            <input
+              type="range"
+              min="0.5"
+              max="2.0"
+              step="0.1"
+              value={(w.voiceVolume || 100) / 100}
+              onChange={(e) => w.set('voiceVolume', Math.round(parseFloat(e.target.value) * 100))}
+              className="w-full accent-primary cursor-pointer"
+            />
+          </div>
         </div>
-      </div>
 
-      <hr className="border-border" />
+        {/* Background Music — Side by side */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="p-3 rounded-lg bg-muted/30 border space-y-1.5">
+            <label className="text-xs font-medium text-foreground block">Background Music</label>
+            <select 
+              className="w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              value={w.musicSource}
+              onChange={(e) => w.set('musicSource', e.target.value)}
+            >
+              <option>Random Background Music</option>
+              <option>Epic / Cinematic</option>
+              <option>Lo-Fi / Chill</option>
+              <option>Upbeat / Energy</option>
+              <option>Ambient / Subtle</option>
+              <option>None</option>
+            </select>
+          </div>
 
-      {/* Background Music Section */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Background Soundtrack</h3>
-        <div className="space-y-2">
-          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
-            Music Preset
-          </label>
-          <select 
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            value={w.musicSource}
-            onChange={(e) => w.set('musicSource', e.target.value)}
-          >
-            <option>Random Background Music</option>
-            <option>Epic / Cinematic</option>
-            <option>Lo-Fi / Chill</option>
-            <option>Upbeat / Energy</option>
-            <option>Ambient / Subtle</option>
-            <option>None</option>
-          </select>
+          <div className="p-3 rounded-lg bg-muted/30 border space-y-1.5">
+            <div className="flex justify-between items-center text-xs">
+              <span className="font-medium text-foreground truncate" title="Background Music Volume (0.2 represents 20%, background music should not be too loud)">Music Volume (0.2 represents 20%)</span>
+              <span className="font-mono text-primary font-semibold text-[11px]">{(w.musicVolume / 100).toFixed(2)}</span>
+            </div>
+            <input
+              type="range"
+              min="0.0"
+              max="1.0"
+              step="0.05"
+              value={(w.musicVolume || 20) / 100}
+              onChange={(e) => w.set('musicVolume', Math.round(parseFloat(e.target.value) * 100))}
+              className="w-full accent-primary cursor-pointer"
+            />
+          </div>
         </div>
       </div>
     </div>

@@ -214,6 +214,7 @@ interface WizardState {
   voiceSpeed: number;
   voiceVolume: number;
   musicSource: string;
+  musicVolume: number;
 
   burnSubtitles: boolean;
   subtitleFont: string;
@@ -287,6 +288,7 @@ const initialState = {
   voiceSpeed: 1.0,
   voiceVolume: 100,
   musicSource: 'Random Background Music',
+  musicVolume: 20,
   burnSubtitles: true,
   subtitleFont: 'BeVietnamPro-Bold.ttf',
   subtitlePosition: 'Bottom (Recommended)',

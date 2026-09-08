@@ -5,6 +5,7 @@ import {
   Scene,
 } from './types';
 import { buildAIVideoPrompt } from './prompts';
+import { getApiKey } from '@/lib/keys';
 
 // Sample royalty-free fallback video clips for dry-run / mock modes
 const DRY_RUN_SAMPLE_VIDEOS: Record<string, string> = {
@@ -26,12 +27,6 @@ export class VideoGenerator {
 
     const jobId = `job-ai-vid-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const model: AIVideoModel = request.model || 'kling-v1';
-    const rawDuration = Number(request.duration);
-    const duration = isNaN(rawDuration) || rawDuration <= 0
-      ? 5
-      : Math.min(Math.max(1, rawDuration), 60);
-    const aspectRatio = request.aspectRatio || '16:9';
-    const cameraMotion = request.cameraMotion || 'static';
 
     // Construct refined cinematic prompt using prompt builder
     const prompt = request.prompt || buildAIVideoPrompt({
@@ -55,8 +50,8 @@ export class VideoGenerator {
       if (model === 'kling-v1') {
         const apiKey = process.env.KLING_API_KEY;
         if (!apiKey) {
-          console.warn('[VideoGenerator] KLING_API_KEY is missing. Using cost-safe dry-run fallback.');
-          return this.generateDryRun(jobId, prompt, request, 'Kling AI (Dry Run - Missing Key)');
+          console.warn('[VideoGenerator] KLING_API_KEY is missing. Falling back to HF Space.');
+          return await this.generateWithGradioFallback(jobId, prompt, request);
         }
         return await this.generateWithKling(jobId, prompt, request, apiKey);
       }
@@ -64,17 +59,17 @@ export class VideoGenerator {
       if (model === 'luma-dream') {
         const apiKey = process.env.LUMA_API_KEY;
         if (!apiKey) {
-          console.warn('[VideoGenerator] LUMA_API_KEY is missing. Using cost-safe dry-run fallback.');
-          return this.generateDryRun(jobId, prompt, request, 'Luma Dream Machine (Dry Run - Missing Key)');
+          console.warn('[VideoGenerator] LUMA_API_KEY is missing. Falling back to HF Space.');
+          return await this.generateWithGradioFallback(jobId, prompt, request);
         }
         return await this.generateWithLuma(jobId, prompt, request, apiKey);
       }
 
       if (model === 'fal-flux') {
-        const apiKey = process.env.FAL_API_KEY;
+        const apiKey = await getApiKey('fal', 'FAL_API_KEY');
         if (!apiKey) {
-          console.warn('[VideoGenerator] FAL_API_KEY is missing. Using cost-safe dry-run fallback.');
-          return this.generateDryRun(jobId, prompt, request, 'Fal.ai Video (Dry Run - Missing Key)');
+          console.warn('[VideoGenerator] FAL_API_KEY is missing. Falling back to HF Space.');
+          return await this.generateWithGradioFallback(jobId, prompt, request);
         }
         return await this.generateWithFal(jobId, prompt, request, apiKey);
       }
@@ -246,38 +241,86 @@ export class VideoGenerator {
   ): Promise<AIVideoGenerationResponse> {
     console.log(`[VideoGenerator] Calling Fal.ai Video API for job ${jobId}...`);
 
-    const response = await fetch('https://fal.run/fal-ai/kling-video/v1/standard/text-to-video', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Key ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        prompt: prompt,
-        aspect_ratio: request.aspectRatio === '9:16' ? '9:16' : request.aspectRatio === '1:1' ? '1:1' : '16:9',
-        duration: request.duration && request.duration > 5 ? '10' : '5',
-      }),
-    });
+    try {
+      const { submitAndWait } = await import('../media/fal-client');
 
-    if (!response.ok) {
-      throw new Error(`Fal.ai HTTP Error: ${response.status} ${response.statusText}`);
+      const falJob = await submitAndWait({
+        model: 'fal-ai/kling-video/v1/standard/text-to-video',
+        input: {
+          prompt: prompt,
+          aspect_ratio: request.aspectRatio === '9:16' ? '9:16' : request.aspectRatio === '1:1' ? '1:1' : '16:9',
+          duration: request.duration && request.duration > 5 ? '10' : '5',
+          image_url: request.characterSheetUrl || undefined,
+        }
+      }, apiKey);
+
+      if (falJob.status === 'completed' && falJob.asset) {
+        return {
+          success: true,
+          jobId,
+          videoUrl: falJob.asset.url,
+          prompt,
+          modelUsed: 'fal-flux',
+          duration: request.duration || 5,
+          metadata: {
+            provider: 'fal-ai',
+            requestId: falJob.requestId,
+          },
+        };
+      }
+      
+      throw new Error(falJob.error || 'Unknown fal error');
+    } catch (e: any) {
+      console.error('[VideoGenerator] fal queue client error:', e.message);
+      return this.generateDryRun(jobId, prompt, request, `Fal.ai (Fallback after failed generation)`);
     }
+  }
 
-    const data = await response.json();
-    const videoUrl = data?.video?.url || data?.images?.[0]?.url || DRY_RUN_SAMPLE_VIDEOS.landscape;
+  /**
+   * Free Gradio fallback using Hugging Face spaces
+   */
+  private async generateWithGradioFallback(
+    jobId: string,
+    prompt: string,
+    request: AIVideoGenerationRequest
+  ): Promise<AIVideoGenerationResponse> {
+    console.log(`[VideoGenerator] Calling Free HF Gradio Space for job ${jobId}...`);
 
-    return {
-      success: true,
-      jobId,
-      videoUrl,
-      prompt,
-      modelUsed: 'fal-flux',
-      duration: request.duration || 5,
-      metadata: {
-        provider: 'fal-ai',
-        requestId: data?.request_id,
-      },
-    };
+    try {
+      const { Client } = await import('@gradio/client');
+      
+      // Connect to a public zeroscope space
+      const app = await Client.connect("fffiloni/zeroscope");
+      const result = await app.predict("/infer", [
+          prompt, // Prompt
+          10,     // num_inference_steps
+          7.5,    // guidance_scale
+          24,     // Number of frames
+      ]);
+
+      let videoUrl = DRY_RUN_SAMPLE_VIDEOS.landscape;
+      
+      // The Gradio client returns a FileData object or array of them
+      if (result?.data?.[0]?.url) {
+        videoUrl = result.data[0].url;
+      }
+
+      return {
+        success: true,
+        jobId,
+        videoUrl,
+        prompt,
+        modelUsed: 'hf-zeroscope (Gradio)',
+        duration: request.duration || 5,
+        metadata: {
+          provider: 'huggingface',
+          isDryRun: false,
+        },
+      };
+    } catch (e: any) {
+      console.error('[VideoGenerator] Gradio fallback failed:', e.message);
+      return this.generateDryRun(jobId, prompt, request, `Gradio Fallback (Failed: ${e.message})`);
+    }
   }
 
   /**

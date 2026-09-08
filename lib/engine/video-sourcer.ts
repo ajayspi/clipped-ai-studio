@@ -1,4 +1,5 @@
 import { Video } from "./types"
+import { getApiKey } from '@/lib/keys';
 
 export const PLATFORMS = ['pexels', 'pixabay', 'openverse'] as const;
 export type PlatformId = (typeof PLATFORMS)[number];
@@ -24,7 +25,7 @@ interface PixabayVideo {
 
 export class VideoSourcer {
   async searchPexels(query: string, perPage = 5): Promise<Video[]> {
-    const key = process.env.PEXELS_API_KEY;
+    const key = await getApiKey('pexels', 'PEXELS_API_KEY');
     if (!key) return [];
 
     try {
@@ -58,7 +59,7 @@ export class VideoSourcer {
   }
 
   async searchPixabay(query: string, perPage = 5): Promise<Video[]> {
-    const key = process.env.PIXABAY_API_KEY;
+    const key = await getApiKey('pixabay', 'PIXABAY_API_KEY');
     if (!key) return [];
 
     try {
@@ -114,6 +115,24 @@ export class VideoSourcer {
       if (seen.has(video.id)) return false;
       seen.add(video.id);
       return true;
+    });
+  }
+
+  async searchImages(query: string, limit = 5): Promise<any[]> {
+    const pexelsKey = await getApiKey('pexels', 'PEXELS_API_KEY');
+    const pixabayKey = await getApiKey('pixabay', 'PIXABAY_API_KEY');
+    
+    // We need to dynamically import image-sources to avoid circular or strict module issues
+    // since video-sourcer is deeply embedded in engine/ types
+    const { searchImages } = await import('@/lib/media/image-sources');
+    
+    return searchImages({
+      query,
+      aspectRatio: '16:9',
+      limit
+    }, {
+      ...(pexelsKey ? { PEXELS_API_KEY: pexelsKey } : {}),
+      ...(pixabayKey ? { PIXABAY_API_KEY: pixabayKey } : {})
     });
   }
 }

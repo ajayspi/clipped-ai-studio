@@ -1,0 +1,242 @@
+[bootstrap] ✨ JWT_SECRET auto-generated (first run)
+[bootstrap] ✨ STORAGE_ENCRYPTION_KEY auto-generated (first run)
+[bootstrap] ✨ API_KEY_SECRET auto-generated (first run)
+[bootstrap] 📁 Secrets persisted to: /root/.omniroute/server.env
+[bootstrap] ℹ️  The following OAuth integrations are not configured:
+[bootstrap]    • Antigravity OAuth (ANTIGRAVITY_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    • Qoder OAuth (QODER_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    These providers will not work until configured.
+[bootstrap] ⚠️  INITIAL_PASSWORD is not set — using default 'CHANGEME'. Change it in Settings!
+[FATAL] Failed to start Next custom server: Error: Could not find a production build in the '.build/next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at async prepareWithHeal (scripts/dev/run-next.mjs:157:5)
+    at async start (scripts/dev/run-next.mjs:181:3)
+[bootstrap] ℹ️  The following OAuth integrations are not configured:
+[bootstrap]    • Antigravity OAuth (ANTIGRAVITY_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    • Qoder OAuth (QODER_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    These providers will not work until configured.
+[bootstrap] ⚠️  INITIAL_PASSWORD is not set — using default 'CHANGEME'. Change it in Settings!
+[FATAL] Failed to start Next custom server: Error: Could not find a production build in the '.build/next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at async prepareWithHeal (scripts/dev/run-next.mjs:157:5)
+    at async start (scripts/dev/run-next.mjs:181:3)
+[bootstrap] ℹ️  The following OAuth integrations are not configured:
+[bootstrap]    • Antigravity OAuth (ANTIGRAVITY_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    • Qoder OAuth (QODER_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    These providers will not work until configured.
+[bootstrap] ⚠️  INITIAL_PASSWORD is not set — using default 'CHANGEME'. Change it in Settings!
+[FATAL] Failed to start Next custom server: Error: Could not find a production build in the '.build/next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at async prepareWithHeal (scripts/dev/run-next.mjs:157:5)
+    at async start (scripts/dev/run-next.mjs:181:3)
+[bootstrap] ℹ️  The following OAuth integrations are not configured:
+[bootstrap]    • Antigravity OAuth (ANTIGRAVITY_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    • Qoder OAuth (QODER_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    These providers will not work until configured.
+[bootstrap] ⚠️  INITIAL_PASSWORD is not set — using default 'CHANGEME'. Change it in Settings!
+[FATAL] Failed to start Next custom server: Error: Could not find a production build in the '.build/next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at async prepareWithHeal (scripts/dev/run-next.mjs:157:5)
+    at async start (scripts/dev/run-next.mjs:181:3)
+[bootstrap] ℹ️  The following OAuth integrations are not configured:
+[bootstrap]    • Antigravity OAuth (ANTIGRAVITY_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    • Qoder OAuth (QODER_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    These providers will not work until configured.
+[bootstrap] ⚠️  INITIAL_PASSWORD is not set — using default 'CHANGEME'. Change it in Settings!
+[FATAL] Failed to start Next custom server: Error: Could not find a production build in the '.build/next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at async prepareWithHeal (scripts/dev/run-next.mjs:157:5)
+    at async start (scripts/dev/run-next.mjs:181:3)
+[bootstrap] ℹ️  The following OAuth integrations are not configured:
+[bootstrap]    • Antigravity OAuth (ANTIGRAVITY_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    • Qoder OAuth (QODER_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    These providers will not work until configured.
+[bootstrap] ⚠️  INITIAL_PASSWORD is not set — using default 'CHANGEME'. Change it in Settings!
+[FATAL] Failed to start Next custom server: Error: Could not find a production build in the '.build/next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at async prepareWithHeal (scripts/dev/run-next.mjs:157:5)
+    at async start (scripts/dev/run-next.mjs:181:3)
+[bootstrap] ℹ️  The following OAuth integrations are not configured:
+[bootstrap]    • Antigravity OAuth (ANTIGRAVITY_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    • Qoder OAuth (QODER_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    These providers will not work until configured.
+[bootstrap] ⚠️  INITIAL_PASSWORD is not set — using default 'CHANGEME'. Change it in Settings!
+[FATAL] Failed to start Next custom server: Error: Could not find a production build in the '.build/next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at async prepareWithHeal (scripts/dev/run-next.mjs:157:5)
+    at async start (scripts/dev/run-next.mjs:181:3)
+[bootstrap] ℹ️  The following OAuth integrations are not configured:
+[bootstrap]    • Antigravity OAuth (ANTIGRAVITY_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    • Qoder OAuth (QODER_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    These providers will not work until configured.
+[bootstrap] ⚠️  INITIAL_PASSWORD is not set — using default 'CHANGEME'. Change it in Settings!
+[FATAL] Failed to start Next custom server: Error: Could not find a production build in the '.build/next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at async prepareWithHeal (scripts/dev/run-next.mjs:157:5)
+    at async start (scripts/dev/run-next.mjs:181:3)
+[bootstrap] ℹ️  The following OAuth integrations are not configured:
+[bootstrap]    • Antigravity OAuth (ANTIGRAVITY_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    • Qoder OAuth (QODER_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    These providers will not work until configured.
+[bootstrap] ⚠️  INITIAL_PASSWORD is not set — using default 'CHANGEME'. Change it in Settings!
+[FATAL] Failed to start Next custom server: Error: Could not find a production build in the '.build/next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at async prepareWithHeal (scripts/dev/run-next.mjs:157:5)
+    at async start (scripts/dev/run-next.mjs:181:3)
+[bootstrap] ℹ️  The following OAuth integrations are not configured:
+[bootstrap]    • Antigravity OAuth (ANTIGRAVITY_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    • Qoder OAuth (QODER_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    These providers will not work until configured.
+[bootstrap] ⚠️  INITIAL_PASSWORD is not set — using default 'CHANGEME'. Change it in Settings!
+[FATAL] Failed to start Next custom server: Error: Could not find a production build in the '.build/next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at async prepareWithHeal (scripts/dev/run-next.mjs:157:5)
+    at async start (scripts/dev/run-next.mjs:181:3)
+[bootstrap] ℹ️  The following OAuth integrations are not configured:
+[bootstrap]    • Antigravity OAuth (ANTIGRAVITY_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    • Qoder OAuth (QODER_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    These providers will not work until configured.
+[bootstrap] ⚠️  INITIAL_PASSWORD is not set — using default 'CHANGEME'. Change it in Settings!
+[FATAL] Failed to start Next custom server: Error: Could not find a production build in the '.build/next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at async prepareWithHeal (scripts/dev/run-next.mjs:157:5)
+    at async start (scripts/dev/run-next.mjs:181:3)
+[bootstrap] ℹ️  The following OAuth integrations are not configured:
+[bootstrap]    • Antigravity OAuth (ANTIGRAVITY_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    • Qoder OAuth (QODER_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    These providers will not work until configured.
+[bootstrap] ⚠️  INITIAL_PASSWORD is not set — using default 'CHANGEME'. Change it in Settings!
+[FATAL] Failed to start Next custom server: Error: Could not find a production build in the '.build/next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at async prepareWithHeal (scripts/dev/run-next.mjs:157:5)
+    at async start (scripts/dev/run-next.mjs:181:3)
+[bootstrap] ℹ️  The following OAuth integrations are not configured:
+[bootstrap]    • Antigravity OAuth (ANTIGRAVITY_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    • Qoder OAuth (QODER_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    These providers will not work until configured.
+[bootstrap] ⚠️  INITIAL_PASSWORD is not set — using default 'CHANGEME'. Change it in Settings!
+[FATAL] Failed to start Next custom server: Error: Could not find a production build in the '.build/next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at async prepareWithHeal (scripts/dev/run-next.mjs:157:5)
+    at async start (scripts/dev/run-next.mjs:181:3)
+[bootstrap] ℹ️  The following OAuth integrations are not configured:
+[bootstrap]    • Antigravity OAuth (ANTIGRAVITY_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    • Qoder OAuth (QODER_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    These providers will not work until configured.
+[bootstrap] ⚠️  INITIAL_PASSWORD is not set — using default 'CHANGEME'. Change it in Settings!
+[FATAL] Failed to start Next custom server: Error: Could not find a production build in the '.build/next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at async prepareWithHeal (scripts/dev/run-next.mjs:157:5)
+    at async start (scripts/dev/run-next.mjs:181:3)
+[bootstrap] ℹ️  The following OAuth integrations are not configured:
+[bootstrap]    • Antigravity OAuth (ANTIGRAVITY_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    • Qoder OAuth (QODER_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    These providers will not work until configured.
+[bootstrap] ⚠️  INITIAL_PASSWORD is not set — using default 'CHANGEME'. Change it in Settings!
+[FATAL] Failed to start Next custom server: Error: Could not find a production build in the '.build/next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at async prepareWithHeal (scripts/dev/run-next.mjs:157:5)
+    at async start (scripts/dev/run-next.mjs:181:3)
+[bootstrap] ℹ️  The following OAuth integrations are not configured:
+[bootstrap]    • Antigravity OAuth (ANTIGRAVITY_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    • Qoder OAuth (QODER_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    These providers will not work until configured.
+[bootstrap] ⚠️  INITIAL_PASSWORD is not set — using default 'CHANGEME'. Change it in Settings!
+[FATAL] Failed to start Next custom server: Error: Could not find a production build in the '.build/next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at async prepareWithHeal (scripts/dev/run-next.mjs:157:5)
+    at async start (scripts/dev/run-next.mjs:181:3)
+[bootstrap] ℹ️  The following OAuth integrations are not configured:
+[bootstrap]    • Antigravity OAuth (ANTIGRAVITY_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    • Qoder OAuth (QODER_OAUTH_CLIENT_SECRET) — set in .env or /root/.omniroute/server.env
+[bootstrap]    These providers will not work until configured.
+[bootstrap] ⚠️  INITIAL_PASSWORD is not set — using default 'CHANGEME'. Change it in Settings!
+[FATAL] Failed to start Next custom server: Error: Could not find a production build in the '.build/next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at async prepareWithHeal (scripts/dev/run-next.mjs:157:5)
+    at async start (scripts/dev/run-next.mjs:181:3)
+
+> omniroute@3.8.51 start
+> node scripts/dev/run-next.mjs start -p 20128
+
+[MDX] generated files in 29.861065000000053ms
+✓ Running next.config.mjs took 456ms
+
+> omniroute@3.8.51 start
+> node scripts/dev/run-next.mjs start -p 20128
+
+[MDX] generated files in 33.115095999999994ms
+✓ Running next.config.mjs took 420ms
+
+> omniroute@3.8.51 start
+> node scripts/dev/run-next.mjs start -p 20128
+
+[MDX] generated files in 29.358079999999973ms
+✓ Running next.config.mjs took 414ms
+
+> omniroute@3.8.51 start
+> node scripts/dev/run-next.mjs start -p 20128
+
+[MDX] generated files in 30.992826000000036ms
+✓ Running next.config.mjs took 423ms
+
+> omniroute@3.8.51 start
+> node scripts/dev/run-next.mjs start -p 20128
+
+[MDX] generated files in 29.20693099999994ms
+✓ Running next.config.mjs took 417ms
+
+> omniroute@3.8.51 start
+> node scripts/dev/run-next.mjs start -p 20128
+
+[MDX] generated files in 36.40338699999995ms
+✓ Running next.config.mjs took 427ms
+
+> omniroute@3.8.51 start
+> node scripts/dev/run-next.mjs start -p 20128
+
+[MDX] generated files in 30.143275000000017ms
+✓ Running next.config.mjs took 409ms
+
+> omniroute@3.8.51 start
+> node scripts/dev/run-next.mjs start -p 20128
+
+[MDX] generated files in 34.03629999999998ms
+✓ Running next.config.mjs took 432ms
+
+> omniroute@3.8.51 start
+> node scripts/dev/run-next.mjs start -p 20128
+
+[MDX] generated files in 33.244788000000085ms
+✓ Running next.config.mjs took 428ms
+
+> omniroute@3.8.51 start
+> node scripts/dev/run-next.mjs start -p 20128
+
+[MDX] generated files in 30.610551999999984ms
+✓ Running next.config.mjs took 414ms
+
+> omniroute@3.8.51 start
+> node scripts/dev/run-next.mjs start -p 20128
+
+[MDX] generated files in 33.741214000000014ms
+✓ Running next.config.mjs took 426ms
+
+> omniroute@3.8.51 start
+> node scripts/dev/run-next.mjs start -p 20128
+
+[MDX] generated files in 28.921328000000017ms
+✓ Running next.config.mjs took 418ms
+
+> omniroute@3.8.51 start
+> node scripts/dev/run-next.mjs start -p 20128
+
+[MDX] generated files in 30.14210700000001ms
+✓ Running next.config.mjs took 431ms
+
+> omniroute@3.8.51 start
+> node scripts/dev/run-next.mjs start -p 20128
+
+[MDX] generated files in 28.494282999999996ms
+✓ Running next.config.mjs took 419ms
+
+> omniroute@3.8.51 start
+> node scripts/dev/run-next.mjs start -p 20128
+
+[MDX] generated files in 34.13359200000002ms
+✓ Running next.config.mjs took 432ms
+
+> omniroute@3.8.51 start
+> node scripts/dev/run-next.mjs start -p 20128
+
+[MDX] generated files in 32.162829999999985ms
+✓ Running next.config.mjs took 411ms
+
+> omniroute@3.8.51 start
+> node scripts/dev/run-next.mjs start -p 20128
+
+[MDX] generated files in 30.615625000000023ms
+✓ Running next.config.mjs took 417ms

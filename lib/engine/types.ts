@@ -1,3 +1,5 @@
+import type { MediaAsset } from '@/lib/media/types';
+
 export interface Video {
   id: string;
   url: string;
@@ -21,7 +23,11 @@ export interface Scene {
   selectedVideo?: Video;
   imageUrl?: string;
   videoUrl?: string;
+  audioUrl?: string;
+  /** Canonical provenance-bearing media asset. Coexists with imageUrl/videoUrl for backward compat. */
+  mediaAsset?: MediaAsset;
 }
+
 
 export interface ScriptAnalysis {
   script: string;
@@ -396,6 +402,33 @@ export interface AvatarGenerationResponse {
   metadata: Record<string, any>;
   error?: string;
 }
+
+export const AVATAR_PRESETS: AvatarPreset[] = [
+  {
+    id: 'sarah_presenter',
+    name: 'Sarah (Presenter)',
+    previewUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
+    gender: 'female',
+    style: 'photorealistic',
+    supportedProviders: ['heygen', 'did', 'liveportrait', 'remotion-pip'],
+  },
+  {
+    id: 'marcus_tech',
+    name: 'Marcus (Tech Anchor)',
+    previewUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80',
+    gender: 'male',
+    style: 'photorealistic',
+    supportedProviders: ['heygen', 'did', 'liveportrait', 'remotion-pip'],
+  },
+  {
+    id: 'alex_casual',
+    name: 'Alex (Creator)',
+    previewUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=500&auto=format&fit=crop&q=80',
+    gender: 'male',
+    style: 'photorealistic',
+    supportedProviders: ['heygen', 'did', 'liveportrait', 'remotion-pip'],
+  },
+];
 
 // ==========================================
 // Workflow 8: Whiteboard Animation Engine Types

@@ -1,0 +1,9 @@
+Starting Talkbyte deployment...
+Already on 'feature/update-talkbyte-2026'
+Your branch is up to date with 'origin/feature/update-talkbyte-2026'.
+From https://github.com/ajayspi/Talkbyte
+ * branch            feature/update-talkbyte-2026 -> FETCH_HEAD
+Already up to date.
+-s: line 13: pm2: command not found
+-s: line 15: pm2: command not found
+\nEXIT STATUS: 127\n

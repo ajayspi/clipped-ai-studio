@@ -113,7 +113,7 @@ export async function POST(req: Request) {
       
       if (openaiKey) {
         console.log("Triggering DALL-E for: ", keywords.join(' '));
-        const res = await fetch('https://api.openai.com/v1/images/generations', {
+        const res = await fetch('http://localhost:20128/v1/images/generations', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${openaiKey}`,

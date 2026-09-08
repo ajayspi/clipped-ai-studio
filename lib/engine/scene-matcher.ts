@@ -1,3 +1,5 @@
+import { getOmniRouteConfig } from '@/lib/keys';
+import { complete, parseJson } from '@/lib/engine/llm';
 import { Scene, ScriptAnalysis } from "./types";
 
 const SYSTEM_PROMPT =
@@ -32,24 +34,29 @@ function splitIntoPasses(script: string): string[] {
 export class SceneMatcher {
   async analyzeScript(
     script: string,
+    targetDuration?: number
   ): Promise<ScriptAnalysis> {
     const passes = splitIntoPasses(script);
     const scenes: Scene[] = [];
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error("OPENAI_API_KEY is not set. Cannot perform scene matching.");
+    const omniConfig = await getOmniRouteConfig();
+    if (!omniConfig.apiKey) {
+      throw new Error('OmniRoute API key is not configured. Cannot perform scene matching.');
     }
 
     for (const [index, pass] of passes.entries()) {
-      const prompt = `Break this narration into visual scenes for stock-footage sourcing.
-${passes.length > 1 ? `This is part ${index + 1} of ${passes.length} of a longer script; cover only the text below.` : ''}
+      let prompt = `Break this narration into visual scenes for stock-footage sourcing.
+${passes.length > 1 ? `This is part ${index + 1} of ${passes.length} of a longer script; cover only the text below.` : ''}`;
 
-For each scene give:
+      if (targetDuration) {
+        prompt += `\nIMPORTANT CONSTRAINT: Each scene MUST be approximately ${targetDuration} seconds long (roughly ${Math.round(targetDuration * 2.5)} words per scene). Break the script into small chunks strictly adhering to this duration constraint.`;
+      }
+
+      prompt += `\n\nFor each scene give:
 1. text — the words spoken during it, taken verbatim from the narration
 2. keywords — 3-5 English stock-footage search terms
 3. description — what is shown on screen
-4. duration — seconds, estimated from the spoken length
+4. duration — seconds, estimated from the spoken length (if constrained, strictly output ${targetDuration || 'the length'})
 5. emotion — the tone
 
 Every word of the narration must appear in exactly one scene, in order.
@@ -58,35 +65,13 @@ Narration:
 ${pass}
 
 Return ONLY valid JSON, no markdown:
-{"scenes":[{"text":"...","keywords":["..."],"description":"...","duration":5,"emotion":"educational"}]}`;
+{"scenes":[{"text":"...","keywords":["..."],"description":"...","duration":${targetDuration || 5},"emotion":"educational"}]}`;
 
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          response_format: { type: "json_object" },
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: prompt }
-          ]
-        })
-      });
-
-      if (!res.ok) {
-        throw new Error(`OpenAI API failed: ${res.statusText}`);
-      }
-
-      const data = await res.json();
-      const content = data.choices[0].message.content;
-      
-      let parsed;
+      const content = await complete({ system: SYSTEM_PROMPT, user: prompt, json: true }, undefined, 'auto');
+      let parsed: { scenes?: Array<Record<string, unknown>> };
       try {
-        parsed = JSON.parse(content);
-      } catch (e) {
+        parsed = parseJson<{ scenes?: Array<Record<string, unknown>> }>(content);
+      } catch {
         console.error("Failed to parse JSON from LLM", content);
         continue;
       }
@@ -115,3 +100,5 @@ Return ONLY valid JSON, no markdown:
 }
 
 export const sceneMatcher = new SceneMatcher();
+
+
