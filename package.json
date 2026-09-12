@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "NODE_OPTIONS=--max_old_space_size=512 next build",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint .",
     "test": "node tests/e2e/standalone-runner.js",
