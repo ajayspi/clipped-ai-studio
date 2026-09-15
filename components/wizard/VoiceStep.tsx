@@ -121,7 +121,7 @@ export function VoiceStep() {
   }, []);
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col gap-1">
         <h2 className="text-2xl font-semibold tracking-tight text-white flex items-center gap-2">
           <Volume2 className="h-6 w-6 text-purple-400" /> Voice Synthesis
@@ -145,7 +145,7 @@ export function VoiceStep() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
         {voices.map((v) => {
           const isSelected = w.voice === v.id;
           const isPlaying = playingVoiceId === v.id;
@@ -155,17 +155,17 @@ export function VoiceStep() {
             <div
               key={v.id}
               onClick={() => handleSelectVoice(v)}
-              className={`group flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer \${
+              className={`group flex items-center justify-between p-2 rounded-lg border transition-all cursor-pointer \${
                 isSelected
                   ? 'bg-purple-500/10 border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.15)]'
                   : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04] hover:border-white/10'
               }`}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={(e) => handlePlayPreview(e, v)}
                   disabled={isLoadingAudio !== null && !isLoading}
-                  className={`h-10 w-10 rounded-full flex items-center justify-center transition-all \${
+                  className={`h-8 w-8 rounded-full flex items-center justify-center transition-all \${
                     isPlaying || isLoading
                       ? 'bg-purple-500 text-white shadow-[0_0_15px_rgba(168,85,247,0.4)]'
                       : 'bg-white/10 text-white hover:bg-white/20'
@@ -180,10 +180,10 @@ export function VoiceStep() {
                   )}
                 </button>
                 <div className="flex flex-col">
-                  <span className={`text-sm font-medium transition-colors \${isSelected ? 'text-white' : 'text-white/80 group-hover:text-white'}`}>
+                  <span className={`text-xs font-medium transition-colors \${isSelected ? 'text-white' : 'text-white/80 group-hover:text-white'}`}>
                     {v.name}
                   </span>
-                  <div className="flex items-center gap-2 text-xs text-white/40">
+                  <div className="flex items-center gap-2 text-[10px] text-white/40">
                     <span className="flex items-center gap-1">
                       {v.gender === 'female' ? '♀' : v.gender === 'male' ? '♂' : '⚥'} {v.gender}
                     </span>
@@ -205,10 +205,10 @@ export function VoiceStep() {
         })}
       </div>
 
-      <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 space-y-4">
+      <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-3 space-y-2">
         <h3 className="text-sm font-medium text-white/80">Voice Adjustments</h3>
-        <div className="grid grid-cols-2 gap-8">
-          <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
             <div className="flex justify-between">
               <label className="text-xs text-white/50">Playback Speed</label>
               <span className="text-xs text-purple-400 font-medium">{w.voiceSpeed}x</span>
@@ -224,7 +224,7 @@ export function VoiceStep() {
             />
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-1.5">
             <div className="flex justify-between">
               <label className="text-xs text-white/50">Preview Volume</label>
               <span className="text-xs text-purple-400 font-medium">{Math.round(volume * 100)}%</span>

@@ -81,7 +81,7 @@ function PresetMiniPreview({ preset }: { preset: SubtitlePresetConfig }) {
   }
 
   return (
-    <div className="w-full h-20 rounded-lg bg-gradient-to-br from-zinc-950/90 via-zinc-900 to-black flex items-center justify-center p-2 relative overflow-hidden border border-white/5">
+    <div className="w-full h-14 rounded-lg bg-gradient-to-br from-zinc-950/90 via-zinc-900 to-black flex items-center justify-center p-2 relative overflow-hidden border border-white/5">
       {/* Background ambient lighting */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03)_0%,transparent_70%)]" />
       
@@ -173,17 +173,17 @@ export function SubtitlesStep() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Top Glassmorphic Master Burn-in Toggle Card */}
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-2xl border border-white/10 dark:border-white/5 bg-card/80 dark:bg-zinc-900/70 backdrop-blur-xl p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] transition-all"
+        className="relative overflow-hidden rounded-2xl border border-white/10 dark:border-white/5 bg-card/80 dark:bg-zinc-900/70 backdrop-blur-xl p-3 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] transition-all"
       >
         <div className="absolute top-0 right-0 w-80 h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
         
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
-          <div className="flex items-start sm:items-center gap-3.5">
+          <div className="flex items-start sm:items-center gap-2.5">
             <div className={`p-2.5 rounded-xl border transition-colors ${
               w.burnSubtitles
                 ? 'bg-primary/20 border-primary/40 text-primary shadow-lg shadow-primary/20'
@@ -244,8 +244,8 @@ export function SubtitlesStep() {
             className="space-y-6"
           >
             {/* Live Subtitle Interactive Sandbox Banner */}
-            <div className="relative overflow-hidden rounded-2xl border border-white/10 dark:border-white/5 bg-zinc-950 p-6 shadow-2xl">
-              <div className="flex items-center justify-between mb-4">
+            <div className="relative overflow-hidden rounded-2xl border border-white/10 dark:border-white/5 bg-zinc-950 p-3 shadow-2xl">
+              <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-primary animate-ping" />
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
@@ -273,12 +273,12 @@ export function SubtitlesStep() {
               </div>
 
               {/* Dynamic Animated Subtitle Canvas */}
-              <div className={`w-full min-h-[140px] rounded-xl bg-gradient-to-br ${backdropClasses[sandboxBackdrop]} flex items-center justify-center p-6 relative border border-white/10 overflow-hidden shadow-inner`}>
+              <div className={`w-full min-h-[100px] rounded-xl bg-gradient-to-br ${backdropClasses[sandboxBackdrop]} flex items-center justify-center p-6 relative border border-white/10 overflow-hidden shadow-inner`}>
                 {/* Subtle grid pattern */}
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
                 
                 <div
-                  className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 transition-all duration-300 relative z-10"
+                  className="flex flex-wrap items-center justify-center gap-2 sm:gap-2 transition-all duration-300 relative z-10"
                   style={{
                     backgroundColor: computedBoxBg,
                     backdropFilter: w.subtitleBox ? 'blur(12px)' : 'none',
@@ -638,7 +638,7 @@ export function SubtitlesStep() {
                       <span>Primary Text Color</span>
                       <span className="font-mono text-muted-foreground text-[11px]">{w.subtitleColor}</span>
                     </label>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       <input
                         type="color"
                         value={w.subtitleColor}
@@ -670,7 +670,7 @@ export function SubtitlesStep() {
                       <span>Active Word Highlight Color</span>
                       <span className="font-mono text-primary text-[11px] font-bold">{w.subtitleHighlightColor}</span>
                     </label>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       <input
                         type="color"
                         value={w.subtitleHighlightColor}

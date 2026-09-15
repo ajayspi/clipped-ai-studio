@@ -145,7 +145,7 @@ export function ScriptStep() {
            </button>
         </div>
         <textarea
-          className="min-h-[220px] w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm shadow-inner placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary leading-relaxed"
+          className="min-h-[140px] w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm shadow-inner placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary leading-relaxed"
           placeholder="Write or paste your narration here..."
           value={w.narration}
           onChange={(e) => w.set('narration', e.target.value)}
