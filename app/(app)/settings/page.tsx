@@ -41,6 +41,11 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useSupabase, TestConnectionResult } from "@/lib/supabase/context";
 import { ApiProviderHub } from "@/components/settings/ApiProviderHub";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { PROVIDER_REGISTRY } from "@/lib/api-router";
+
 
 interface OmniTestResult {
   success: boolean;
@@ -256,12 +261,55 @@ ALTER TABLE public.scheduled_posts ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their own posts" ON public.scheduled_posts FOR ALL USING (true);
 `;
 
+
+function SortableFallbackItem({ id, remove }: { id: string; remove: (id: string) => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+  const style = { transform: CSS.Transform.toString(transform), transition };
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center justify-between p-3 rounded-xl border bg-white/[0.02] border-white/5 hover:bg-white/[0.04] transition-all">
+      <div className="flex items-center gap-3">
+        <div {...attributes} {...listeners} className="cursor-grab text-muted-foreground hover:text-white"><GripVertical className="w-4 h-4"/></div>
+        <span className="text-sm font-medium text-white/90">{id}</span>
+      </div>
+      <button type="button" onClick={() => remove(id)} className="text-muted-foreground hover:text-destructive p-1 rounded-md"><X className="w-4 h-4" /></button>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("OmniRoute AI");
   const [loading, setLoading] = useState(true);
 
   // ── OmniRoute Configuration State ──────────────────────────────────────────
   const [endpointUrl, setEndpointUrl] = useState("http://localhost:20128/v1");
+  const [fallbackProviders, setFallbackProviders] = useState<string[]>([]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (active.id !== over.id) {
+      setFallbackProviders((items) => {
+        const oldIndex = items.indexOf(active.id);
+        const newIndex = items.indexOf(over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const removeFallbackProvider = (id: string) => {
+    setFallbackProviders(fallbackProviders.filter(p => p !== id));
+  };
+
+  const addFallbackProvider = (id: string) => {
+    if (!fallbackProviders.includes(id)) {
+      setFallbackProviders([...fallbackProviders, id]);
+    }
+  };
+
   const [apiKey, setApiKey] = useState("");
   const [showApiKey, setShowApiKey] = useState(false);
   const [isConfigured, setIsConfigured] = useState(false);
@@ -363,6 +411,14 @@ export default function SettingsPage() {
       }
       setIsConfigured(Boolean(data.isConfigured || data.omniroute?.isConfigured));
       setMaskedApiKey(data.maskedApiKey || data.omniroute?.maskedApiKey || "");
+      if (data.keys?.omnirouteFallbackProviders?.maskedApiKey) {
+        try {
+          const parsed = JSON.parse(data.keys.omnirouteFallbackProviders.maskedApiKey);
+          setFallbackProviders(Array.isArray(parsed) ? parsed : ["openai", "gemini", "anthropic"]);
+        } catch(e) { setFallbackProviders(["openai", "gemini", "anthropic"]); }
+      } else {
+        setFallbackProviders(["openai", "gemini", "anthropic"]);
+      }
       setOmniSource(data.source || data.omniroute?.source || "default");
 
       if (data.keys) {
@@ -891,6 +947,46 @@ export default function SettingsPage() {
                     {/* Body */}
                     <div className="p-6 space-y-6">
                       {/* Feedback Banner */}
+
+                      {/* OmniRoute Fallback Configuration */}
+                      <div className="mt-8 pt-8 border-t border-white/5 space-y-6">
+                        <div>
+                          <h3 className="text-sm font-medium text-white/90">OmniRoute Fallback Hierarchy</h3>
+                          <p className="text-xs text-muted-foreground mt-1">If a provider fails or rate-limits, requests will automatically cascade down this list.</p>
+                        </div>
+
+                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                          <SortableContext items={fallbackProviders} strategy={verticalListSortingStrategy}>
+                            <div className="space-y-2">
+                              {fallbackProviders.map((id) => (
+                                <SortableFallbackItem key={id} id={id} remove={removeFallbackProvider} />
+                              ))}
+                            </div>
+                          </SortableContext>
+                        </DndContext>
+
+                        <div className="flex gap-2">
+                          <select
+                            className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                            onChange={(e) => { if(e.target.value) addFallbackProvider(e.target.value); e.target.value = ""; }}
+                            defaultValue=""
+                          >
+                            <option value="" disabled>Add a fallback provider...</option>
+                            {PROVIDER_REGISTRY.map(p => (
+                              <option key={p.id} value={p.id} disabled={fallbackProviders.includes(p.id)}>{p.name}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <button
+                          onClick={handleSaveFallbackProviders}
+                          disabled={savingOmni}
+                          className="px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 text-sm font-medium transition-colors"
+                        >
+                          {savingOmni ? "Saving..." : "Save Fallback Order"}
+                        </button>
+                      </div>
+
                       {omniFeedback && (
                         <div
                           className={`p-4 rounded-xl text-xs flex items-start gap-2.5 border ${
