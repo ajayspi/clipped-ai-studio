@@ -1,19 +1,28 @@
-## 2026-09-01T13:39:54Z
-You are Explorer 3 for Milestone 2 (Automatic Mission Mode & Progress View).
-Your working directory is C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_3.
-Authoritative Request: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\ORIGINAL_REQUEST.md
-Scope Document: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\PROJECT.md
-Test Infra: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\TEST_INFRA.md
+## 2026-09-17T00:11:33Z
 
-Mission:
-Investigate test cases, edge cases, and verification strategies for Milestone 2:
-1. Define test specifications for `tests/e2e/test-mission-mode.js`:
-   - One-click prompt submission validation (various prompts, styles, aspect ratios).
-   - Full 5-stage pipeline lifecycle execution (Script -> Scenes -> Assets -> Audio -> Composition).
-   - Status polling and log verification (`GET /api/workflows/mission?id=...`).
-   - Manual / Edit in Wizard state transfer validation.
-   - Zero-key fallback execution (ensure no crashes or uncaught exceptions when environment keys are absent).
-   - Invalid input handling (empty prompt, invalid job ID, malformed payload).
-2. Formulate verification criteria and integration into `tests/e2e/standalone-runner.js`.
-3. Deliver a detailed handoff report in `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_3\handoff.md` and send a message back.
-Remember: You are read-only; do NOT modify source code files.
+You are Explorer M2-3 for Milestone 2 of the Clipped Frontend Headless Test Suite project.
+Working directory: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_3
+Workspace directory: C:\Users\vigilare\.gemini\antigravity\scratch\clipped
+
+MANDATORY FIRST STEP: Read the authoritative request and project plan:
+1. C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\ORIGINAL_REQUEST.md (specifically the section "## Follow-up — 2026-09-16T21:22:28Z")
+2. C:\Users\vigilare\.gemini\antigravity\scratch\clipped\PROJECT.md
+3. C:\Users\vigilare\.gemini\antigravity\scratch\clipped\test\setup.ts
+
+Your objective is to investigate the technical requirements, source files, and test harness strategy for:
+1. Login Pages:
+   - `app/(auth)/login/page.tsx` and `app/login/page.tsx`.
+   - Inspect both files: are they identical, does one redirect or re-export the other?
+   - What forms, inputs, submit handlers, and auth provider buttons are rendered?
+   - What Supabase auth mocks (`signInWithPassword`, `signInWithOAuth`) or Next.js router mocks are invoked?
+2. Register Pages:
+   - `app/(auth)/register/page.tsx` and `app/register/page.tsx`.
+   - Inspect both files: are they identical, does one redirect or re-export the other?
+   - What forms, inputs, submit handlers, and error/success alerts are rendered?
+3. Recommended Test Architecture:
+   - How should test files be organized in `test/pages/core/` (e.g. `auth.test.tsx`)?
+   - What exact assertions verify clean mounting without exceptions?
+
+Deliverables:
+Write a comprehensive investigation report to `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_3\analysis.md` and a handoff summary to `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_3\handoff.md`.
+Then send a completion message back to the orchestrator (parent).

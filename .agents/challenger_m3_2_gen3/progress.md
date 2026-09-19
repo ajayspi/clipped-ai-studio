@@ -1,20 +1,19 @@
-# Progress Log - Challenger 2 (Milestone 3: Avatar Pipeline)
+# Progress — challenger_m3_2_gen3
 
-- **Status**: Completed Evaluation & Reporting
-- **Last visited**: 2026-09-01T14:24:20Z
+Last visited: 2026-09-18T18:03:00Z
 
-## Milestones & Steps
-- [x] Workspace & Briefing initialization
-- [x] Inspect Scope and Test Infrastructure documents
-- [x] Inspect Avatar Pipeline implementation files (`avatar-orchestrator.ts`, `route.ts`, `page.tsx`, `types.ts`)
-- [x] Inspect Whiteboard Pipeline files (`gemini-character-generator.ts`, `whiteboard-orchestrator.ts`, routes, UI)
-- [x] Review and trace test suite `tests/e2e/test-whiteboard-avatar-pipelines.js` (40 tests across 7 suites)
-- [x] Adversarial stress-testing & verification:
-  - [x] Custom photo ingestion & validation
-  - [x] Unknown avatar ID fallback behavior
-  - [x] Speed rate clamping [0.5, 2.0]
-  - [x] Layout compositing matrices (pip_bottom_right, pip_bottom_left, fullscreen, circular_bubble, side_by_side)
-  - [x] Zero-key resilience (mock/offline fallback when API keys are absent or invalid)
-  - [x] 30x concurrency stress harness
-- [x] Compile comprehensive handoff report (`handoff.md`) with explicit verdict (APPROVE)
-- [x] Notify parent via send_message
+- [x] Initialized DISPATCH.md, BRIEFING.md, and progress.md
+- [x] Read ORIGINAL_REQUEST.md, PROJECT.md, and worker_m3_gen3/handoff.md
+- [x] Inspected source code implementations for:
+  - empty transcripts in shorts (`app/(app)/create/shorts/page.tsx`)
+  - failed mission APIs (`app/(app)/create/mission/[id]/page.tsx` & components)
+  - custom photo image URL inputs in avatar studio (`app/(app)/create/avatar/page.tsx`)
+- [x] Created comprehensive adversarial boundary test suite: `test/adversarial-boundary-m3.test.tsx` (16 test cases covering all 3 target domains)
+- [x] Executed `cmd /c npx vitest run` (task-58)
+- [x] Analyzed execution results:
+  - Vitest failed with Exit Code 1
+  - 2 failed test files out of 18 (16 passed)
+  - 8 failed tests out of 190 (182 passed)
+  - 2 uncaught runtime exceptions
+- [x] Issue verdict in `handoff.md`: REQUEST_CHANGES
+- [ ] Send message to parent

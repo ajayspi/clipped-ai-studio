@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export interface ProviderConfig {
   envVars: string[];
   category: string;

@@ -37,9 +37,10 @@ export class ImageGenerator {
       try {
         console.log(`Generating image for scene: ${scene.description.substring(0, 40)}...`);
         
+        const baseStyle = "educational tech style, paradox style, consistent character anchor, minimalist stick man character";
         const prompt = options.style 
-          ? `${scene.description}, in the style of ${options.style}`
-          : scene.description;
+          ? `${scene.description}, in the style of ${options.style}, ${baseStyle}`
+          : `${scene.description}, ${baseStyle}`;
 
         const res = await fetch(`https://fal.run/fal-ai/${model}`, {
           method: 'POST',

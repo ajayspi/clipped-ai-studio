@@ -1,16 +1,10 @@
-## 2026-09-01T14:19:17Z
+## 2026-09-18T17:57:27Z
+Working Directory: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\challenger_m3_1_gen3
+Read ORIGINAL_REQUEST.md at C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\ORIGINAL_REQUEST.md, PROJECT.md at C:\Users\vigilare\.gemini\antigravity\scratch\clipped\PROJECT.md, and Worker M3 Handoff at C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\worker_m3_gen3\handoff.md.
 
-You are Challenger 1 for Milestone 3 (Gemini Character Sheets & Whiteboard Pipeline).
-Working directory: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\challenger_m3_1_gen3
-Authoritative User Request: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\ORIGINAL_REQUEST.md
-Scope Document: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\PROJECT.md
-Test Infrastructure: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\TEST_INFRA.md
-
-Mission:
-Adversarially challenge and stress-test the Whiteboard & Gemini Character Sheet pipeline:
-- Test 9-pose grid math, bounding box constraints, keyword sentiment-to-pose mapping, unknown archetypes, ultra-long prompts, and 30x concurrency.
-- Run tests: `node tests/e2e/test-whiteboard-avatar-pipelines.js`
-- Render your explicit verdict: APPROVE or REQUEST_CHANGES.
-
-Output:
-Write a full challenge report to `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\challenger_m3_1_gen3\handoff.md` and send a brief completion message to parent.
+Task:
+1. Adversarially stress test the whiteboard and wizard components.
+2. Challenge with missing/malformed poses and rapid store resets.
+3. Run `cmd /c npx vitest run` under repeated/stress conditions.
+4. Issue your verdict in `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\challenger_m3_1_gen3\handoff.md`: APPROVE or REQUEST_CHANGES.
+5. Send completion message to parent.

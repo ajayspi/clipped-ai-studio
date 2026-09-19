@@ -1,118 +1,134 @@
-# Project: Clipped AI Studio — Final Product Package
+# Project: Clipped AI Studio — Frontend Automated Headless Unit Test Suite
 
 ## Architecture
-Clipped is a full-stack Next.js 15 (React 19) AI video generation platform powered by Remotion, multi-provider LLMs/TTS/Video models, Supabase PostgreSQL, and automated social publishing.
+Comprehensive automated headless unit and component render test suite (Vitest + React Testing Library + JSDOM) across 100% of frontend `page.tsx` routes in Clipped.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                                    CLIENT LAYER                                        │
-│  - App Shell, Header, Sidebar, Dynamic Supabase Context Provider                       │
-│  - Creation Hub & Workflows (/create, /create/*)                                       │
-│  - Subtitles Configuration with Glassmorphism & Visual Depth (R3)                      │
-│  - Settings (/settings) with Custom Supabase Panel (R1) & Voice Previews (R2)          │
-│  - Workspaces & Folder Organization (R4.3)                                             │
-│  - Analytics Dashboard & API Cost Estimation (R4.5)                                    │
-│  - Brand Kit & Watermark Configuration (R4.2)                                          │
+│                                 TEST INFRASTRUCTURE LAYER                              │
+│  - Vitest Runner (vitest.config.mts, vite-tsconfig-paths, @vitejs/plugin-react)        │
+│  - JSDOM Environment & DOM polyfills (ResizeObserver, IntersectionObserver, Media)     │
+│  - Centralized Mock Harness (test/setup.ts)                                            │
+│    * next/navigation (useRouter, useSearchParams, usePathname, useParams)              │
+│    * next/font stubs                                                                   │
+│    * Supabase client & context providers (mock user, session, testConnection)          │
+│    * Database mocks for Server Components (@/lib/db)                                   │
+│    * Global fetch mock router for client-mount endpoints                               │
+│    * HTMLMediaElement & window.Audio stubs                                             │
 └──────────────────────────────────────────┬─────────────────────────────────────────────┘
                                            │
 ┌──────────────────────────────────────────▼─────────────────────────────────────────────┐
-│                                 API & ENGINE LAYER                                     │
-│  - Dynamic Supabase SSR Client & Connection Diagnostics (/api/settings/supabase/test)  │
-│  - Voice Engine (Azure TTS, OpenAI TTS, Keyless Fallback) & Preview API (/api/tts/*)   │
-│  - Developer REST API (/api/v1/generate, /api/v1/jobs/[id]) & HMAC Webhooks (R4.4)     │
-│  - Social Publishing Engine (YouTube Shorts, TikTok, Instagram) & Export (R4.1)        │
-│  - Cost Estimator & Usage Tracking Engine (lib/engine/cost-estimator.ts)               │
-│  - Remotion Composition (Subtitles, Neon Glows, Watermark Overlay) & Render Worker     │
+│                                     TEST SUITES                                        │
+│  - Core Page Tests: dashboard, settings, queue, library, planner, login, register       │
+│  - Creation Workflow Tests: create hub, auto, ai-videos, avatar, bulk, drama,          │
+│    footage, images, shorts, stories, url, whiteboard, mission/[id]                     │
+│  - RSC Test Harness: Async server component resolution (await PageComponent())         │
+│  - React 19 Dynamic Route Harness: Suspense + Promise params for mission/[id]          │
 └──────────────────────────────────────────┬─────────────────────────────────────────────┘
                                            │
 ┌──────────────────────────────────────────▼─────────────────────────────────────────────┐
-│                            PERSISTENCE & INFRASTRUCTURE                                │
-│  - Dynamic Supabase Instance (LocalStorage + Cookies + Fallback)                       │
-│  - Tables: users, videos, render_jobs, api_credits, settings, scheduled_posts,         │
-│            workspaces, campaigns                                                       │
-│  - Opaque-Box Automated Test Suite (tests/e2e/standalone-runner.js)                    │
+│                              DEFENSIVE STABILITY & BUILD                               │
+│  - Guard app/(app)/planner/page.tsx against date-fns v4 Invalid time value crashes      │
+│  - Provide app/(app)/queue/page.tsx standalone route re-exporting QueueCard / view     │
+│  - Clean npm run build verification with zero regressions                              │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Feature Inventory
 | # | Feature | Description | Milestone | Source |
 |---|---------|-------------|-----------|--------|
-| 1 | Custom Supabase UI | Settings panel for NEXT_PUBLIC_SUPABASE_URL & ANON_KEY | M1 | R1 |
-| 2 | Dynamic Client Routing | SupabaseProvider + localStorage + SSR cookies for dynamic DB | M1 | R1 |
-| 3 | Supabase Test Probe | POST /api/settings/supabase/test for latency & schema checks | M1 | R1 |
-| 4 | Azure TTS Integration | Azure Cognitive Speech REST synthesis in TTSEngine | M2 | R2 |
-| 5 | Free/Keyless Voice APIs | Google Translate TTS, Web Speech, in-memory synth | M2 | R2 |
-| 6 | Voice Audio Previews | Play/Pause preview buttons next to voice models with sample audio | M2 | R2 |
-| 7 | Modern Subtitles UI | Glassmorphism, backdrop-blur, shadows, visual depth | M3 | R3 |
-| 8 | Subtitle Style Presets | 6 presets: Hormozi Pop, Cyber Neon, Minimalist, Cinematic, etc. | M3 | R3 |
-| 9 | Subtitle Position Selector | 3-segment smartphone mockup selector + live preview sandbox | M3 | R3 |
-| 10 | One-Click Export & Publish | Direct publish to YouTube Shorts / TikTok mocks + export API | M4 | R4.1 |
-| 11 | Custom Branding & Watermark | Watermark overlay in Remotion (5 anchors, scale, opacity, badge) | M4 | R4.2 |
-| 12 | Project Workspaces | Folders & campaigns organization, workspaces table & UI filter | M4 | R4.3 |
-| 13 | Developer API & Webhooks | /api/v1/generate, /api/v1/jobs/[id], HMAC signed webhooks | M4 | R4.4 |
-| 14 | Advanced Analytics Dashboard | API usage tracking, multi-provider cost estimation model | M4 | R4.5 |
-| 15 | Standalone Test Suite | Automated opaque-box tests covering all R1-R4 criteria | M5 | Acceptance Criteria |
+| 1 | Vitest & RTL Infrastructure | Dependencies in package.json and vitest.config.mts with JSDOM and @/* aliasing | M1 | Survey / R1 |
+| 2 | Global Mock Harness | test/setup.ts mocking next/navigation, Supabase, Media, Observers, Fetch | M1 | Survey / R2 |
+| 3 | Package Test Scripts | Configure "test:unit": "vitest run" in package.json | M1 | Survey / R1 |
+| 4 | Dashboard Route Test | Headless render test for app/(app)/dashboard/page.tsx with RSC async harness | M2 | Survey / R1 |
+| 5 | Settings Route Test | Headless render test for app/(app)/settings/page.tsx with SupabaseProvider & Audio mocks | M2 | Survey / R1 |
+| 6 | Library Route Test | Headless render test for app/(app)/library/page.tsx with workspace/job mocks | M2 | Survey / R1 |
+| 7 | Queue Route Standalone & Test | Standalone app/(app)/queue/page.tsx route and dedicated headless unit test | M2 | Survey / R1 |
+| 8 | Planner Route Test | Headless render test for app/(app)/planner/page.tsx with RSC async harness | M2 | Survey / R1 |
+| 9 | Login Route Test | Headless render test for app/(auth)/login/page.tsx and app/login/page.tsx | M2 | Survey / R1 |
+| 10 | Register Route Test | Headless render test for app/(auth)/register/page.tsx and app/register/page.tsx | M2 | Survey / R1 |
+| 11 | Create Hub Test | Headless render test for app/(app)/create/page.tsx | M3 | Survey / R1 |
+| 12 | Auto Workflow Test | Headless render test for app/(app)/create/auto/page.tsx | M3 | Survey / R1 |
+| 13 | AI-Videos Workflow Test | Headless render test for app/(app)/create/ai-videos/page.tsx | M3 | Survey / R1 |
+| 14 | Avatar Workflow Test | Headless render test for app/(app)/create/avatar/page.tsx with canvas preview | M3 | Survey / R1 |
+| 15 | Bulk Workflow Test | Headless render test for app/(app)/create/bulk/page.tsx | M3 | Survey / R1 |
+| 16 | Drama Workflow Test | Headless render test for app/(app)/create/drama/page.tsx | M3 | Survey / R1 |
+| 17 | Footage Workflow Test | Headless render test for app/(app)/create/footage/page.tsx | M3 | Survey / R1 |
+| 18 | Images Workflow Test | Headless render test for app/(app)/create/images/page.tsx | M3 | Survey / R1 |
+| 19 | Shorts Workflow Test | Headless render test for app/(app)/create/shorts/page.tsx | M3 | Survey / R1 |
+| 20 | Stories Workflow Test | Headless render test for app/(app)/create/stories/page.tsx | M3 | Survey / R1 |
+| 21 | URL Workflow Test | Headless render test for app/(app)/create/url/page.tsx | M3 | Survey / R1 |
+| 22 | Whiteboard Workflow Test | Headless render test for app/(app)/create/whiteboard/page.tsx | M3 | Survey / R1 |
+| 23 | Mission Dynamic Route Test | Headless render test for app/(app)/create/mission/[id]/page.tsx with Suspense & Promise params | M3 | Survey / R1 |
+| 24 | Defensive Planner Fix | Fix date-fns v4 parsing in app/(app)/planner/page.tsx to avoid Invalid time value crash | M4 | Survey / R3 |
+| 25 | Full Test Suite Execution | Execute vitest run across all 20+ tests ensuring 100% pass | M4 | Acceptance Criteria |
+| 26 | Production Build Verification | Verify npm run build succeeds without regressions | M4 | Acceptance Criteria |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| 1 | Custom Supabase Connection | Settings panel, dynamic context, cookies, connection probe test | none | PLANNED |
-| 2 | Voice API Expansion & Previews | Azure TTS, Free/Keyless, Preview API, Play/Pause UI in Settings & Wizard | none | PLANNED |
-| 3 | Modernize Subtitles UI | SubtitlesStep redesign, glassmorphism, 6 presets, position selector, Remotion styling | none | PLANNED |
-| 4 | Premium Package Features | Social Export, Branding & Watermarks, Workspaces, Developer API/Webhooks, Analytics | M1, M2, M3 | PLANNED |
-| 5 | E2E Testing & Verification | Comprehensive test runner for R1-R4 acceptance criteria | M1, M2, M3, M4 | PLANNED |
-| 6 | Forensic Audit & Packaging | Integrity verification, build validation, and final presentation | M5 | PLANNED |
+| 1 | Test Infrastructure & Mock Harness | Vitest, JSDOM, RTL dependencies, vitest.config.mts, test/setup.ts | none | PLANNED |
+| 2 | Core Routes Headless Tests | Unit tests for dashboard, settings, library, queue, planner, login, register + queue route | M1 | PLANNED |
+| 3 | Create Workflow Routes Tests | Unit tests for all 13 creation routes under app/(app)/create/** | M1 | PLANNED |
+| 4 | Defensive Fixes, Suite Run & Build Verification | Planner date-fns guard, full suite execution (100% pass), npm run build verification | M2, M3 | PLANNED |
 
 ## Interface Contracts
 
-### 1. Supabase Dynamic Client Context
-- `lib/supabase/context.tsx`:
-  - `useSupabase()`: returns `{ supabase, config, setCustomConfig, resetToDefault, testConnection }`
-  - `clipped_custom_supabase_config` in `localStorage`
-  - `clipped_custom_supabase_url`, `clipped_custom_supabase_anon_key` in `document.cookie`
-- `app/api/settings/supabase/test/route.ts`:
-  - Request: `{ url: string, anonKey: string }`
-  - Response: `{ success: boolean, reachable: boolean, latencyMs: number, schema: { isHealthy: boolean, tables: Record<string, { exists: boolean }> } }`
+### 1. Vitest Configuration (`vitest.config.mts`)
+- Environment: `jsdom`
+- Setup file: `./test/setup.ts`
+- Plugins: `@vitejs/plugin-react`, `vite-tsconfig-paths`
+- Globals: `true`
 
-### 2. TTS Voice Preview & Synthesis
-- `lib/engine/tts.ts`:
-  - Providers: `'azure' | 'elevenlabs' | 'openai' | 'google' | 'coqui' | 'keyless' | 'mock' | 'auto'`
-  - `synthesize(request: TTSRequest): Promise<TTSResponse>`
-- `app/api/tts/preview/route.ts`:
-  - Request: `{ text?: string, voiceId: string, provider?: string, language?: string, speed?: number }`
-  - Response: `{ success: boolean, audioUrl: string, audioBase64: string, duration: number, providerUsed: string, voiceId: string }`
+### 2. Global Test Harness (`test/setup.ts`)
+- `next/navigation`:
+  - `useRouter`: returns `{ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn(), back: vi.fn(), forward: vi.fn() }`
+  - `usePathname`: returns `'/'`
+  - `useSearchParams`: returns `new URLSearchParams()`
+  - `useParams`: returns `{}`
+- `next/font`:
+  - stubs `localFont` and `next/font/google`
+- `window.Audio`:
+  - mocked with `{ play: vi.fn().mockResolvedValue(undefined), pause: vi.fn(), addEventListener: vi.fn(), removeEventListener: vi.fn() }`
+- `HTMLMediaElement.prototype.play` / `pause`:
+  - mocked as resolved promises
+- `ResizeObserver` & `IntersectionObserver`:
+  - polyfilled with mock classes
+- `window.matchMedia`:
+  - polyfilled returning `{ matches: false, addListener: vi.fn(), removeListener: vi.fn() }`
+- `navigator.clipboard`:
+  - polyfilled with `{ writeText: vi.fn().mockResolvedValue(undefined) }`
 
-### 3. Remotion Composition & Watermark
-- `remotion/Composition.tsx`:
-  - `WatermarkConfig`: `{ url?: string, position?: 'top-left'|'top-right'|'bottom-left'|'bottom-right'|'center', opacity?: number, scale?: number, margin?: number, handle?: string }`
-  - `SubtitleStyleConfig`: `{ preset: string, color: string, highlightColor?: string, outlineColor: string, outlineWidth: number, fontSize: number, yPosition: number, showBox: boolean, boxColor: string, boxOpacity?: number, neonGlow?: boolean, uppercase: boolean, maxWidth: number }`
+### 3. Server Component Test Pattern (RSC)
+For `dashboard/page.tsx` and `planner/page.tsx`:
+```tsx
+const ResolvedPage = await DashboardPage();
+render(ResolvedPage);
+```
 
-### 4. Developer API & Webhooks
-- `app/api/v1/generate/route.ts`:
-  - Request: `{ prompt: string, workflow?: string, aspectRatio?: string, voice?: string, burnSubtitles?: boolean, watermarkUrl?: string, webhookUrl?: string, metadata?: Record<string, any> }`
-  - Response: `{ success: true, jobId: string, status: "processing", createdAt: string, statusUrl: string }`
-- `app/api/v1/jobs/[id]/route.ts`:
-  - Response: `{ jobId: string, status: string, progress: number, videoUrl?: string, duration?: number, costEstimation?: { totalCostUsd: number, llmTokens: number, ttsCharacters: number } }`
-
-### 5. Workspaces & Analytics
-- `app/api/workspaces/route.ts`:
-  - `GET`: Returns list of workspaces with video counts.
-  - `POST`: `{ name: string, color?: string, icon?: string, description?: string }`
-- `lib/engine/cost-estimator.ts`:
-  - `calculateVideoCost(params: VideoCostParams): VideoCostBreakdown`
-  - `getAggregatedAnalytics(): AnalyticsSummary`
+### 4. React 19 Dynamic Route Test Pattern
+For `create/mission/[id]/page.tsx`:
+```tsx
+render(
+  <React.Suspense fallback={<div>Loading...</div>}>
+    <MissionProgressPage params={Promise.resolve({ id: 'test-mission-123' })} />
+  </React.Suspense>
+);
+```
 
 ## Code Layout
-- `app/(app)/settings/page.tsx` — Settings page with Supabase Connection & Voice Catalog tabs
-- `app/(app)/analytics/page.tsx` — Analytics and cost estimations dashboard
-- `app/(app)/library/page.tsx` — Video library with workspaces filter and one-click export
-- `components/wizard/SubtitlesStep.tsx` — Modernized Subtitles UI
-- `components/wizard/VoiceStep.tsx` — Voice Step with audio previews
-- `lib/supabase/context.tsx` — Dynamic Supabase React Context
-- `lib/supabase/client.ts` — Dynamic Browser SSR client
-- `lib/supabase/server.ts` — Dynamic Server SSR client with cookie inspection
-- `lib/engine/tts.ts` — Expanded TTS engine (Azure + Keyless + OpenAI)
-- `lib/engine/cost-estimator.ts` — Cost calculation engine
-- `lib/engine/webhook-dispatcher.ts` — HMAC webhook dispatcher
-- `remotion/Composition.tsx` — Remotion composition with watermark & neon subtitle support
-- `tests/e2e/standalone-runner.js` — Automated test suite for R1-R4
+- `vitest.config.mts` — Vitest configuration
+- `test/setup.ts` — Global mock harness & JSDOM environment polyfills
+- `test/pages/core/dashboard.test.tsx` — Dashboard route render test
+- `test/pages/core/settings.test.tsx` — Settings route render test
+- `test/pages/core/library.test.tsx` — Library route render test
+- `test/pages/core/queue.test.tsx` — Queue route render test
+- `test/pages/core/planner.test.tsx` — Planner route render test
+- `test/pages/core/auth.test.tsx` — Login & Register route render tests
+- `test/pages/create/create-hub.test.tsx` — Create Hub test
+- `test/pages/create/wizards.test.tsx` — AI Videos, Footage, Images, Stories wizard tests
+- `test/pages/create/generators.test.tsx` — Auto, Bulk, Drama, Shorts, URL generator tests
+- `test/pages/create/interactive.test.tsx` — Avatar & Whiteboard studio tests
+- `test/pages/create/mission.test.tsx` — Mission [id] dynamic route test
+- `app/(app)/queue/page.tsx` — Standalone Queue route
+- `app/(app)/planner/page.tsx` — Defensive date validation

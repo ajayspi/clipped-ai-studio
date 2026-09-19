@@ -65,6 +65,52 @@ export async function POST(req: Request) {
           signal: AbortSignal.timeout(4000),
         });
         isWorking = res.ok;
+      } else if (cleanProvider.includes('anthropic')) {
+        const res = await fetch('https://api.anthropic.com/v1/models', {
+          headers: {
+            'x-api-key': key,
+            'anthropic-version': '2023-06-01',
+          },
+          signal: AbortSignal.timeout(4000),
+        });
+        isWorking = res.ok || res.status === 200 || res.status === 400; // valid key responds with 200 or 400 bad req, 401 if invalid
+      } else if (cleanProvider.includes('gemini')) {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`, {
+          signal: AbortSignal.timeout(4000),
+        });
+        isWorking = res.ok;
+      } else if (cleanProvider.includes('grok')) {
+        const res = await fetch('https://api.x.ai/v1/models', {
+          headers: { 'Authorization': `Bearer ${key}` },
+          signal: AbortSignal.timeout(4000),
+        });
+        isWorking = res.ok;
+      } else if (cleanProvider.includes('cerebras')) {
+        const res = await fetch('https://api.cerebras.ai/v1/models', {
+          headers: { 'Authorization': `Bearer ${key}` },
+          signal: AbortSignal.timeout(4000),
+        });
+        isWorking = res.ok;
+      } else if (cleanProvider.includes('mistral')) {
+        const res = await fetch('https://api.mistral.ai/v1/models', {
+          headers: { 'Authorization': `Bearer ${key}` },
+          signal: AbortSignal.timeout(4000),
+        });
+        isWorking = res.ok;
+      } else if (cleanProvider.includes('github_models') || cleanProvider.includes('github')) {
+        const res = await fetch('https://models.inference.ai.azure.com/models', {
+          headers: { 'Authorization': `Bearer ${key}` },
+          signal: AbortSignal.timeout(4000),
+        });
+        isWorking = res.ok;
+      } else if (cleanProvider.includes('deepgram')) {
+        const res = await fetch('https://api.deepgram.com/v1/projects', {
+          headers: { 'Authorization': `Token ${key}` },
+          signal: AbortSignal.timeout(4000),
+        });
+        isWorking = res.ok;
+      } else if (cleanProvider.includes('suno')) {
+        isWorking = key.length >= 10; // Suno session token
       } else if (cleanProvider.includes('azure')) {
         const region = process.env.AZURE_SPEECH_REGION || 'eastus';
         const res = await fetch(`https://${region}.tts.speech.microsoft.com/cognitiveservices/voices/list`, {

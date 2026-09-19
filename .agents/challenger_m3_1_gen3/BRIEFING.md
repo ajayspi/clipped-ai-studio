@@ -1,59 +1,64 @@
-# BRIEFING — 2026-09-01T14:25:00Z
+# BRIEFING — 2026-09-18T18:04:00Z
 
 ## Mission
-Adversarially challenge and stress-test the Whiteboard & Gemini Character Sheet pipeline (9-pose grid math, bounding box constraints, keyword sentiment-to-pose mapping, unknown archetypes, ultra-long prompts, 30x concurrency).
+Adversarially stress test Whiteboard and Wizard components, test malformed poses and rapid store resets, run stress suites, and deliver empirical verdict.
 
 ## 🔒 My Identity
-- Archetype: EMPIRICAL CHALLENGER
+- Archetype: challenger
 - Roles: critic, specialist
 - Working directory: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\challenger_m3_1_gen3
-- Original parent: a96ac2f2-f545-409e-b167-78ba7a0210a5
-- Milestone: Milestone 3 (Gemini Character Sheets & Whiteboard Pipeline)
+- Original parent: 037a6fc7-a6eb-46c1-b85d-68e7a4aa8c74
+- Milestone: M3
 - Instance: 1 of 1
 
 ## 🔒 Key Constraints
 - Review-only — do NOT modify implementation code
-- Find bugs by writing and executing tests, generators, oracles, stress harnesses
-- Render explicit verdict: APPROVE or REQUEST_CHANGES
+- Report any failures as findings — do NOT fix them yourself
+- Empirical challenge only: bugs must be reproduced by writing and running test harnesses
+- .agents/ holds only metadata — no source code or tests in .agents/
 
 ## Current Parent
-- Conversation ID: a96ac2f2-f545-409e-b167-78ba7a0210a5
-- Updated: 2026-09-01T14:25:00Z
+- Conversation ID: 037a6fc7-a6eb-46c1-b85d-68e7a4aa8c74
+- Updated: 2026-09-18T18:04:00Z
 
 ## Review Scope
-- **Files to review**: 
-  - `lib/ai/gemini-character-generator.ts`
-  - `lib/engine/whiteboard-orchestrator.ts`
-  - `lib/engine/avatar-orchestrator.ts`
-  - `app/api/workflows/whiteboard/route.ts`
-  - `app/api/workflows/whiteboard/character-sheet/route.ts`
-  - `app/api/workflows/avatar/route.ts`
-  - `app/(app)/create/whiteboard/page.tsx`
-  - `app/(app)/create/avatar/page.tsx`
-  - `tests/e2e/test-whiteboard-avatar-pipelines.js`
-- **Interface contracts**: PROJECT.md (§3, §4, §5), TEST_INFRA.md, ORIGINAL_REQUEST.md (§R3)
-- **Review criteria**: Correctness, edge case resilience, bounding box math, 9-pose grid slicing, concurrency, error handling
+- **Files to review**: `app/(app)/create/whiteboard/page.tsx`, `components/wizard/wizard-store.ts`, `components/wizard/CreationWizard.tsx`, `components/wizard/ScenesStep.tsx`, `components/wizard/RenderStep.tsx`, `components/wizard/LivePlayer.tsx`
+- **Interface contracts**: PROJECT.md, ORIGINAL_REQUEST.md, worker_m3_gen3/handoff.md
+- **Review criteria**: Robustness against malformed/missing poses, concurrent/rapid store reset races, invalid inputs, rendering edge cases, memory leaks, test flakiness under repeat stress
 
 ## Attack Surface
 - **Hypotheses tested**:
-  1. 9-pose bounding box coordinate integrity across [0, 0, 1000, 1000] canvas — VERIFIED
-  2. Sub-image bounds & SVG path generation — VERIFIED
-  3. Keyword sentiment-to-pose mapping regex & edge-case fallbacks — VERIFIED
-  4. Unknown archetypes & invalid color sanitization — VERIFIED
-  5. Ultra-long prompts (>4000 chars) & multi-sentence chunking — VERIFIED
-  6. 30x rapid concurrent dispatches & non-colliding job ID generation — VERIFIED
-  7. Zero-key offline fallback robustness — VERIFIED
-- **Vulnerabilities found**: None. All edge cases handled defensively with bounds clamping, fallbacks, and regex guards.
-- **Untested angles**: Live external network calls to Gemini/HeyGen APIs when paid keys are configured (tested via mock and deterministic vector engines).
+  1. Missing/null/non-array `bbox` on active pose in Whiteboard Studio. (CONFIRMED CRASH)
+  2. Missing/empty poses object in Whiteboard Studio. (PASSED - handled gracefully)
+  3. Rapid archetype switching in Whiteboard Studio. (PASSED - resilient)
+  4. Malformed SVG path in Whiteboard progressive canvas. (PASSED - rendered without crash)
+  5. 100 rapid concurrent wizard store resets & mutations. (PASSED - store correctly reinitializes)
+  6. Rapid store reset while CreationWizard is mounted. (PASSED - component returns to step 0)
+  7. Out-of-bounds `step` in store (e.g. `goToStep(99)` or `goToStep(-1)`). (CONFIRMED CRASH)
+  8. Auto-pilot interrupted by immediate store reset. (PASSED - handled)
+  9. Malformed beats with undefined/null `keywords` in `ScenesStep`. (CONFIRMED CRASH)
+  10. Malformed candidate with undefined `url` in `ScenesStep`. (CONFIRMED CRASH)
+  11. Undefined `workflowType` in `RenderStep`. (CONFIRMED CRASH)
+- **Vulnerabilities found**:
+  - `app/(app)/create/whiteboard/page.tsx:438:78`: Uncaught `TypeError: Cannot read properties of undefined (reading 'join')` and `null (reading 'join')` on `bbox.join(", ")`.
+  - `components/wizard/ScenesStep.tsx:61:25`: Uncaught `TypeError: Cannot read properties of undefined (reading 'map')` on `beat.keywords.map`.
+  - `components/wizard/ScenesStep.tsx:73:33`: Uncaught `TypeError: Cannot read properties of undefined (reading 'endsWith')` on `beat.candidates[0].url.endsWith`.
+  - `components/wizard/CreationWizard.tsx:28` & `components/wizard/wizard-store.ts:335`: Uncaught `TypeError: Cannot read properties of undefined (reading 'name')` when `goToStep` receives out-of-bounds index.
+  - `components/wizard/RenderStep.tsx:52:53`: Uncaught `TypeError: Cannot read properties of undefined (reading 'replace')` on `w.workflowType.replace`.
+- **Untested angles**: Full server Remotion bundle render under headless environment.
 
 ## Loaded Skills
-- None
+None loaded.
 
 ## Key Decisions Made
-- Completed static, mathematical, and algorithmic empirical stress-testing across all 7 challenge suites.
-- Rendered explicit verdict: APPROVE.
+- Authored empirical stress test harness in `test/adversarial-whiteboard-wizard.test.tsx`.
+- Executed full Vitest suite twice under repeated stress conditions.
+- Confirmed deterministic reproduction of 5 uncaught runtime exceptions.
+- Verdict: REQUEST_CHANGES.
 
 ## Artifact Index
-- handoff.md — Challenge Report and Verdict
-- progress.md — Task completion tracker
-- DISPATCH.md — Initial dispatch log
+- DISPATCH.md — incoming dispatch instructions
+- BRIEFING.md — persistent state and attack surface
+- progress.md — liveness heartbeat
+- handoff.md — formal empirical challenger verdict report
+- test/adversarial-whiteboard-wizard.test.tsx — executable adversarial test suite

@@ -399,6 +399,91 @@ export function ApiProviderHub() {
         </div>
       )}
 
+      {/* ── ProStudioX Fallback Chains & Failover Hierarchy ────────────────── */}
+      <div className="rounded-2xl border border-border/60 bg-card/60 p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/40 pb-3">
+          <div>
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-purple-400" />
+              ProStudioX Fallback Chains & Failover Cascades
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Automated cascading execution order from primary to fallback providers when an API hits quota or fails.
+            </p>
+          </div>
+          <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 w-fit">
+            Automatic Failover Active
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {categories.slice(1).map((cat) => {
+            const meta = CATEGORY_META[cat];
+            const catProviders = providers
+              .filter((p) => p.category === cat && (p.isConfigured || p.isFree))
+              .sort((a, b) => {
+                // Active & healthy first, then highest priority
+                if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
+                return (b.priority + b.defaultPriority) - (a.priority + a.defaultPriority);
+              });
+
+            return (
+              <div key={cat} className="rounded-xl border border-border/40 bg-muted/20 p-3 flex flex-col justify-between">
+                <div className="flex items-center gap-1.5 mb-2.5">
+                  <span className={meta?.color || "text-muted-foreground"}>{meta?.icon}</span>
+                  <span className="text-xs font-semibold">{meta?.label || cat} Chain</span>
+                </div>
+
+                <div className="space-y-1.5">
+                  {catProviders.length === 0 ? (
+                    <p className="text-[11px] text-muted-foreground italic">No providers configured</p>
+                  ) : (
+                    catProviders.slice(0, 4).map((p, idx) => {
+                      const isFirst = idx === 0 && p.isActive && p.isHealthy;
+                      return (
+                        <div
+                          key={p.id}
+                          className={`flex items-center justify-between text-xs px-2.5 py-1.5 rounded-lg transition-all ${
+                            isFirst
+                              ? "bg-purple-500/15 border border-purple-500/30 text-purple-200 font-medium"
+                              : p.isActive && p.isHealthy
+                              ? "bg-background/80 border border-border/50 text-foreground"
+                              : "bg-muted/40 text-muted-foreground line-through opacity-60"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <span className="font-mono text-[10px] opacity-70">
+                              {idx === 0 ? "1° Primary" : `${idx + 1}° Fallback`}
+                            </span>
+                            <span className="truncate">{p.name}</span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                            {p.isHealthy ? (
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                            ) : (
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                            )}
+                            <span className="text-[10px] font-mono text-muted-foreground">
+                              P:{p.priority}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                <div className="mt-2.5 pt-2 border-t border-border/20 flex items-center justify-between text-[10px] text-muted-foreground">
+                  <span>Failover: Sequential</span>
+                  <span>{catProviders.filter(p => p.isActive && p.isHealthy).length} standby</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Category Filter */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1">
         {categories.map((cat) => {

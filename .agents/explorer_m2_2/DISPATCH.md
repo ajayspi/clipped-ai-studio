@@ -1,19 +1,25 @@
-## 2026-09-01T13:39:54Z
-You are Explorer 2 for Milestone 2 (Automatic Mission Mode & Progress View).
-Your working directory is C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_2.
-Authoritative Request: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\ORIGINAL_REQUEST.md
-Scope Document: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\PROJECT.md
-Test Infra: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\TEST_INFRA.md
+## 2026-09-17T00:11:33Z
+You are Explorer M2-2 for Milestone 2 of the Clipped Frontend Headless Test Suite project.
+Working directory: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_2
+Workspace directory: C:\Users\vigilare\.gemini\antigravity\scratch\clipped
 
-Mission:
-Investigate the UI & Frontend architecture for Automatic Mission Mode:
-1. Inspect `components/create/MissionPromptBar.tsx`, `app/(app)/create/page.tsx`, and examine how prompt submission triggers navigation to `/create/mission/[id]`.
-2. Inspect `useWizardStore.ts` (or relevant Zustand stores), wizard components, and determine the exact state transfer mechanism for the "Manual / Edit in Wizard" toggle button.
-3. Formulate the UI specification for `app/(app)/create/mission/[id]/page.tsx`:
-   - 5-stage progress visualizer (Script, Scenes, Assets, Audio, Composition) with status badges and animated indicators.
-   - Real-time log console stream with timestamps and log levels.
-   - Live video preview (using Remotion Player or interactive card) when composition is ready.
-   - "Edit in Wizard" action button transferring all generated data (prompt, script, scenes, audio, style) into `useWizardStore` and navigating to the wizard.
-   - Error handling and retry states.
-4. Deliver a detailed handoff report in `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_2\handoff.md` and send a message back.
-Remember: You are read-only; do NOT modify source code files.
+MANDATORY FIRST STEP: Read the authoritative request and project plan:
+1. C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\ORIGINAL_REQUEST.md (specifically the section "## Follow-up — 2026-09-16T21:22:28Z")
+2. C:\Users\vigilare\.gemini\antigravity\scratch\clipped\PROJECT.md
+3. C:\Users\vigilare\.gemini\antigravity\scratch\clipped\test\setup.ts
+
+Your objective is to investigate the technical requirements, source files, and test harness strategy for:
+1. `app/(app)/settings/page.tsx`:
+   - Inspect component structure: is it a client component ('use client')?
+   - Check hooks and context requirements (`useSupabase`, audio preview elements, tabs, custom API key management forms, etc.).
+   - Identify any external API calls, fetch endpoints, or browser API requirements (e.g. `window.Audio`, `matchMedia`, `localStorage`).
+2. `app/(app)/library/page.tsx`:
+   - Inspect component structure: client vs server component.
+   - Check data queries (e.g. Supabase `render_jobs` table, filtering by workspace, search filters).
+   - Identify UI states: loading, empty state, populated job cards, video modal previews.
+   - Determine necessary mock data and assertions for headless rendering.
+
+Deliverables:
+Write a comprehensive investigation report to `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_2\analysis.md` and a handoff summary to `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_2\handoff.md`.
+Then send a completion message back to the orchestrator (parent).
+

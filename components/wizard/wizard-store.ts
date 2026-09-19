@@ -267,6 +267,8 @@ export const DEFAULT_SYSTEM_PROMPT =
   'You are a short-form video scriptwriter. Return narration only — no headings, no stage directions.';
 
 const initialState = {
+  workflowType: 'footage' as WorkflowType,
+  autoMode: false,
   step: 0,
   furthestStep: 0,
   provider: '',
@@ -326,13 +328,11 @@ const initialState = {
 };
 
 export const useWizardStore = create<WizardState>((set, get) => ({
-  workflowType: 'footage',
-  autoMode: false,
   ...initialState,
 
   setAspectRatio: (ar) => set({ aspectRatio: ar }),
 
-  goToStep: (step) => set({ step }),
+  goToStep: (step) => set({ step: Math.max(0, Math.min(step, STEPS.length - 1)) }),
   next: () => {
     const step = Math.min(get().step + 1, STEPS.length - 1);
     set({ step, furthestStep: Math.max(step, get().furthestStep) });

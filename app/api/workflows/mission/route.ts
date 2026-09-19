@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { missionOrchestrator } from '@/lib/engine/mission-orchestrator';
+import { supabaseAdmin as supabase } from '@/lib/db';
+import type { MissionJobParams } from '@/scripts/lib/job-params';
 
 export async function POST(req: Request) {
   try {
@@ -16,31 +17,38 @@ export async function POST(req: Request) {
     const cleanPrompt = prompt.trim();
     const jobId = crypto.randomUUID();
 
-    // 1. Initialize Job State
-    await missionOrchestrator.createJob(jobId, {
+    const jobParams: MissionJobParams = {
+      type: 'mission',
       prompt: cleanPrompt,
       aspectRatio,
       style,
       voice,
       mock: Boolean(mock),
+    };
+
+    // Enqueue-only: insert a pending render_jobs row that the render-worker
+    // claims via its Realtime wake-up. The background mission pipeline must NOT
+    // run inside this request handler — a serverless function is torn down the
+    // moment it returns, so setTimeout fire-and-forget dies on Vercel.
+    const { error: insertError } = await supabase.from('render_jobs').insert({
+      id: jobId,
+      status: 'pending',
+      progress: 0,
+      workflow_type: 'mission',
+      logs: JSON.stringify(jobParams),
+      created_at: new Date().toISOString(),
     });
 
-    // 2. Fire Background Orchestration Task
-    setTimeout(async () => {
-      try {
-        await missionOrchestrator.executeMission(jobId, {
-          prompt: cleanPrompt,
-          aspectRatio,
-          style,
-          voice,
-          mock: Boolean(mock),
-        });
-      } catch (err) {
-        console.error(`[API /api/workflows/mission] Background mission error for ${jobId}:`, err);
-      }
-    }, 0);
+    if (insertError) {
+      console.error('[API /api/workflows/mission] Enqueue failed:', insertError);
+      return NextResponse.json(
+        { success: false, error: insertError.message || 'Failed to enqueue mission' },
+        { status: 500 }
+      );
+    }
 
-    // 3. Return immediate response
+    // Return the exact same response shape as before: the UI polls progressUrl
+    // and reads stage steps from the GET handler, which is DB-backed.
     return NextResponse.json({
       success: true,
       jobId,
