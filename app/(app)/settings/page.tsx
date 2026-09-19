@@ -79,6 +79,9 @@ const BASE_PROVIDERS = [
   { id: "api_groq", name: "Groq Cloud (Fast Llama)", category: "AI Models" },
   { id: "api_deepseek", name: "DeepSeek API", category: "AI Models" },
   { id: "api_grok", name: "xAI Grok", category: "AI Models" },
+  { id: "api_cerebras", name: "Cerebras (Fast Inference)", category: "AI Models" },
+  { id: "api_mistral", name: "Mistral AI", category: "AI Models" },
+  { id: "api_github_models", name: "GitHub Models (Azure Inference)", category: "AI Models" },
   { id: "api_fal", name: "Fal.ai", category: "AI Models" },
 
   // Stock Media
@@ -292,6 +295,7 @@ export default function SettingsPage() {
   const [testingAll, setTestingAll] = useState(false);
   const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string }>>({});
   const [inputs, setInputs] = useState<Record<string, string>>({});
+  const [showKeyIds, setShowKeyIds] = useState<Record<string, boolean>>({});
 
   // Voice Catalog State
   const [voiceFilter, setVoiceFilter] = useState<string>("All");
@@ -352,7 +356,7 @@ export default function SettingsPage() {
   async function fetchKeys() {
     setLoading(true);
     try {
-      const res = await fetch("/api/settings/keys");
+      const res = await fetch("/api/settings/keys", { cache: "no-store" });
       const data = await res.json();
       if (data.keys) {
         setKeys(data.keys);
@@ -740,10 +744,11 @@ export default function SettingsPage() {
 
                     <div className="divide-y">
                       {currentTabProviders.map((provider) => {
-                        const keyData = keys[provider.id];
-                        const isConfigured = keyData?.isConfigured;
-                        const testState = testResults[provider.id];
-                        const isTesting = testing === provider.id || testingAll;
+                        const cleanId = provider.id.replace(/^api_/, "");
+                        const keyData = keys[provider.id] || keys[cleanId] || keys[`api_${cleanId}`];
+                        const isConfigured = Boolean(keyData?.isConfigured && keyData?.maskedValue);
+                        const testState = testResults[provider.id] || testResults[cleanId];
+                        const isTesting = testing === provider.id || testing === cleanId || testingAll;
 
                         return (
                           <div
@@ -779,14 +784,31 @@ export default function SettingsPage() {
                               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                                 <div className="relative flex-1">
                                   <input
-                                    type="password"
-                                    placeholder={isConfigured ? keyData?.maskedValue : "Enter API Key / Region"}
-                                    value={inputs[provider.id] || ""}
+                                    type={showKeyIds[provider.id] ? "text" : "password"}
+                                    placeholder={isConfigured ? (showKeyIds[provider.id] ? (keyData?.maskedValue || "Configured") : keyData?.maskedValue) : "Enter API Key / Region"}
+                                    value={inputs[provider.id] ?? (isConfigured && !inputs[provider.id] ? keyData?.maskedValue : "")}
+                                    readOnly={isConfigured && inputs[provider.id] === undefined}
+                                    onFocus={() => {
+                                      if (isConfigured && inputs[provider.id] === undefined) {
+                                        setInputs((prev) => ({ ...prev, [provider.id]: "" }));
+                                      }
+                                    }}
                                     onChange={(e) =>
                                       setInputs((prev) => ({ ...prev, [provider.id]: e.target.value }))
                                     }
-                                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 pr-8 py-1 text-sm font-mono shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                   />
+                                  {isConfigured && (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setShowKeyIds((prev) => ({ ...prev, [provider.id]: !prev[provider.id] }))
+                                      }
+                                      className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+                                    >
+                                      {showKeyIds[provider.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
+                                  )}
                                 </div>
                                 <div className="flex gap-2">
                                   <button
@@ -1316,10 +1338,11 @@ export default function SettingsPage() {
 
                   <div className="divide-y">
                     {currentTabProviders.map((provider) => {
-                      const keyData = keys[provider.id];
-                      const isConfigured = keyData?.isConfigured;
-                      const testState = testResults[provider.id];
-                      const isTesting = testing === provider.id || testingAll;
+                      const cleanId = provider.id.replace(/^api_/, "");
+                      const keyData = keys[provider.id] || keys[cleanId] || keys[`api_${cleanId}`];
+                      const isConfigured = Boolean(keyData?.isConfigured && keyData?.maskedValue);
+                      const testState = testResults[provider.id] || testResults[cleanId];
+                      const isTesting = testing === provider.id || testing === cleanId || testingAll;
 
                       return (
                         <div
@@ -1355,14 +1378,31 @@ export default function SettingsPage() {
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                               <div className="relative flex-1">
                                 <input
-                                  type="password"
-                                  placeholder={isConfigured ? keyData?.maskedValue : "Enter API Key / Token"}
-                                  value={inputs[provider.id] || ""}
+                                  type={showKeyIds[provider.id] ? "text" : "password"}
+                                  placeholder={isConfigured ? (showKeyIds[provider.id] ? (keyData?.maskedValue || "Configured") : keyData?.maskedValue) : "Enter API Key / Token"}
+                                  value={inputs[provider.id] ?? (isConfigured && !inputs[provider.id] ? keyData?.maskedValue : "")}
+                                  readOnly={isConfigured && inputs[provider.id] === undefined}
+                                  onFocus={() => {
+                                    if (isConfigured && inputs[provider.id] === undefined) {
+                                      setInputs((prev) => ({ ...prev, [provider.id]: "" }));
+                                    }
+                                  }}
                                   onChange={(e) =>
                                     setInputs((prev) => ({ ...prev, [provider.id]: e.target.value }))
                                   }
-                                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 pr-8 py-1 text-sm font-mono shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                 />
+                                {isConfigured && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setShowKeyIds((prev) => ({ ...prev, [provider.id]: !prev[provider.id] }))
+                                    }
+                                    className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+                                  >
+                                    {showKeyIds[provider.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                  </button>
+                                )}
                               </div>
                               <div className="flex gap-2">
                                 <button
@@ -1588,7 +1628,7 @@ export default function SettingsPage() {
       </AnimatePresence>
 
       {/* ── API Health Hub Panel ─────────────────────────────────────────── */}
-      {activeCategory === "API Health Hub" && (
+      {activeTab === "API Health Hub" && (
         <div className="mt-2">
           <div className="mb-5">
             <h2 className="text-xl font-bold flex items-center gap-2">

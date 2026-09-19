@@ -93,7 +93,7 @@ export default function ShortsPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
           <Scissors className="h-6 w-6 text-amber-500" />
-          Extract Shorts Workflow
+          Extract Viral Shorts
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           Slice long-form podcasts, webinars, and keynotes into high-scoring vertical viral shorts with AI hook detection.
@@ -109,7 +109,7 @@ export default function ShortsPage() {
             </div>
           )}
 
-          <form onSubmit={handleExtract} className="space-y-6">
+          <form onSubmit={handleExtract} noValidate className="space-y-6">
             {/* Source Type Selection Tabs */}
             <div className="rounded-xl border bg-card p-5 shadow-sm space-y-4">
               <label className="text-sm font-semibold flex items-center gap-2">
@@ -154,7 +154,7 @@ export default function ShortsPage() {
                   }`}
                 >
                   <Upload className="h-4 w-4" />
-                  Video File
+                  Upload File
                 </button>
               </div>
 

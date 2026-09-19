@@ -168,3 +168,70 @@ Implement the following premium features:
 - [ ] **R2**: Clicking the "Play" button next to a voice model successfully triggers an audio playback of a sample text.
 - [ ] **R3**: The Subtitles UI renders without console errors and features visual depth (e.g., shadows, blur).
 - [ ] **R4**: The analytics dashboard successfully calculates and displays a mock API cost based on generated videos.
+
+## Follow-up — 2026-09-16T21:22:28Z
+
+# Teamwork Project Prompt
+
+Implement and execute a comprehensive automated headless unit test suite (using Vitest / React Testing Library) across all frontend page routes (`page.tsx`) in Clipped to verify that all pages mount and render cleanly without throwing uncaught client boundary crashes, missing dependency errors, or broken hooks.
+
+Working directory: c:\Users\vigilare\.gemini\antigravity\scratch\clipped
+Integrity mode: development
+
+## Requirements
+
+### R1. Automated Headless Render Test Suite for all `page.tsx` Routes
+Set up and execute automated headless unit and component render tests for every `page.tsx` route in the application:
+- `app/(app)/dashboard/page.tsx`
+- `app/(app)/settings/page.tsx`
+- `app/(app)/queue/page.tsx`
+- `app/(app)/library/page.tsx`
+- `app/(app)/planner/page.tsx`
+- `app/login/page.tsx`
+- `app/register/page.tsx`
+- All generation workflows under `app/(app)/create/**/page.tsx` (`auto`, `ai-videos`, `avatar`, `bulk`, `drama`, `footage`, `images`, `shorts`, `stories`, `url`, `whiteboard`, `mission/[id]`)
+
+### R2. Context & Mock Provider Setup
+Provide mock harnesses for essential Next.js client-side context (e.g. `next/navigation` hooks `useRouter`, `useSearchParams`, `usePathname`, Supabase client context, and audio/video playback contexts) so each page executes in isolation without failing due to missing server runtime wrappers.
+
+### R3. Automated Fixes & Verification Report
+If any page fails to render due to syntax errors, broken imports, unhandled null checks, or missing props, repair the issue and re-run the suite until all tests pass. Generate a test summary log detailing the pass/fail results for every single page.
+
+## Acceptance Criteria
+
+### Unit Testing Verification (Programmatic)
+- [ ] Running the test runner command (e.g. `npm test` or `npx vitest run`) discovers and executes tests against every single `page.tsx` route.
+- [ ] 100% of tested pages mount and render their critical UI elements without throwing unhandled exceptions or error boundary triggers.
+- [ ] No regression in existing build pipelines (`npm run build` passes cleanly).
+
+## Follow-up — 2026-09-18T17:15:34Z
+
+# Teamwork Project Prompt — Resume Execution
+
+> Status: Launched — delegated to teamwork_preview
+> Goal: Automated headless unit test suite & health verification across all `page.tsx` routes
+> Requested team: [none — teamwork routes from the description]
+
+You were previously executing a comprehensive automated headless unit test suite (using Vitest / React Testing Library) across all frontend page routes (`page.tsx`) in Clipped. You made great progress, but the server restarted and stopped your tasks due to a quota limit error (code 429).
+Your test suite is in place (`npm run test:unit`) and currently has 144 passing tests and 17 failing tests across 5 files. Your last known milestone was Milestone 4 / debugging Milestone 3 failures.
+
+Working directory: c:\Users\vigilare\.gemini\antigravity\scratch\clipped
+Integrity mode: development
+
+## Requirements
+
+### R1. Complete the Automated Headless Render Test Suite
+Resume fixing the broken tests and page components. Run `npm run test:unit` to see the current failures. For example, `app/(app)/create/whiteboard/page.tsx:475:34` is throwing `TypeError: Cannot read properties of undefined (reading 'pose_1')` because of missing optional chaining, and `wizards.test.tsx` has text mismatch errors.
+
+### R2. Context & Mock Provider Setup
+Ensure your mock harnesses remain intact and any new edge cases are handled.
+
+### R3. Automated Fixes & Verification Report
+Repair all remaining failing test suites and page component bugs so that the test suite passes 100%. Generate a test summary log detailing the pass/fail results for every single page.
+
+## Acceptance Criteria
+
+### Unit Testing Verification (Programmatic)
+- [ ] Running `npm run test:unit` discovers and executes tests against every single `page.tsx` route with 100% passing tests.
+- [ ] 100% of tested pages mount and render their critical UI elements without throwing unhandled exceptions or error boundary triggers.
+- [ ] No regression in existing build pipelines (`npm run build` passes cleanly).

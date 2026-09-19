@@ -49,7 +49,7 @@ export function RenderStep() {
         <div className="p-4 space-y-3 text-sm">
           <div className="flex justify-between items-center py-2 border-b">
             <span className="text-muted-foreground">Workflow Type</span>
-            <span className="font-medium capitalize">{w.workflowType.replace('-', ' ')}</span>
+            <span className="font-medium capitalize">{(w.workflowType || 'footage').replace('-', ' ')}</span>
           </div>
           <div className="flex justify-between items-center py-2 border-b">
             <span className="text-muted-foreground">Scenes / Beats</span>
@@ -57,7 +57,7 @@ export function RenderStep() {
           </div>
           <div className="flex justify-between items-center py-2 border-b">
             <span className="text-muted-foreground">Target Duration</span>
-            <span className="font-medium">{w.beats.reduce((sum, b) => sum + b.duration, 0).toFixed(1)}s</span>
+            <span className="font-medium">{w.beats.reduce((sum, b) => sum + (Number.isFinite(b?.duration) ? b.duration : 0), 0).toFixed(1)}s</span>
           </div>
           <div className="flex justify-between items-center py-2 border-b">
             <span className="text-muted-foreground">Voiceover</span>

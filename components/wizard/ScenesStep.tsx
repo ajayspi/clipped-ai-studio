@@ -58,7 +58,7 @@ function SortableBeat({ beat, index }: { beat: Beat; index: number }) {
           <Clock className="w-3 h-3" />
           {beat.duration}s
           <div className="flex flex-wrap gap-1 ml-2">
-            {beat.keywords.map((kw, i) => (
+            {(beat.keywords || []).map((kw, i) => (
               <span key={i} className="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
                 {kw}
               </span>
@@ -69,8 +69,8 @@ function SortableBeat({ beat, index }: { beat: Beat; index: number }) {
       
       <div className="w-48 shrink-0 flex flex-col gap-2">
          <div className="aspect-video bg-muted rounded-md border flex items-center justify-center relative overflow-hidden group/thumb">
-           {beat.candidates && beat.candidates.length > 0 ? (
-             beat.candidates[0].url.endsWith('.mp4') ? (
+           {beat.candidates && beat.candidates.length > 0 && beat.candidates[0]?.url ? (
+             (beat.candidates[0].url.endsWith('.mp4') || beat.candidates[0].url.endsWith('.webm')) ? (
                <video src={beat.candidates[0].url} className="w-full h-full object-cover" muted loop autoPlay playsInline />
              ) : (
                <img src={beat.candidates[0].url} alt="Candidate" className="w-full h-full object-cover" />

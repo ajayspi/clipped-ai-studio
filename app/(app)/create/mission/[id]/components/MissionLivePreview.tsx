@@ -12,8 +12,6 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { MissionJobState, Scene } from "@/lib/engine/types";
-import { MainComposition } from "@/remotion/Composition";
-import { Player } from "@remotion/player";
 
 interface MissionLivePreviewProps {
   job: MissionJobState;
@@ -21,32 +19,19 @@ interface MissionLivePreviewProps {
 
 export function MissionLivePreview({ job }: MissionLivePreviewProps) {
   const [selectedSceneIndex, setSelectedSceneIndex] = useState(0);
-  const [showRemotionPlayer, setShowRemotionPlayer] = useState(true);
 
   const scenes = job.scenes || [];
   const activeScene: Scene | undefined = scenes[selectedSceneIndex] || scenes[0];
   const isCompleted = job.overallProgress === 100 && !job.error;
 
   const totalDuration = scenes.reduce((sum, s) => sum + (s.duration || 4), 0);
-  const fps = 30;
-  const durationInFrames = Math.max(1, Math.floor(totalDuration * fps));
 
-  const compWidth = job.aspectRatio === "16:9" ? 1920 : 1080;
-  const compHeight = job.aspectRatio === "9:16" ? 1920 : 1080;
   const aspectClass =
     job.aspectRatio === "16:9"
       ? "aspect-video"
       : job.aspectRatio === "1:1"
       ? "aspect-square"
       : "aspect-[9/16]";
-
-  const beats = scenes.map((s, idx) => ({
-    id: s.id || `beat-${idx + 1}`,
-    text: s.text,
-    duration: s.duration || 4,
-    clipUrl: s.selectedVideo?.url || s.videoUrl || s.imageUrl || "",
-    audioUrl: s.audioUrl || "",
-  }));
 
   return (
     <div className="rounded-2xl border border-border/70 bg-card/60 backdrop-blur-xl p-5 md:p-6 shadow-sm space-y-5">
@@ -70,38 +55,19 @@ export function MissionLivePreview({ job }: MissionLivePreviewProps) {
         </div>
       </div>
 
-      {/* Video / Remotion Player Preview Box */}
+      {/* Video Preview Box */}
       <div className="flex justify-center bg-black/40 rounded-xl p-3 border border-border/40">
         <div
           className={`relative w-full ${aspectClass} bg-black rounded-lg overflow-hidden border border-border/60 shadow-lg`}
           style={{ maxWidth: job.aspectRatio === "16:9" ? "100%" : "320px" }}
         >
-          {isCompleted && beats.length > 0 && showRemotionPlayer ? (
-            <Player
-              component={MainComposition}
-              durationInFrames={durationInFrames}
-              compositionWidth={compWidth}
-              compositionHeight={compHeight}
-              fps={fps}
+          {isCompleted && job.videoUrl ? (
+            <video
+              src={job.videoUrl}
               controls
               autoPlay
               loop
-              inputProps={{
-                beats: beats,
-                burnSubtitles: true,
-                subtitleStyle: {
-                  y: 78,
-                  color: "#ffffff",
-                  size: 5.2,
-                  outlineWidth: 2.5,
-                  outlineColor: "#000000",
-                  isBox: false,
-                  boxColor: "#000000",
-                  uppercase: false,
-                  maxWidth: 82,
-                },
-              }}
-              style={{ width: "100%", height: "100%" }}
+              className="w-full h-full object-contain"
             />
           ) : activeScene ? (
             <div className="relative w-full h-full flex flex-col justify-between p-4 bg-gradient-to-t from-black/90 via-black/30 to-black/60">

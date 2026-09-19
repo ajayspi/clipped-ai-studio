@@ -13,10 +13,10 @@ import { MissionLivePreview } from "./components/MissionLivePreview";
 export default function MissionProgressPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string }> | { id: string };
 }) {
-  const unwrappedParams = use(params);
-  const jobId = unwrappedParams.id;
+  const unwrappedParams = params && typeof (params as any).then === 'function' ? use(params as Promise<{ id: string }>) : params;
+  const jobId = (unwrappedParams as any)?.id || "";
   const searchParams = useSearchParams();
 
   const [job, setJob] = useState<MissionJobState | null>(null);

@@ -97,7 +97,7 @@ export default function AvatarCreatePage() {
           script,
           avatarType,
           avatarId: selectedAvatarId,
-          customImageUrl: avatarType === "custom_photo" ? customImageUrl : undefined,
+          customImageUrl: avatarType === "custom_photo" ? (customImageUrl?.trim() || undefined) : undefined,
           layout,
           voice,
           speed,
@@ -110,7 +110,7 @@ export default function AvatarCreatePage() {
         setStatusMessage("Job created! Redirecting to Mission Progress...");
         router.push(`/create/mission/${data.jobId}`);
       } else {
-        setStatusMessage(data.error || "Generation failed");
+        setStatusMessage(data.error ? "Generation failed: " + data.error : "Generation failed");
         setGenerating(false);
       }
     } catch (err: any) {
@@ -233,14 +233,14 @@ export default function AvatarCreatePage() {
                       type="text"
                       value={customImageUrl}
                       onChange={(e) => setCustomImageUrl(e.target.value)}
-                      placeholder="https://images.unsplash.com/photo-..."
+                      placeholder="https://example.com/portrait.jpg"
                       className="flex-1 bg-slate-950/80 border border-slate-700/70 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
                     />
                   </div>
                 </div>
-                {customImageUrl && (
+                {Boolean(customImageUrl && customImageUrl.trim()) && (
                   <div className="w-24 h-24 rounded-xl overflow-hidden border border-slate-700 bg-slate-950">
-                    <img src={customImageUrl} alt="Custom Preview" className="w-full h-full object-cover" />
+                    <img src={customImageUrl.trim()} alt="Custom Preview" className="w-full h-full object-cover" />
                   </div>
                 )}
               </div>

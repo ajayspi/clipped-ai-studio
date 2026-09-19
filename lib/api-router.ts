@@ -67,6 +67,16 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     models: ['meta-llama/llama-3.3-70b-instruct', 'mistralai/mistral-large', 'google/gemini-flash-1.5'],
   },
   {
+    id: 'omniroute_local_llm',
+    name: 'OmniRoute (Local Gateway)',
+    category: 'llm',
+    healthEndpoint: 'http://localhost:20128/v1/models',
+    healthAuthHeader: (k) => `Bearer ${k || 'dummy'}`,
+    baseUrl: 'http://localhost:20128/v1',
+    defaultPriority: 100, // Highest priority
+    models: ['auto', 'auto/coding', 'auto/fast', 'auto/cheap'],
+  },
+  {
     id: 'groq',
     name: 'Groq (Ultra-Fast)',
     category: 'llm',
@@ -199,6 +209,15 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
   },
 
   // ── Paid Image Providers ───────────────────────────────────────────────────
+  {
+    id: 'omniroute_local_image',
+    name: 'OmniRoute (Local Gateway)',
+    category: 'image',
+    healthEndpoint: 'http://localhost:20128/v1/models',
+    healthAuthHeader: (k) => `Bearer ${k || 'dummy'}`, // OmniRoute doesn't require a key strictly
+    baseUrl: 'http://localhost:20128/v1',
+    defaultPriority: 100, // Highest priority since it's a local router!
+  },
   {
     id: 'pexels',
     name: 'Pexels',

@@ -1,16 +1,11 @@
-## 2026-09-01T14:19:17Z
-You are Reviewer 2 for Milestone 3 (Avatar to Video Pipeline).
-Working directory: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\reviewer_m3_2_gen3
-Authoritative User Request: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\ORIGINAL_REQUEST.md
-Scope Document: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\PROJECT.md
-Test Infrastructure: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\TEST_INFRA.md
+## 2026-09-18T17:57:27Z
 
-Mission:
-Review the Avatar to Video workflow implementation:
-- Inspect `lib/engine/avatar-orchestrator.ts`, `app/api/workflows/avatar/route.ts`, and `app/(app)/create/avatar/page.tsx`.
-- Verify preset avatar catalog (Sarah, Marcus, Alex, Emma, David, Elena) + custom photo avatar support, PiP/fullscreen/side-by-side layouts, TTS voice synchronization, and multi-track Remotion composition.
-- Run tests: `node tests/e2e/test-whiteboard-avatar-pipelines.js`
-- Render your explicit verdict: APPROVE or REQUEST_CHANGES.
+Working Directory: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\reviewer_m3_2_gen3
+Read ORIGINAL_REQUEST.md at C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\ORIGINAL_REQUEST.md, PROJECT.md at C:\Users\vigilare\.gemini\antigravity\scratch\clipped\PROJECT.md, and Worker M3 Handoff at C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\worker_m3_gen3\handoff.md.
 
-Output:
-Write a full review report to `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\reviewer_m3_2_gen3\handoff.md` and send a brief completion message to parent.
+Task:
+1. Independently verify the completeness of headless tests across all 13 creation routes and all core routes.
+2. Verify that Zustand store isolation is clean and no state leaks across tests.
+3. Run the test suite: `cmd /c npx vitest run`.
+4. Issue your verdict in `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\reviewer_m3_2_gen3\handoff.md`: APPROVE or REQUEST_CHANGES.
+5. Send completion message to parent.

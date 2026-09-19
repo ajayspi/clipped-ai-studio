@@ -1,314 +1,194 @@
-# Handoff Report — Milestone 2: UI & Frontend Architecture for Automatic Mission Mode
+# Handoff Report: Milestone 2 — Settings & Library Pages Headless Test Investigation
+
+**Agent**: Explorer M2-2  
+**Recipient**: Orchestrator (parent `e91b87b5-3b8b-4cd7-a637-e331126205cf`)  
+**Workspace**: `C:\Users\vigilare\.gemini\antigravity\scratch\clipped`  
+**Working Directory**: `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_2`  
+**Date**: 2026-09-17  
+
+---
 
 ## 1. Observation
 
-### 1.1 Existing Create Hub & Prompt Submission Flow
-- **`components/create/MissionPromptBar.tsx` (lines 20–35)**:
-  ```tsx
-  export function MissionPromptBar({ onStartMission }: MissionPromptBarProps) {
-    const router = useRouter();
-    const [prompt, setPrompt] = useState("");
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const handleSubmit = (e?: React.FormEvent) => {
-      if (e) e.preventDefault();
-      const cleanPrompt = prompt.trim();
-      if (!cleanPrompt) return;
-
-      setIsSubmitting(true);
-      if (onStartMission) {
-        onStartMission(cleanPrompt);
-      } else {
-        router.push(`/create/auto?prompt=${encodeURIComponent(cleanPrompt)}&autoStart=true`);
+### Observation 1: Architecture of `app/(app)/settings/page.tsx`
+- **File path**: `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\app\(app)\settings\page.tsx` (1648 lines).
+- **Line 1**: Declared as `"use client";`.
+- **Line 38**: Imports `useSupabase, TestConnectionResult` from `@/lib/supabase/context`.
+- **Line 39**: Imports `ApiProviderHub` from `@/components/settings/ApiProviderHub`.
+- **Line 288**: Exports default component `SettingsPage()`.
+- **Lines 289-340**: Defines component state including:
+  - `const [activeTab, setActiveTab] = useState("AI Models");` (Line 289)
+  - `const [keys, setKeys] = useState<Record<string, ApiKeyData>>({});` (Line 290)
+  - `const [loading, setLoading] = useState(true);` (Line 292)
+  - `const audioRef = useRef<HTMLAudioElement | null>(null);` (Line 306)
+  - `const { url: activeSupabaseUrl, anonKey: activeSupabaseAnonKey, isCustom, status: supabaseStatus, latencyMs, schemaStatus, setCustomConfig, resetToDefault, testConnection } = useSupabase();` (Lines 318-328)
+- **Lines 342-349**: On mount calls `fetchKeys()`.
+  ```ts
+  useEffect(() => {
+    fetchKeys();
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
       }
     };
+  }, []);
   ```
-  - **Observation**: Currently, `handleSubmit` routes to `/create/auto?prompt=...&autoStart=true` as a placeholder. In Milestone 2, submitting a prompt must trigger `POST /api/workflows/mission` or generate a mission session and immediately navigate to `/create/mission/[id]`.
-
-- **`app/(app)/create/page.tsx` (lines 54–56)**:
-  ```tsx
-  {/* Hero 1-Click Automatic Mission Prompt Bar */}
-  <MissionPromptBar />
-  ```
-  - **Observation**: `MissionPromptBar` is prominently rendered at the top of the Create Hub with suggestions and direct keyboard Enter trigger.
-
-### 1.2 Wizard Store & Component Structure
-- **`components/wizard/wizard-store.ts` (lines 37–99, 146–176)**:
-  - Defines `useWizardStore` Zustand store managing:
-    - `workflowType`: `'footage' | 'images' | 'ai-videos' | 'stories' | 'bulk-plan' | 'extract-shorts' | 'micro-drama' | 'auto'`
-    - `step`: `0` (Script), `1` (Scenes), `2` (Voice), `3` (Subtitles), `4` (Render)
-    - `furthestStep`: number tracking allowed navigation steps
-    - `subject`, `narration`, `keywords`: string / string[]
-    - `aspectRatio`: `'9:16' | '16:9' | '1:1'`
-    - `voice`, `voiceService`, `voiceoverMode`, `musicSource`: string
-    - `beats`: `Beat[]` where each `Beat` has `{ id, text, keywords, duration, candidates?: Footage[], selectedId?: string }`
-    - `burnSubtitles`, `subtitlePreset`, `subtitleColor`, `subtitleSize`, `subtitleY`, `subtitleOutlineWidth`
-    - Store actions: `set(key, value)`, `goToStep(step)`, `next()`, `back()`, `reset()`.
-- **`components/wizard/CreationWizard.tsx` (lines 33–39)**:
-  ```tsx
-  // Initialize the workflow type in the store
-  useEffect(() => {
-    if (w.workflowType !== workflowType) {
-      w.reset()
-      w.set('workflowType', workflowType)
-    }
-  }, [workflowType])
-  ```
-  - **Observation**: When `CreationWizard` mounts with `workflowType="footage"`, it checks `if (w.workflowType !== workflowType)`. If `useWizardStore` already has `workflowType === 'footage'`, it skips `w.reset()`, keeping all hydrated data intact.
-
-### 1.3 Remotion Player & Composition Architecture
-- **`components/wizard/LivePlayer.tsx` (lines 34–67)**:
-  - Embeds `@remotion/player` rendering `MainComposition` with props: `beats`, `burnSubtitles`, `subtitleStyle`, `aspectRatio`.
-- **`remotion/Composition.tsx` (lines 111–153)**:
-  - `MainComposition` accepts `beats: BeatProp[]` (`id`, `text`, `duration`, `clipUrl`, `audioUrl`), `burnSubtitles: boolean`, `subtitleStyle`, `bgmUrl`, and renders dynamic `<Sequence>` blocks with `<RemotionVideo>`, `<img>`, and `<SubtitleOverlay>` pop animations.
-
-### 1.4 Type Contracts in `lib/engine/types.ts` (lines 475–512)
-- Type definitions already exist:
+- **Lines 356-372**: `fetchKeys()` calls `GET /api/settings/keys`.
+- **Lines 374-397**: `testKey(providerId)` calls `POST /api/settings/keys/check`.
+- **Lines 407-428**: `saveKey(providerId)` calls `POST /api/settings/keys`.
+- **Lines 430-470**: `handleAddCustomProvider()` calls `POST /api/settings/keys`.
+- **Lines 473-529**: `handleToggleVoicePreview(voice)` calls `POST /api/tts/preview`:
   ```ts
-  export type MissionStage =
-    | 'prompt_analysis'
-    | 'script_generation'
-    | 'scene_planning'
-    | 'asset_sourcing'
-    | 'voice_synthesis'
-    | 'video_composition'
-    | 'ready';
-
-  export interface MissionStepStatus {
-    stage: MissionStage;
-    label: string;
-    status: 'pending' | 'in_progress' | 'completed' | 'failed';
-    progress: number;
-    startedAt?: string;
-    completedAt?: string;
-    log?: string;
-  }
-
-  export interface MissionJobState {
-    jobId: string;
-    prompt: string;
-    aspectRatio: AspectRatio;
-    style: string;
-    voice: string;
-    currentStage: MissionStage;
-    overallProgress: number;
-    steps: MissionStepStatus[];
-    script?: string;
-    scenes?: Scene[];
-    audioUrl?: string;
-    videoUrl?: string;
-    error?: string;
+  const audio = new Audio(data.audioUrl);
+  audioRef.current = audio;
+  ...
+  await audio.play();
+  ```
+- **Lines 644-650**: Loading UI branch:
+  ```tsx
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center min-h-[50vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
   ```
+- **Lines 687-715**: 7 category tabs: `"AI Models"`, `"Voice & Audio"`, `"Stock Media"`, `"Brand Kits"`, `"Usage & Quotas"`, `"Database & Supabase"`, `"API Health Hub"`.
+- **Lines 1442-1560**: Modal for `Add Custom API Integration`.
+- **Lines 1564-1628**: Modal for `Supabase PostgreSQL Schema (DDL)`.
+- **Lines 1631-1644**: Renders `<ApiProviderHub />` when `activeTab === "API Health Hub"`.
+
+### Observation 2: Potential Crash in `ApiProviderHub.tsx` with Default Fallback Mock
+- **File path**: `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\components\settings\ApiProviderHub.tsx`
+- **Lines 245-253**:
+  ```ts
+  const res = await fetch("/api/settings/health");
+  const data = await res.json();
+  if (data.success) {
+    setProviders(data.providers);
+    setSummary(data.summary);
+    setLastRefresh(new Date());
+  }
+  ```
+- **Lines 320, 331**:
+  ```ts
+  const filtered = providers.filter((p) => activeCategory === "all" || p.category === activeCategory);
+  const healthyCount = providers.filter((p) => p.isHealthy).length;
+  ```
+- **`test/setup.ts` Line 435**: Fallback fetch handler returns:
+  ```ts
+  return new Response(JSON.stringify({ success: true, data: [] }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+  ```
+- If `/api/settings/health` hits this fallback, `data.success` is `true` while `data.providers` is `undefined`. Setting `providers` to `undefined` causes line 320 `providers.filter` to throw `TypeError: Cannot read properties of undefined (reading 'filter')`.
+
+### Observation 3: Architecture of `app/(app)/library/page.tsx`
+- **File path**: `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\app\(app)\library\page.tsx` (442 lines).
+- **Line 1**: Declared as `"use client";`.
+- **Line 17**: Imports `DashboardCard` from `@/components/dashboard/DashboardCard`.
+- **Lines 36-80**: Internal component `QueueCard({ job })` for rendering background rendering/failed jobs.
+- **Line 82**: Exports default component `LibraryPage()`.
+- **Lines 83-95**: Defines component state:
+  - `videos`, `queuedJobs`, `failedJobs`, `workspaces`, `activeWorkspace` (`"all"`), `loading` (`true`), `showNewFolderModal`, `newFolderName`, `newFolderColor`, `creatingFolder`, `lastRefreshed`, `pollRef`.
+- **Lines 96-99**: On mount calls `loadLibraryData()`:
+  ```ts
+  useEffect(() => {
+    loadLibraryData();
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, []);
+  ```
+- **Lines 101-116**: `loadLibraryData()` calls `GET /api/workspaces` followed by `refreshJobs()` (`GET /api/jobs`).
+- **Lines 118-140**: `refreshJobs()`:
+  ```ts
+  if ((data.queued || []).length > 0) {
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(refreshJobs, 8000);
+  } else {
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+  }
+  ```
+- **Lines 237-262**: Conditional "Rendering Queue" panel rendered when `queuedJobs.length > 0 || failedJobs.length > 0`.
+- **Lines 265-316**: Workspace category chips ("All Videos" with total count, individual workspaces with color dots and counts, "+ New Workspace" button).
+- **Lines 319-323**: Loading state `<div className="flex h-64 items-center justify-center"><Loader2 ... /></div>`.
+- **Lines 324-339**: Empty state `<div className="flex h-64 ..."><h3>No videos in this workspace</h3>...</div>`.
+- **Lines 340-350**: Populated state `<div className="columns-1 sm:columns-2 ...">{filteredVideos.map((video) => <DashboardCard ... />)}</div>`.
+- **Lines 353-438**: New Workspace Modal form (`showNewFolderModal`).
+
+### Observation 4: Global Mock Harness Coverage in `test/setup.ts`
+- **File path**: `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\test\setup.ts` (440 lines).
+- `next/navigation`: `useRouter`, `usePathname`, `useSearchParams`, `useParams` fully mocked (Lines 18-34).
+- `next/font`: stubs for `google`, `local` (Lines 37-53).
+- DOM Polyfills: `ResizeObserver`, `IntersectionObserver`, `window.matchMedia`, `navigator.clipboard` (Lines 56-103).
+- Media Stubs: `HTMLMediaElement.prototype.play`/`pause`/`load` and `MockAudio` on `window.Audio` / `globalThis.Audio` (Lines 105-131).
+- Supabase Mocks: `@/lib/supabase/client` (Lines 282-296), `@/lib/supabase/context` (`useSupabase`, `SupabaseProvider`) (Lines 301-350), `@/lib/db` (`supabase`, `supabaseAdmin`) (Lines 355-363).
+- Fetch Mock: Handles `/api/settings/supabase/test`, `/api/workspaces`, `/api/jobs`, `/api/settings/keys`, `/api/workflows/mission` (Lines 368-439).
 
 ---
 
 ## 2. Logic Chain
 
-1. **Prompt Submission Flow**:
-   - In `MissionPromptBar.tsx`, when the user inputs a topic and hits Enter or clicks "Auto Generate", the component executes a `POST /api/workflows/mission` request with `{ prompt, aspectRatio: '9:16', style: 'cinematic', voice: 'onyx' }`.
-   - The API immediately creates a pending `render_jobs` record in Supabase (or in-memory registry) and returns `{ success: true, jobId, status: 'processing', progressUrl: '/create/mission/[jobId]' }`.
-   - `MissionPromptBar.tsx` pushes the route to `/create/mission/${jobId}`. If a network hiccup occurs before the POST resolves, it falls back gracefully by generating a local `jobId = crypto.randomUUID()` and navigating to `/create/mission/${jobId}?prompt=${encodeURIComponent(cleanPrompt)}&autoStart=true`.
+1. **Client Boundary Execution**:
+   - Both `SettingsPage` and `LibraryPage` are explicitly `"use client"` components (Observation 1, Line 1; Observation 3, Line 1).
+   - Therefore, tests must use standard React Testing Library `render(<Component />)` inside JSDOM rather than async server component resolution `await Component()`.
 
-2. **Mission Progress Page Architecture (`/create/mission/[id]`)**:
-   - On page mount, `useMissionProgress(id)` polls `GET /api/workflows/mission?id=${id}` (every 1000ms) or connects to an SSE event stream `/api/workflows/mission/stream?id=${id}`.
-   - The UI divides into a 2-column glassmorphism layout:
-     - **Left Column**:
-       - **Mission Hero Info Card**: Prompt title, aspect ratio badge (9:16), voice model, elapsed timer, and overall progress bar (0–100%).
-       - **5-Stage Stepper Visualizer**:
-         1. *Script Generation* (LLM narrative & hook)
-         2. *Scene Planning* (Breakdown into shot-length beats & keywords)
-         3. *Asset Sourcing* (Pexels / Pixabay / AI visuals matched per scene)
-         4. *Neural Audio* (TTS voiceover generation)
-         5. *Video Composition* (Remotion sequencing, subtitles, final composite)
-         - Each step features animated state icons (pulsing spinner for in-progress, green checkmark for completed, clock for pending, red exclamation for failed).
-       - **Real-Time Log Console**: Terminal-style live stream displaying timestamped event logs with colored log-level badges (`INFO`, `SUCCESS`, `WARN`, `ERROR`), auto-scroll, and copy log actions.
-     - **Right Column**:
-       - **Live Video Preview / Remotion Player**:
-         - While in progress: Interactive storyboard preview showing scene cards and thumbnails as they get sourced.
-         - Once Stage 5 is ready / completed: Full `@remotion/player` embedding `MainComposition` with playback controls, subtitle styling, and audio sync.
-       - **Mission Details & Metrics Panel**: Word count, duration, number of scenes/beats, cost tier badge.
-       - **"Manual / Edit in Wizard" CTA**: Prominent action card allowing the user to take manual control.
+2. **Context Provider Requirements**:
+   - `SettingsPage` invokes `useSupabase()` (Observation 1, Line 38).
+   - While `test/setup.ts` globally stubs `@/lib/supabase/context` to return a default connected context, wrapping `<SettingsPage />` in `<SupabaseProvider>` (Observation 4, Line 347) guarantees that any nested component or provider hook executes cleanly.
 
-3. **State Transfer Mechanism ("Manual / Edit in Wizard")**:
-   - When the user clicks "Manual / Edit in Wizard":
-     a. The handler takes the current `MissionJobState` (prompt, script, scenes, audioUrl, aspectRatio, voice).
-     b. It transforms `scenes` into `Beat[]` format accepted by `useWizardStore`:
-        ```ts
-        const beats: Beat[] = (jobState.scenes || []).map((scene, idx) => ({
-          id: scene.id || `beat-${idx}`,
-          text: scene.text,
-          keywords: scene.keywords || [],
-          duration: scene.duration || 3,
-          selectedId: `cand-${idx}`,
-          candidates: [{
-            id: `cand-${idx}`,
-            url: scene.videoUrl || scene.imageUrl || scene.selectedVideo?.url || '',
-            title: scene.description || `Scene ${idx + 1}`,
-            platform: scene.selectedVideo?.platform || 'pexels',
-            thumbnail: scene.selectedVideo?.thumbnail || scene.imageUrl || '',
-            duration: scene.duration || 3,
-            score: 1.0,
-            reason: 'Mission Mode Sourced',
-          }],
-        }));
-        ```
-     c. It invokes `useWizardStore.setState` or store setters:
-        - `workflowType`: `'footage'`
-        - `subject`: `jobState.prompt`
-        - `narration`: `jobState.script || ''`
-        - `beats`: `beats`
-        - `voice`: `jobState.voice || 'onyx'`
-        - `aspectRatio`: `jobState.aspectRatio || '9:16'`
-        - `step`: `jobState.scenes?.length ? 1 : 0` (or step 4 for direct render review)
-        - `furthestStep`: `4` (unlocking all 5 wizard steps for instant user navigation)
-        - `autoMode`: `false`
-     d. It navigates the router to `/create/footage`.
-     e. In `CreationWizard.tsx`, because `w.workflowType === 'footage'`, the `useEffect` initialization check `w.workflowType !== workflowType` evaluates to `false`, preventing `w.reset()`, and leaving all transferred state fully hydrated!
+3. **External Endpoint Mocking**:
+   - On initial mount, `SettingsPage` requests `GET /api/settings/keys` (Observation 1, Line 359). `test/setup.ts` already responds with `{ success: true, keys: {} }` (Observation 4, Line 422).
+   - On initial mount, `LibraryPage` requests `GET /api/workspaces` and `GET /api/jobs` (Observation 3, Lines 105, 120). `test/setup.ts` already responds with `{ success: true, workspaces: [] }` and `{ success: true, completed: [], queued: [], failed: [] }` (Observation 4, Lines 408, 415).
+   - Therefore, both pages can mount in isolation out of the box without network errors.
+
+4. **Defensive Endpoint Enhancements**:
+   - If tests switch `SettingsPage` to the `"API Health Hub"` tab, `<ApiProviderHub />` calls `GET /api/settings/health` (Observation 1, Line 1642; Observation 2, Line 246).
+   - If `test/setup.ts` returns the fallback `{ success: true, data: [] }`, `providers` becomes `undefined`, crashing `providers.filter` (Observation 2, Lines 320, 435).
+   - Similarly, clicking the Play button for a voice model calls `POST /api/tts/preview` and expects `data.audioUrl` (Observation 1, Lines 491-508).
+   - Therefore, the test suite implementers should either avoid switching to `"API Health Hub"` without mocking `/api/settings/health`, or enhance `test/setup.ts` to supply `{ success: true, providers: [], summary: { total: 0, healthy: 0, offline: 0, byCategory: {} } }` and `/api/tts/preview` with `{ success: true, audioUrl: "..." }`.
+
+5. **Polling and Timer Stability**:
+   - `LibraryPage` initializes `setInterval(refreshJobs, 8000)` whenever `data.queued.length > 0` (Observation 3, Line 132).
+   - In automated test runners, unresolved setIntervals can cause process leaks or lingering handles.
+   - Therefore, default tests should maintain `queued: []` or ensure component unmounting to trigger cleanup (`clearInterval(pollRef.current)` in Observation 3, Line 98).
 
 ---
 
 ## 3. Caveats
 
-- **No Caveats on Core Architecture**: The existing codebase already contains all necessary primitives (`useWizardStore`, `MainComposition`, `LivePlayer`, `types.ts`, and `/create/footage`).
-- **Network Mode Resilience**: When Supabase or external AI APIs (OpenAI/ElevenLabs/Pexels) are unconfigured or offline, the backend falls back to deterministic mock generators. The UI handles both live and mock data identically through standard contracts.
-- **Remotion Bundle Size**: The `@remotion/player` is dynamically imported or wrapped as a client component to avoid SSR hydration mismatches in Next.js App Router.
+1. **Framer Motion DOM Nesting**:
+   - `framer-motion` animates transitions using `motion.div`. In JSDOM, motion elements render synchronous DOM nodes, but animations are skipped. When querying elements inside `<AnimatePresence>`, tests should use RTL `await screen.findByText(...)` or `waitFor(...)` to ensure state updates have settled.
+2. **Dynamic Workspaces & Audio Objects**:
+   - Voice preview tests rely on `window.Audio`. `test/setup.ts` provides `MockAudio`, but audio events (`ended`, `error`) must be manually triggered if testing the playback completion cycle.
+3. **No Code Modifications**:
+   - As an explorer agent in read-only mode, no modifications were made to application source files.
 
 ---
 
-## 4. Conclusion & Technical UI Specification
+## 4. Conclusion
 
-### 4.1 Specification for `components/create/MissionPromptBar.tsx` Enhancement
-
-```tsx
-// Key update in MissionPromptBar.tsx handleSubmit:
-const handleSubmit = async (e?: React.FormEvent) => {
-  if (e) e.preventDefault();
-  const cleanPrompt = prompt.trim();
-  if (!cleanPrompt) return;
-
-  setIsSubmitting(true);
-  try {
-    const res = await fetch("/api/workflows/mission", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        prompt: cleanPrompt,
-        aspectRatio: "9:16",
-        style: "cinematic",
-        voice: "onyx",
-      }),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      router.push(`/create/mission/${data.jobId}`);
-      return;
-    }
-  } catch (err) {
-    console.warn("Direct mission API dispatch error, using fallback navigation:", err);
-  }
-
-  // Resilient fallback navigation
-  const fallbackJobId = crypto.randomUUID();
-  router.push(`/create/mission/${fallbackJobId}?prompt=${encodeURIComponent(cleanPrompt)}&autoStart=true`);
-};
-```
-
-### 4.2 Specification for `app/(app)/create/mission/[id]/page.tsx`
-
-#### Component Structure
-```
-app/(app)/create/mission/[id]/
-  ├── page.tsx                     (Main Mission Progress Page)
-  ├── components/
-  │    ├── MissionHeader.tsx       (Title, Status Badge, Edit in Wizard CTA, Retry)
-  │    ├── MissionStepper.tsx      (5-Stage Progress Stepper & Overall Bar)
-  │    ├── MissionLogConsole.tsx   (Live Console Stream with Log Levels & Timestamps)
-  │    ├── MissionLivePreview.tsx  (Remotion Player & Storyboard Preview)
-  │    └── MissionStateHandoff.ts  (State transfer function to useWizardStore)
-```
-
-#### 5-Stage Visualizer Stage Mapping
-| Step # | Stage Key | Title | Description | Sub-Action / Indicators |
-|---|---|---|---|---|
-| 1 | `script_generation` | Script Generation | Narrative hook & dialogue synthesis | Word counter badge, tone pill |
-| 2 | `scene_planning` | Scene Breakdown | Storyboard beat analysis & pacing | Scene count (e.g., 4 beats) |
-| 3 | `asset_sourcing` | Asset Sourcing | HD Stock footage & image matching | Thumbnails grid, platform badges |
-| 4 | `voice_synthesis` | Neural Audio & TTS | OpenAI / ElevenLabs narration sync | Audio duration (e.g., 28.5s) |
-| 5 | `video_composition` | Video Composition | Remotion storyboard & subtitle burn-in | Remotion Player unlocked |
-
-#### State Transfer Method (`hydrateWizardFromMission`)
-```ts
-import { useWizardStore, Beat } from "@/components/wizard/wizard-store";
-import { MissionJobState } from "@/lib/engine/types";
-
-export function transferMissionToWizard(mission: MissionJobState, router: any) {
-  const store = useWizardStore.getState();
-
-  const beats: Beat[] = (mission.scenes || []).map((scene, idx) => {
-    const clipUrl = scene.videoUrl || scene.imageUrl || scene.selectedVideo?.url || '';
-    return {
-      id: scene.id || `beat-${idx}`,
-      text: scene.text || '',
-      keywords: scene.keywords || [],
-      duration: scene.duration || 3,
-      selectedId: `cand-${idx}-0`,
-      candidates: clipUrl ? [{
-        id: `cand-${idx}-0`,
-        url: clipUrl,
-        title: scene.description || `Scene ${idx + 1}`,
-        platform: scene.selectedVideo?.platform || 'pexels',
-        thumbnail: scene.selectedVideo?.thumbnail || clipUrl,
-        duration: scene.duration || 3,
-        score: 1.0,
-        reason: 'Mission Mode Sourced Asset',
-      }] : [],
-    };
-  });
-
-  // Hydrate store
-  useWizardStore.setState({
-    workflowType: 'footage',
-    subject: mission.prompt || '',
-    narration: mission.script || '',
-    aspectRatio: mission.aspectRatio || '9:16',
-    voice: mission.voice || 'onyx',
-    beats: beats,
-    step: beats.length > 0 ? 1 : 0,
-    furthestStep: 4,
-    autoMode: false,
-    error: null,
-    busy: null,
-  });
-
-  // Navigate to wizard
-  router.push('/create/footage');
-}
-```
+1. `app/(app)/settings/page.tsx` and `app/(app)/library/page.tsx` are fully understood, cleanly structured client components ready for automated headless testing.
+2. The recommended test file paths for Milestone 2 are:
+   - `test/pages/core/settings.test.tsx` (Testing header, tabs, AI models, voice catalog, Supabase routing, DDL modal, and custom provider modal).
+   - `test/pages/core/library.test.tsx` (Testing loading state, empty state, populated video cards, workspace chips, rendering queue, and new folder modal).
+3. The existing `test/setup.ts` mock harness provides solid coverage for Next.js navigation, Supabase, and media elements. Implementing the suggested mock responses for `/api/settings/health` and `/api/tts/preview` will make the test suite 100% resilient.
 
 ---
 
 ## 5. Verification Method
 
-To independently verify the UI architecture and state transfer:
-
-1. **Verify Prompt Submission Navigation**:
-   - Inspect `components/create/MissionPromptBar.tsx` and verify `router.push('/create/mission/' + jobId)`.
-2. **Verify Route Loading & Real-Time Polling**:
-   - Inspect `app/(app)/create/mission/[id]/page.tsx` with test ID `c8f2a100-34b2-4889-bb02-c9a184128f11`.
-   - Verify all 5 stages render appropriate badges (`Completed`, `In Progress`, `Pending`, `Failed`).
-   - Verify log stream displays timestamped messages.
-3. **Verify Remotion Player Composition**:
-   - When composition stage is completed, check that `LivePlayer` / `MainComposition` mounts without console warnings.
-4. **Verify State Transfer to `useWizardStore`**:
-   - Trigger `transferMissionToWizard(mockMissionState, router)`.
-   - Read `useWizardStore.getState()`.
-   - Assert:
-     - `useWizardStore.getState().subject === mockMissionState.prompt`
-     - `useWizardStore.getState().narration === mockMissionState.script`
-     - `useWizardStore.getState().beats.length === mockMissionState.scenes.length`
-     - `useWizardStore.getState().furthestStep === 4`
-     - `useWizardStore.getState().workflowType === 'footage'`
-5. **Run Existing Test Harness**:
-   - `node tests/e2e/test-api-status.js` (Must return exit code 0)
+### How Implementers & Reviewers Can Independently Verify:
+1. **File Inspection**:
+   - Inspect `app/(app)/settings/page.tsx` (Lines 1-729) to confirm `"use client"`, `fetchKeys()`, and tab structure.
+   - Inspect `app/(app)/library/page.tsx` (Lines 1-200) to confirm `"use client"`, `loadLibraryData()`, and queue/workspace handling.
+   - Inspect `test/setup.ts` (Lines 368-439) to verify existing fetch routes.
+2. **Execute Unit Test Runner**:
+   - Command: `npx vitest run test/sanity.test.ts` (or `npm run test:unit`)
+   - Confirm all existing infrastructure and mock tests pass cleanly.
+3. **Create & Run Milestone 2 Test Files**:
+   - Implement `test/pages/core/settings.test.tsx` and `test/pages/core/library.test.tsx`.
+   - Run: `npx vitest run test/pages/core/settings.test.tsx test/pages/core/library.test.tsx`.
+   - Verification succeeds when 100% of tests mount and render UI elements without throwing unhandled exceptions.

@@ -1,126 +1,215 @@
-# Milestone 3 Empirical Challenge Report: Gemini Character Sheets & Whiteboard Pipeline
+# Milestone 3 Empirical Challenger Handoff Report
 
-**Challenger Role**: Empirical Challenger 1 (Critic & Specialist)  
-**Target Milestone**: Milestone 3 — Gemini Character Reference Sheets, Whiteboard Animation, and Avatar Pipelines  
-**Verdict**: **APPROVE**  
-**Date / Timestamp**: 2026-09-01T14:25:00Z  
+**Verdict**: **REQUEST_CHANGES**
+**Overall Risk Assessment**: **HIGH**
 
 ---
 
 ## 1. Observation
 
-Direct examination of implementation and test artifacts revealed the following:
+### Verification Executions & Output
+Ran `cmd /c npx vitest run` under repeated conditions in `C:\Users\vigilare\.gemini\antigravity\scratch\clipped`:
 
-### A. 9-Pose Grid Geometry & Bounding Box Math
-- In `lib/ai/gemini-character-generator.ts` (lines 28–39):
-  ```typescript
-  export const POSE_GRID_BBOXES: Record<string, [number, number, number, number]> = {
-    pose_1: [0, 0, 333, 333],
-    pose_2: [333, 0, 666, 333],
-    pose_3: [666, 0, 1000, 333],
-    pose_4: [0, 333, 333, 666],
-    pose_5: [333, 333, 666, 666],
-    pose_6: [666, 333, 1000, 666],
-    pose_7: [0, 666, 333, 1000],
-    pose_8: [333, 666, 666, 1000],
-    pose_9: [666, 666, 1000, 1000],
-  };
-  ```
-- In `lib/ai/gemini-character-generator.ts` (lines 126–149), `generateCompositeSheetSvg` applies affine translation offsets $(col \times 333.33, row \times 333.33)$ inside a uniform $1000 \times 1000$ SVG canvas, matching the normalized `[0, 1000]` viewport bounds.
+#### Run 1 Result
+- **Command**: `cmd /c npx vitest run`
+- **Result**: `Test Files: 2 failed | 16 passed (18)`
+- **Tests**: `8 failed | 182 passed (190)`
+- **Errors**: `2 uncaught exceptions`
+- **Duration**: `39.64s`
 
-### B. Archetype Normalization & Fallbacks
-- In `lib/ai/gemini-character-generator.ts` (lines 17–26, 160–164):
-  - Supported archetypes: `['stickman', 'saint', 'old man', 'founder', 'doctor', 'teacher', 'scientist', 'custom']`.
-  - Unrecognized or malformed archetype inputs (e.g. `'unknown_alien_warrior_999'`, empty strings, undefined) are safely coerced via `.toLowerCase().trim()` and fall back to `'stickman'`.
+#### Run 2 Result (Repeat Stress Test)
+- **Command**: `cmd /c npx vitest run`
+- **Result**: `Test Files: 2 failed | 16 passed (18)`
+- **Tests**: `8 failed | 182 passed (190)`
+- **Errors**: `2 uncaught exceptions`
+- **Duration**: `22.03s`
 
-### C. Sentiment & Keyword-to-Pose Mapping
-- In `lib/ai/gemini-character-generator.ts` (lines 333–363):
-  - `mapSentimentToPose(textOrSentiment)` uses case-insensitive regular expressions for semantic category matching:
-    - Discovery/Eureka (`eureka`, `idea`, `lightbulb`, `discovery`) $\rightarrow$ `pose_3`
-    - Pointing (`point`, `here`, `look`, `specifically`, `step`) $\rightarrow$ `pose_2`
-    - Explaining (`explain`, `because`, `how`, `works`, `understand`) $\rightarrow$ `pose_4`
-    - Reading (`read`, `history`, `study`, `research`, `document`) $\rightarrow$ `pose_5`
-    - Confused/Questioning (`why`, `confus`, `wonder`, `puzzle`, `unknown`) $\rightarrow$ `pose_6`
-    - Sitting/Meditating (`sit`, `relax`, `meditat`, `calm`, `think`) $\rightarrow$ `pose_7`
-    - Writing (`write`, `note`, `record`, `inscribe`, `equation`) $\rightarrow$ `pose_8`
-    - Blessing/Triumph (`bless`, `peace`, `triumph`, `success`, `wisdom`) $\rightarrow$ `pose_9`
-    - Default fallback $\rightarrow$ `pose_1` (neutral)
-  - Null, undefined, or empty strings are safely guarded with `(textOrSentiment || '').toLowerCase()`.
+### Verbatim Failures & Stack Traces
 
-### D. Input Clamping & Storyboard Chunking
-- In `lib/engine/whiteboard-orchestrator.ts` (lines 103–105, 283–306):
-  - Prompts exceeding 4,000 characters are clamped to 4,000.
-  - Sentence splitting via lookbehind regex `/(?<=[.?!])\s+/` chunks prompts into 3 to 8 storyboard beats, with beat narration clamped to 60 characters for typography safety.
-  - Marker color is validated against hex regex `/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/`, defaulting to `#1E293B` if invalid.
+#### Finding 1: Whiteboard Studio Uncaught Crash on Missing/Null Pose Bounding Box
+- **File**: `app/(app)/create/whiteboard/page.tsx:438:78`
+- **Verbatim Error**:
+```
+⎯⎯⎯⎯⎯ Uncaught Exception ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'join')
+ ❯ WhiteboardCreatePage app/(app)/create/whiteboard/page.tsx:438:78
+    436|                       </p>
+    437|                       <span className="text-[10px] font-mono text-slate-500 block mt-1">
+    438|                         BBox: [{characterSheet.poses[activePosePreview].bbox.join(", ")}]
+       |                                                                              ^
+    439|                       </span>
+    440|                     </div>
 
-### E. Avatar Pipeline & Multi-Track Compositing
-- In `lib/engine/avatar-orchestrator.ts` (lines 127–130, 140–148, 244–287):
-  - Speech speed clamped to $[0.5, 2.0]$.
-  - Missing custom photo URL safely falls back to default preset (`sarah_presenter`).
-  - Assembles multi-track Remotion manifest containing `backgroundVideo`, `avatarOverlay`, `audioTrack`, `subtitleOverlay`, and `backgroundMusic` with audio ducking.
+⎯⎯⎯⎯⎯ Uncaught Exception ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of null (reading 'join')
+ ❯ WhiteboardCreatePage app/(app)/create/whiteboard/page.tsx:438:78
+    436|                       </p>
+    437|                       <span className="text-[10px] font-mono text-slate-500 block mt-1">
+    438|                         BBox: [{characterSheet.poses[activePosePreview].bbox.join(", ")}]
+       |                                                                              ^
+```
 
-### F. Concurrency & Asynchronous Job Isolation
-- In `lib/engine/whiteboard-orchestrator.ts` and `lib/engine/avatar-orchestrator.ts`:
-  - Job IDs generated using unique timestamps and base-36 random salts (`wb_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`).
-  - Job instances maintain discrete state mappings in `Map<string, JobState>` without shared mutable collision.
+#### Finding 2: ScenesStep Uncaught Crash on Beat with Missing/Null Keywords
+- **File**: `components/wizard/ScenesStep.tsx:61:25`
+- **Verbatim Error**:
+```
+ FAIL  test/adversarial-whiteboard-wizard.test.tsx > CHALLENGE 3A: ScenesStep handles beats with undefined or null keywords without crashing
+AssertionError: expected TypeError: Cannot read properties of undefined (reading 'map') to be null
+ ❯ test/adversarial-whiteboard-wizard.test.tsx:399:27
+```
+Line 61 of `components/wizard/ScenesStep.tsx`:
+```tsx
+61: {beat.keywords.map((kw, i) => (
+```
 
-### G. E2E Test Suite
-- In `tests/e2e/test-whiteboard-avatar-pipelines.js`:
-  - 40 tests across 7 suites covering Tiers 1 through 5 (unit generation, animators, avatar layouts, edge cases, pairwise combinatorics, real-world explainer scenarios, and 30x concurrency stress tests).
+#### Finding 3: ScenesStep Uncaught Crash on Candidate with Missing URL
+- **File**: `components/wizard/ScenesStep.tsx:73:33`
+- **Verbatim Error**:
+```
+ FAIL  test/adversarial-whiteboard-wizard.test.tsx > CHALLENGE 3B: ScenesStep handles candidate with missing url without crashing
+AssertionError: expected TypeError: Cannot read properties of undefined (reading 'endsWith') to be null
+ ❯ test/adversarial-whiteboard-wizard.test.tsx:431:27
+```
+Line 73 of `components/wizard/ScenesStep.tsx`:
+```tsx
+73: beat.candidates[0].url.endsWith('.mp4') ? (
+```
+
+#### Finding 4: CreationWizard Uncaught Crash on Out-of-Bounds Step
+- **File**: `components/wizard/CreationWizard.tsx:28` & `components/wizard/wizard-store.ts:335`
+- **Verbatim Error**:
+```
+ FAIL  test/adversarial-whiteboard-wizard.test.tsx > CHALLENGE 2C: out-of-bounds step value (e.g. step=99 or step=-1) in store
+AssertionError: expected TypeError: Cannot read properties of undefined (reading 'name') to be null
+ ❯ test/adversarial-whiteboard-wizard.test.tsx:325:27
+```
+Lines 28-30 of `components/wizard/CreationWizard.tsx`:
+```tsx
+28: const step = STEPS[w.step]
+29: const [submitting, setSubmitting] = useState(false)
+30: const StepIcon = STEP_ICONS[w.step]
+```
+
+#### Finding 5: RenderStep Uncaught Crash on Undefined WorkflowType
+- **File**: `components/wizard/RenderStep.tsx:52:53`
+- **Verbatim Error**:
+```
+ FAIL  test/adversarial-whiteboard-wizard.test.tsx > CHALLENGE 3C: RenderStep handles corrupted workflowType and NaN beat durations
+AssertionError: expected TypeError: Cannot read properties of undefined (reading 'replace') to be null
+ ❯ test/adversarial-whiteboard-wizard.test.tsx:459:27
+```
+Line 52 of `components/wizard/RenderStep.tsx`:
+```tsx
+52: <span className="font-medium capitalize">{w.workflowType.replace('-', ' ')}</span>
+```
 
 ---
 
 ## 2. Logic Chain
 
-1. **Grid Bounding Box Soundness**:
-   - For all 9 poses $i \in [1, 9]$, let bbox be $[x_1, y_1, x_2, y_2]$.
-   - Observation A proves $0 \le x_1 < x_2 \le 1000$ and $0 \le y_1 < y_2 \le 1000$ for every pose.
-   - Cells partition the $1000 \times 1000$ canvas into non-overlapping regions without underflow or overflow. Therefore, sub-image cropping and Remotion frame extraction are mathematically bounded and distortion-free.
-
-2. **Semantic Robustness & Non-Crashing Resilience**:
-   - Observation C and D prove that all strings (empty, whitespace, ultra-long, invalid unicode, unlisted archetypes, invalid hex colors) pass through normalization pipelines with guaranteed valid fallbacks.
-   - No `TypeError` or `undefined` property access can occur in `mapSentimentToPose` or `generateCharacterSheet`.
-
-3. **Concurrency & Thread Safety**:
-   - Observation F demonstrates that concurrent job creation produces distinct random UUIDs/keys and isolated memory mappings.
-   - Rapid concurrent dispatches (tested up to 30x in Suite 7) execute without state leakage or promise race conditions.
-
-4. **Zero-Key Offline Guarantee**:
-   - When external AI providers (Gemini, HeyGen, D-ID, Fal) are offline or unconfigured, the system cascades deterministically to the built-in SVG line-art generator and Remotion PiP compositor, satisfying the cost-safe dry-run requirement.
-
-5. **Requirement Conformance**:
-   - The implementation satisfies all criteria outlined in `PROJECT.md` (§Milestone 3, Feature 9–13) and `ORIGINAL_REQUEST.md` (§R3).
+1. **Observation**: `app/(app)/create/whiteboard/page.tsx:438` accesses `.bbox.join(", ")` directly inside `{characterSheet?.poses?.[activePosePreview] && (...)`.
+2. **Inference**: While worker M3 guarded `characterSheet?.poses?.[activePosePreview]?.svgPath`, line 438 assumed that any defined pose object always contains an array `bbox`.
+3. **Observation**: When Gemini or an external pipeline returns a character sheet where a pose has no bounding box, or `bbox` is `null` or a string, the component evaluates line 438.
+4. **Result**: React throws an unhandled `TypeError: Cannot read properties of undefined (reading 'join')` or `Cannot read properties of null (reading 'join')`, crashing the entire Whiteboard Animation Studio.
+5. **Observation**: In `components/wizard/ScenesStep.tsx:61`, `beat.keywords.map` is called directly without checking if `beat.keywords` is defined or an array. In line 73, `beat.candidates[0].url.endsWith` is called directly without checking if `url` exists.
+6. **Inference**: AI storyboard decomposition or candidate retrieval endpoints that return partial scene objects (e.g. omitted keywords or candidate without direct URL) cause immediate React component crashes during scene review.
+7. **Observation**: In `components/wizard/wizard-store.ts:335`, `goToStep: (step) => set({ step })` does not clamp `step`, unlike `next()` and `back()`. When `step` is set out-of-bounds, `STEPS[w.step]` is `undefined` in `CreationWizard.tsx:28`, crashing on `step.name`.
+8. **Observation**: In `components/wizard/RenderStep.tsx:52`, `{w.workflowType.replace('-', ' ')}` assumes `w.workflowType` is always a defined string. If `workflowType` is undefined, `.replace` crashes the render review step.
 
 ---
 
-## 3. Caveats
+## 3. Stress Test Results Summary
 
-- **External Network Dependency**: Live calls to Google Gemini (`gemini-1.5-flash`) or HeyGen API require valid network access and API credentials; when absent or during automated sandboxed tests, the engine deterministically utilizes the vector SVG fallback generator, which was verified to produce structurally identical 9-pose schemas.
-- **Remotion Video Rendering**: Video URLs produced in mock/development mode point to verified Mixkit royalty-free preview assets rather than invoking local ffmpeg hardware encoding.
+| Challenge ID | Target Component | Scenario | Expected Behavior | Actual Behavior | Result |
+|---|---|---|---|---|---|
+| **CHALLENGE 1A** | `WhiteboardCreatePage` | Active pose missing `bbox` | Renders pose details safely with fallback | Throws uncaught `TypeError: Cannot read properties of undefined (reading 'join')` | **FAIL** |
+| **CHALLENGE 1B** | `WhiteboardCreatePage` | Active pose has `bbox: null` | Renders pose details safely with fallback | Throws uncaught `TypeError: Cannot read properties of null (reading 'join')` | **FAIL** |
+| **CHALLENGE 1C** | `WhiteboardCreatePage` | `poses` is empty object `{}` | Default archetype labels render; pose clicks safe | Successfully rendered without crash | **PASS** |
+| **CHALLENGE 1D** | `WhiteboardCreatePage` | Rapid switching across 4 archetypes | UI remains responsive, no crash | Successfully processed concurrent fetches | **PASS** |
+| **CHALLENGE 1E** | `WhiteboardCreatePage` | Malformed SVG path string in pose | SVG renders with malformed path without crash | Successfully rendered `<path>` without exception | **PASS** |
+| **CHALLENGE 2A** | `useWizardStore` | 100 rapid concurrent resets & mutations | Store state cleanly reinitializes to default | Clean reset to default state verified | **PASS** |
+| **CHALLENGE 2B** | `CreationWizard` | Rapid store resets during active mount | Component cleanly resets to Step 0 | Component gracefully returned to Step 0 | **PASS** |
+| **CHALLENGE 2C** | `CreationWizard` & store | Out-of-bounds `goToStep(99)` | Clamped to valid step or graceful fallback | Throws uncaught `TypeError: Cannot read properties of undefined (reading 'name')` | **FAIL** |
+| **CHALLENGE 2D** | `CreationWizard` | Store reset while auto-pilot fetch in-flight | Auto mode cancels cleanly, resets to step 0 | Auto mode cleanly aborted, step reset to 0 | **PASS** |
+| **CHALLENGE 3A** | `ScenesStep` | Beat with `keywords: undefined` or `null` | Renders beat without tags or with fallback | Throws uncaught `TypeError: Cannot read properties of undefined (reading 'map')` | **FAIL** |
+| **CHALLENGE 3B** | `ScenesStep` | Candidate with missing `url` | Renders fallback thumbnail placeholder | Throws uncaught `TypeError: Cannot read properties of undefined (reading 'endsWith')` | **FAIL** |
+| **CHALLENGE 3C** | `RenderStep` | `workflowType: undefined` | Renders default workflow name | Throws uncaught `TypeError: Cannot read properties of undefined (reading 'replace')` | **FAIL** |
+| **CHALLENGE 3D** | `LivePlayer` & store | Subtitle positioning bounds & preset stress | Subtitle styles applied; drag box bounded | All 6 presets applied, custom presets handled | **PASS** |
 
 ---
 
-## 4. Conclusion
-
-**Verdict: APPROVE**
-
-The Gemini Character Sheets, Whiteboard Animation, and Avatar pipelines are robust, mathematically verified, resilient against edge-case inputs, and fully compliant with the Milestone 3 specification. No blocking bugs, regression risks, or unbounded calculations were detected.
+## 4. Caveats
+- Baseline test suite (16 test files, 161 tests) remains fully passing in isolation.
+- The failures occur under boundary conditions, malformed AI responses, and out-of-bounds state mutations that real production users and external model APIs (Gemini, Claude) encounter.
+- Challenger has strictly respected the Review-Only constraint and has NOT modified implementation files.
 
 ---
 
-## 5. Verification Method
+## 5. Conclusion & Required Changes
 
-To independently verify the Milestone 3 pipeline and all 40 test cases:
+**Verdict**: **REQUEST_CHANGES**
 
-```bash
-# 1. Run the dedicated Whiteboard & Avatar pipeline E2E test suite
-node tests/e2e/test-whiteboard-avatar-pipelines.js
+To resolve these empirical failures, the following remediations must be applied by the worker:
 
-# 2. Run the standalone runner covering the full create workflow suite
-node tests/e2e/standalone-runner.js
+1. **`app/(app)/create/whiteboard/page.tsx:438`**:
+   Replace:
+   ```tsx
+   BBox: [{characterSheet.poses[activePosePreview].bbox.join(", ")}]
+   ```
+   With safe array checking:
+   ```tsx
+   BBox: [{Array.isArray(characterSheet.poses[activePosePreview].bbox) ? characterSheet.poses[activePosePreview].bbox.join(", ") : "N/A"}]
+   ```
+
+2. **`components/wizard/ScenesStep.tsx:61`**:
+   Replace:
+   ```tsx
+   {beat.keywords.map((kw, i) => (
+   ```
+   With safe optional chaining / fallback:
+   ```tsx
+   {(beat.keywords || []).map((kw, i) => (
+   ```
+
+3. **`components/wizard/ScenesStep.tsx:73`**:
+   Replace:
+   ```tsx
+   beat.candidates[0].url.endsWith('.mp4') ? (
+   ```
+   With safe URL check:
+   ```tsx
+   beat.candidates[0]?.url?.endsWith?.('.mp4') ? (
+   ```
+
+4. **`components/wizard/wizard-store.ts:335` & `components/wizard/CreationWizard.tsx:28`**:
+   In `wizard-store.ts`:
+   ```tsx
+   goToStep: (step) => set({ step: Math.max(0, Math.min(step, STEPS.length - 1)) }),
+   ```
+   In `CreationWizard.tsx`:
+   ```tsx
+   const safeStepIndex = Math.max(0, Math.min(w.step, STEPS.length - 1));
+   const step = STEPS[safeStepIndex] || STEPS[0];
+   const StepIcon = STEP_ICONS[safeStepIndex] || STEP_ICONS[0];
+   ```
+
+5. **`components/wizard/RenderStep.tsx:52`**:
+   Replace:
+   ```tsx
+   <span className="font-medium capitalize">{w.workflowType.replace('-', ' ')}</span>
+   ```
+   With safe fallback:
+   ```tsx
+   <span className="font-medium capitalize">{(w.workflowType || 'default').replace('-', ' ')}</span>
+   ```
+
+---
+
+## 6. Verification Method
+
+Run Vitest across the entire test suite including the adversarial harness:
+```powershell
+cmd /c npx vitest run
 ```
-
-### Invalidation Conditions:
-- Any bounding box coordinate falling outside $[0, 1000]$ or having $x_2 \le x_1$ / $y_2 \le y_1$.
-- Any unrecognized archetype causing an unhandled rejection rather than falling back to `stickman`.
-- Any concurrent job dispatch collisions resulting in duplicate job IDs.
+**Invalidation Condition**:
+All 18 test files (including `test/adversarial-whiteboard-wizard.test.tsx`) pass with 100% success (0 failed tests, 0 uncaught exceptions).
