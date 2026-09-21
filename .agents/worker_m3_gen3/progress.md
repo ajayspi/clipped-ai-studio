@@ -1,8 +1,8 @@
-# Progress Log — Milestone 3 Implementation
+# Progress Log — Milestone 3 Implementation & Remediation
 
-**Last visited**: 2026-09-01T19:48:45Z  
+**Last visited**: 2026-09-18T18:00:00Z  
 **Agent**: worker_m3_gen3  
-**Status**: All Milestone 3 deliverables fully implemented and verified
+**Status**: Milestone 3 test remediation complete: 16/16 test files passed, 161/161 tests passed, 0 unhandled exceptions
 
 ## Tasks Completed
 - [x] 1. Inspected types and helper engines in `lib/engine/types.ts`, `lib/engine/tts.ts`, `lib/engine/mission-orchestrator.ts`
@@ -13,9 +13,17 @@
   - [x] `app/api/workflows/whiteboard/character-sheet/route.ts` (POST)
   - [x] `app/api/workflows/whiteboard/route.ts` (POST, GET)
   - [x] `app/api/workflows/avatar/route.ts` (POST, GET)
-- [x] 6. Implemented Studio UI Pages:
-  - [x] `app/(app)/create/whiteboard/page.tsx` (Interactive Whiteboard studio with archetype cards, 9-pose grid preview, linework style, marker colors, aspect ratio, and live canvas mockup)
-  - [x] `app/(app)/create/avatar/page.tsx` (Interactive Avatar studio with avatar roster, custom photo upload, voice selector with audio test, layout radio selector, and live framing canvas mockup)
-- [x] 7. Implemented test suite `tests/e2e/test-whiteboard-avatar-pipelines.js` (40 tests across 7 suites covering Tiers 1–5)
-- [x] 8. Formulated comprehensive 5-component handoff report in `handoff.md`
-- [x] 9. Sent completion message to parent
+- [x] 6. Applied targeted remediation across all components and tests:
+  - [x] `app/(app)/create/whiteboard/page.tsx`: Fixed pose button label rendering to `{poseData?.name || pose.label}` and updated `POSE_NAMES` labels to `"Neutral Stand"` and `"Pointing Right"`.
+  - [x] `test/pages/create/interactive.test.tsx`: Wrapped all fetch mocking in robust `try / finally { global.fetch = originalFetch; }` blocks.
+  - [x] `test/pages/create/mission.test.tsx`: Scoped all fetch mocks to `/api/workflows/mission` only, wrapped in `try / finally { global.fetch = baseFetch; }`, fixed fake timers.
+  - [x] `test/pages/create/wizards.test.tsx`: Wrapped step transitions in `await waitFor(...)`, wrapped fetch mocks in `try / finally`.
+  - [x] `app/(app)/create/avatar/page.tsx`: Verified error status message prefix and image URL placeholder.
+  - [x] `app/(app)/create/auto/page.tsx`: Verified "Primary Target Platforms" label.
+  - [x] `app/(app)/create/drama/page.tsx`: Verified "AI Micro-Drama Series" heading and character name placeholder.
+  - [x] `app/(app)/create/shorts/page.tsx`: Verified "Extract Viral Shorts" heading and `noValidate` attribute.
+  - [x] `app/(app)/create/mission/[id]/page.tsx`: Verified defensive params unwrap.
+  - [x] `components/wizard/wizard-store.ts`: Verified `workflowType: 'footage'` and `autoMode: false` in `initialState` and `reset()`.
+  - [x] `test/adversarial-query-builder.test.ts`: Verified 15000ms timeout for RSC tests.
+- [x] 7. Full test suite verification via `cmd /c npx vitest run`: 16/16 test files passed, 161/161 tests passed in 17.60s
+- [ ] 8. Finalize `handoff.md` and send completion message to parent

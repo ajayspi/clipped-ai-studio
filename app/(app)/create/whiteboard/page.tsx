@@ -36,9 +36,9 @@ interface CharacterSheet {
 }
 
 const ARCHETYPES = [
-  { id: "stickman", label: "Stickman Classic", desc: "Timeless minimalist line art", icon: "✏️" },
-  { id: "saint", label: "Saint / Philosopher", desc: "Robed elder with wisdom poses", icon: "📜" },
-  { id: "old man", label: "Elder Professor", desc: "Wise elder with cane and glasses", icon: "👴" },
+  { id: "stickman", label: "Stickman", desc: "Timeless minimalist line art", icon: "✏️" },
+  { id: "saint", label: "Ancient Saint", desc: "Robed elder with wisdom poses", icon: "📜" },
+  { id: "old man", label: "Wise Old Man", desc: "Wise elder with cane and glasses", icon: "👴" },
   { id: "founder", label: "Startup Founder", desc: "Modern tech founder presenter", icon: "💼" },
   { id: "doctor", label: "Medical Doctor", desc: "Physician with stethoscope", icon: "🩺" },
   { id: "teacher", label: "Academic Teacher", desc: "Educator with chalkboard pointer", icon: "🎓" },
@@ -48,7 +48,7 @@ const ARCHETYPES = [
 
 const STYLES = [
   { id: "monoline_marker", label: "Monoline Marker", desc: "Clean black marker on white" },
-  { id: "blackboard_chalk", label: "Blackboard Chalk", desc: "White chalk on dark slate" },
+  { id: "blackboard_chalk", label: "Classic Chalkboard", desc: "White chalk on dark slate" },
   { id: "blueprint", label: "Blueprint Grid", desc: "Cyan vector on navy blue" },
   { id: "colored_doodle", label: "Colored Doodle", desc: "Vibrant accent fills" },
   { id: "sketch_outline", label: "Rough Sketch", desc: "Hand-drawn artistic sketch" },
@@ -64,8 +64,8 @@ const MARKER_COLORS = [
 ];
 
 const POSE_NAMES = [
-  { id: "pose_1", label: "Neutral", desc: "Standing balanced" },
-  { id: "pose_2", label: "Pointing", desc: "Pointing to concept" },
+  { id: "pose_1", label: "Neutral Stand", desc: "Standing balanced" },
+  { id: "pose_2", label: "Pointing Right", desc: "Pointing to concept" },
   { id: "pose_3", label: "Eureka", desc: "Idea discovery moment" },
   { id: "pose_4", label: "Explaining", desc: "Discourse & presenting" },
   { id: "pose_5", label: "Reading", desc: "Reviewing scroll/book" },
@@ -387,7 +387,7 @@ export default function WhiteboardCreatePage() {
                 {/* 3x3 Grid */}
                 <div className="grid grid-cols-3 gap-2 bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
                   {POSE_NAMES.map((pose) => {
-                    const poseData = characterSheet.poses[pose.id];
+                    const poseData = characterSheet?.poses?.[pose.id];
                     const isSelected = activePosePreview === pose.id;
                     return (
                       <button
@@ -416,7 +416,7 @@ export default function WhiteboardCreatePage() {
                             <User className="w-6 h-6 text-slate-600" />
                           )}
                         </div>
-                        <div className="text-[10px] font-semibold truncate w-full">{pose.label}</div>
+                        <div className="text-[10px] font-semibold truncate w-full">{poseData?.name || pose.label}</div>
                         <div className="text-[8px] font-mono text-slate-500">{pose.id}</div>
                       </button>
                     );
@@ -424,18 +424,18 @@ export default function WhiteboardCreatePage() {
                 </div>
 
                 {/* Active Pose Detail */}
-                {characterSheet.poses[activePosePreview] && (
+                {characterSheet?.poses?.[activePosePreview] && (
                   <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 text-xs text-slate-300 flex items-start gap-3">
                     <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                     <div>
                       <span className="font-semibold text-slate-100">
-                        {activePosePreview.toUpperCase()}: {characterSheet.poses[activePosePreview].name}
+                        {activePosePreview.toUpperCase()}: {characterSheet?.poses?.[activePosePreview]?.name || activePosePreview}
                       </span>
                       <p className="text-[11px] text-slate-400 mt-0.5">
-                        {characterSheet.poses[activePosePreview].description}
+                        {characterSheet?.poses?.[activePosePreview]?.description || ""}
                       </p>
                       <span className="text-[10px] font-mono text-slate-500 block mt-1">
-                        BBox: [{characterSheet.poses[activePosePreview].bbox.join(", ")}]
+                        BBox: [{Array.isArray(characterSheet?.poses?.[activePosePreview]?.bbox) ? characterSheet.poses[activePosePreview].bbox.join(", ") : "0, 0, 100, 100"}]
                       </span>
                     </div>
                   </div>
@@ -472,10 +472,10 @@ export default function WhiteboardCreatePage() {
 
               {/* Center Sketch with Hand Marker */}
               <div className="flex-1 flex items-center justify-center relative">
-                {characterSheet?.poses[activePosePreview]?.svgPath && (
+                {characterSheet?.poses?.[activePosePreview]?.svgPath && (
                   <svg viewBox="0 0 100 100" className="w-24 h-24 sm:w-28 sm:h-28">
                     <path
-                      d={characterSheet.poses[activePosePreview].svgPath}
+                      d={characterSheet?.poses?.[activePosePreview]?.svgPath || ""}
                       fill="none"
                       stroke={
                         style === "blackboard_chalk"

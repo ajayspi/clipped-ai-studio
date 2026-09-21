@@ -25,9 +25,10 @@ const STEP_ICONS = [Layout, Sparkles, Mic, Type, FileVideo]
 export function CreationWizard({ workflowType }: { workflowType: string }) {
   const router = useRouter()
   const w = useWizardStore()
-  const step = STEPS[w.step]
+  const safeStepIndex = Math.max(0, Math.min(w.step ?? 0, STEPS.length - 1))
+  const step = STEPS[safeStepIndex] || STEPS[0]
   const [submitting, setSubmitting] = useState(false)
-  const StepIcon = STEP_ICONS[w.step]
+  const StepIcon = STEP_ICONS[safeStepIndex] || STEP_ICONS[0]
 
   // Initialize the workflow type in the store
   useEffect(() => {

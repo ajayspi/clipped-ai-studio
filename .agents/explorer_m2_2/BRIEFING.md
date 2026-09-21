@@ -1,46 +1,56 @@
-# BRIEFING — 2026-09-01T13:43:00Z
+# BRIEFING — 2026-09-17T00:20:00Z
 
 ## Mission
-Investigate UI & Frontend architecture for Milestone 2: Automatic Mission Mode & Progress View (/create/mission/[id]).
+Investigate technical requirements, component architecture, and test harness strategy for `app/(app)/settings/page.tsx` and `app/(app)/library/page.tsx` for Milestone 2 of the Clipped Frontend Headless Test Suite.
 
 ## 🔒 My Identity
 - Archetype: explorer
-- Roles: frontend_investigator, ui_specifier
+- Roles: frontend_investigator, test_harness_architect
 - Working directory: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_2
-- Original parent: 561b8e5f-cb4f-4691-b741-ca0feac24051
-- Milestone: Milestone 2 (Automatic Mission Mode & Progress View)
+- Original parent: e91b87b5-3b8b-4cd7-a637-e331126205cf
+- Milestone: Milestone 2 (Core Routes Headless Tests: Settings & Library)
 
 ## 🔒 Key Constraints
-- Read-only investigation — do NOT implement
-- Analyze UI architecture, component patterns, Zustand store integrations, Remotion preview, and progress visualizer
-- Adhere to project guidelines and deliver comprehensive handoff report to parent
+- Read-only investigation — do NOT implement production code changes
+- Investigate `app/(app)/settings/page.tsx` and `app/(app)/library/page.tsx`
+- Detail component structures, hooks, context requirements, external API calls, browser API requirements, UI states, mock data, and test assertion patterns
+- Follow 5-Component Handoff Protocol
 
 ## Current Parent
-- Conversation ID: 561b8e5f-cb4f-4691-b741-ca0feac24051
-- Updated: 2026-09-01T13:43:00Z
+- Conversation ID: e91b87b5-3b8b-4cd7-a637-e331126205cf
+- Updated: 2026-09-17T00:20:00Z
 
 ## Investigation State
 - **Explored paths**:
-  - `components/create/MissionPromptBar.tsx`
-  - `app/(app)/create/page.tsx`
-  - `components/wizard/wizard-store.ts` (Zustand `useWizardStore`)
-  - `components/wizard/CreationWizard.tsx` & wizard steps (`ScriptStep`, `ScenesStep`, `VoiceStep`, `SubtitlesStep`, `RenderStep`, `LivePlayer`)
-  - `remotion/Composition.tsx` (`MainComposition`, `SubtitleOverlay`)
-  - `lib/engine/types.ts` (`MissionStage`, `MissionStepStatus`, `MissionJobState`, `Scene`, `Beat`)
-  - `app/(app)/create/auto/page.tsx`, `app/(app)/create/footage/page.tsx`, `app/(app)/create/ai-videos/page.tsx`
-  - `app/api/workflows/generate/route.ts`, `app/api/workflows/auto/route.ts`
+  - `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\ORIGINAL_REQUEST.md`
+  - `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\PROJECT.md`
+  - `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\test\setup.ts`
+  - `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\test\sanity.test.ts`
+  - `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\package.json`
+  - `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\vitest.config.mts`
+  - `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\app\(app)\settings\page.tsx`
+  - `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\components\settings\ApiProviderHub.tsx`
+  - `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\app\(app)\library\page.tsx`
+  - `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\components\dashboard\DashboardCard.tsx`
+  - `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\components\dashboard\PublishModal.tsx`
+  - `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\app\api\workspaces\route.ts`
+  - `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\app\api\jobs\route.ts`
 - **Key findings**:
-  1. `MissionPromptBar.tsx` prompt submission can execute `POST /api/workflows/mission` (with instant client UUID fallback) and navigate directly to `/create/mission/${jobId}`.
-  2. State transfer to `useWizardStore` works seamlessly by setting `subject`, `narration`, `beats` (mapped from `scenes`), `aspectRatio`, `voice`, `workflowType: 'footage'`, `step: 1` (or 4), and `furthestStep: 4`, then navigating to `/create/footage`. Because `w.workflowType === 'footage'`, `CreationWizard` will not reset, preserving full state.
-  3. `app/(app)/create/mission/[id]/page.tsx` requires a 5-stage stepper (Script, Scenes, Assets, Audio, Composition), a live console log stream with timestamps and log levels, Remotion `@remotion/player` live preview with `MainComposition`, and error handling/retry controls.
-- **Unexplored areas**: None for UI architecture; full handoff report ready for generation.
+  1. Both `app/(app)/settings/page.tsx` and `app/(app)/library/page.tsx` are `"use client"` components utilizing `framer-motion`, multiple `useState` hooks, and initial `useEffect` data loading routines.
+  2. `SettingsPage` requires `useSupabase()` context (mocked globally in `test/setup.ts`), `window.Audio` for voice preview playback, and `navigator.clipboard.writeText` for copying DDL and endpoint URLs.
+  3. `SettingsPage` switches across 7 tabs: AI Models, Voice & Audio, Stock Media, Brand Kits, Usage & Quotas, Database & Supabase, API Health Hub. Switching to "API Health Hub" mounts `<ApiProviderHub />`, which calls `/api/settings/health` and expects `{ success: true, providers: [...], summary: {...} }`. The test harness needs a mock for `/api/settings/health` or needs to guard against undefined `data.providers`.
+  4. `LibraryPage` fetches `/api/workspaces` and `/api/jobs` on mount. It supports 3 distinct UI states: Loading (`Loader2`), Empty State ("No videos in this workspace"), and Populated State with masonry video cards (`DashboardCard`) and an active "Rendering Queue" panel (`QueueCard`).
+  5. `LibraryPage` includes automatic polling (`setInterval` every 8s) if `queuedJobs.length > 0`. In test scenarios, default mock should return `queued: []` to prevent hanging interval timers, or tests must cleanly unmount/use fake timers.
+- **Unexplored areas**: None. All components, hooks, endpoints, and mock strategies are thoroughly analyzed.
 
 ## Key Decisions Made
-- Fully specified UI architecture and state transfer mechanism for `app/(app)/create/mission/[id]/page.tsx` and `MissionPromptBar.tsx`.
-- Defined component hierarchy, hooks, state hydration contract, Remotion player configuration, and fallback mechanisms.
+- Formulate comprehensive technical specifications and test implementation designs for `test/pages/core/settings.test.tsx` and `test/pages/core/library.test.tsx`.
+- Detail the mock harness requirements and edge-case guards for both pages.
 
 ## Artifact Index
-- C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_2\DISPATCH.md — incoming requirements
-- C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_2\BRIEFING.md — working memory and context
-- C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_2\progress.md — progress tracker
-- C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_2\handoff.md — 5-Component handoff report
+- `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_2\DISPATCH.md` — incoming prompt instructions
+- `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_2\BRIEFING.md` — persistent memory & state
+- `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_2\progress.md` — liveness heartbeat
+- `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_2\analysis.md` — comprehensive technical analysis report
+- `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_2\handoff.md` — 5-component handoff report
+

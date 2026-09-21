@@ -1,20 +1,29 @@
-## 2026-09-01T13:39:54Z
+## 2026-09-17T00:11:33Z
 
 <USER_REQUEST>
-You are Explorer 1 for Milestone 2 (Automatic Mission Mode & Progress View).
-Your working directory is C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_1.
-Authoritative Request: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\ORIGINAL_REQUEST.md
-Scope Document: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\PROJECT.md
-Test Infra: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\TEST_INFRA.md
+You are Explorer M2-1 for Milestone 2 of the Clipped Frontend Headless Test Suite project.
+Working directory: C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_1
+Workspace directory: C:\Users\vigilare\.gemini\antigravity\scratch\clipped
 
-Mission:
-Investigate the backend architecture for Automatic Mission Mode.
-1. Inspect existing engines in `lib/engine/` (e.g. `video-pipeline.ts`, `types.ts`, etc.), AI providers in `lib/ai/`, Supabase client and `render_jobs` schema.
-2. Formulate the technical specification for `lib/engine/mission-orchestrator.ts` and `app/api/workflows/mission/route.ts`:
-   - 5-stage execution pipeline: 1. Script Generation, 2. Scene Analysis, 3. Asset Generation, 4. Audio/TTS, 5. Remotion Storyboard Composition.
-   - Job tracking in Supabase `render_jobs` (with in-memory fallback if Supabase is offline/mock).
-   - Polling / status API (`GET /api/workflows/mission?id=[jobId]`) and initiation API (`POST /api/workflows/mission`).
-   - Resilient multi-tier fallback cascade when API keys are absent (Gemini/OpenAI/ElevenLabs/Pexels mock fallbacks).
-3. Deliver a detailed handoff report in `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_1\handoff.md` and send a message back.
-Remember: You are read-only; do NOT modify source code files.
+MANDATORY FIRST STEP: Read the authoritative request and project plan:
+1. C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\ORIGINAL_REQUEST.md (specifically the section "## Follow-up — 2026-09-16T21:22:28Z")
+2. C:\Users\vigilare\.gemini\antigravity\scratch\clipped\PROJECT.md
+3. C:\Users\vigilare\.gemini\antigravity\scratch\clipped\test\setup.ts
+
+Your objective is to investigate the technical requirements, source files, and test harness strategy for:
+1. `app/(app)/dashboard/page.tsx`:
+   - Inspect whether it is an async React Server Component (RSC) or client component.
+   - Inspect data fetching calls (e.g. `@/lib/db` or Supabase queries), what tables/views it queries, what sub-components it mounts.
+   - Determine the exact pattern required to test this page headlessly in Vitest with React Testing Library (e.g. `await DashboardPage()` or client render).
+2. `app/(app)/planner/page.tsx`:
+   - Inspect whether it is an async RSC or client component.
+   - Inspect any date parsing or formatting logic (e.g. `date-fns`) for potential "Invalid time value" errors on empty/null/mock data.
+   - Note any defensive checks needed to ensure reliable headless rendering.
+3. `app/(app)/queue/page.tsx`:
+   - Check if `app/(app)/queue/page.tsx` currently exists in the codebase.
+   - If not, check `components/dashboard/queue-card.tsx` or similar components, and determine what the standalone queue page route and its headless test should look like.
+
+Deliverables:
+Write a comprehensive investigation report to `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_1\analysis.md` and a handoff summary to `C:\Users\vigilare\.gemini\antigravity\scratch\clipped\.agents\explorer_m2_1\handoff.md`.
+Then send a completion message back to the orchestrator (parent).
 </USER_REQUEST>

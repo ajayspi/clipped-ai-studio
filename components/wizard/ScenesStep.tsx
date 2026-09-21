@@ -89,7 +89,7 @@ function SortableBeat({ beat, index }: { beat: Beat; index: number }) {
           <Clock className="w-3 h-3" />
           {beat.duration}s
           <div className="flex flex-wrap gap-1 ml-2">
-            {beat.keywords.map((kw, i) => (
+            {(beat.keywords || []).map((kw, i) => (
               <span key={i} className="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
                 {kw}
               </span>

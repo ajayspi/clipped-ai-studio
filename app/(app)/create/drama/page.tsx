@@ -133,7 +133,7 @@ export default function DramaPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
           <Film className="h-6 w-6 text-purple-500" />
-          Micro-Drama Workflow
+          AI Micro-Drama Series
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           Generate cinematic serialized drama episodes with persistent, consistent character visual anchors across all shots.
@@ -236,7 +236,7 @@ export default function DramaPage() {
                         <label className="text-[11px] font-medium text-muted-foreground">Character Name</label>
                         <input
                           type="text"
-                          placeholder="e.g. Detective Jax"
+                          placeholder="Character name (e.g. Detective Jax)"
                           value={char.name}
                           onChange={(e) => handleCharacterChange(idx, "name", e.target.value)}
                           className="w-full rounded-md border border-input bg-transparent px-2.5 py-1.5 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"

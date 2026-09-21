@@ -177,6 +177,30 @@ function expect(actual) {
       if (substr && !errText.toLowerCase().includes(substr.toLowerCase())) {
         throw new Error(`Expected error containing "${substr}", got "${errText}"`);
       }
+    },
+    get not() {
+      return {
+        toBe(expected) {
+          if (actual === expected) throw new Error(`Expected ${JSON.stringify(actual)} not to be ${JSON.stringify(expected)}`);
+        },
+        toEqual(expected) {
+          if (JSON.stringify(actual) === JSON.stringify(expected)) throw new Error(`Expected ${JSON.stringify(actual)} not to equal ${JSON.stringify(expected)}`);
+        },
+        toContain(item) {
+          if (typeof actual === 'string' || Array.isArray(actual)) {
+            if (actual.includes(item)) throw new Error(`Expected ${JSON.stringify(actual)} not to contain ${JSON.stringify(item)}`);
+          }
+        },
+        toMatch(regex) {
+          if (regex.test(String(actual))) throw new Error(`Expected "${actual}" not to match regex`);
+        },
+        toBeDefined() {
+          if (actual !== undefined && actual !== null) throw new Error(`Expected undefined, got ${actual}`);
+        },
+        toBeTruthy() {
+          if (actual) throw new Error(`Expected falsy value, got ${actual}`);
+        }
+      };
     }
   };
 }
@@ -2588,10 +2612,18 @@ async function main() {
     expect(fs.existsSync(configPath)).toBe(true);
     const config = require(configPath);
     expect(Array.isArray(config.apps)).toBe(true);
-    expect(config.apps.length).toBe(2);
+    expect(config.apps.length).toBe(4);
 
+    const gatewayApp = config.apps.find((a) => a.name === 'omniroute-gateway');
+    const webApp = config.apps.find((a) => a.name === 'clipped-web');
     const renderApp = config.apps.find((a) => a.name === 'render-worker');
     const publishApp = config.apps.find((a) => a.name === 'publish-worker');
+
+    expect(gatewayApp).toBeDefined();
+    expect(gatewayApp.script).toBe('npm');
+
+    expect(webApp).toBeDefined();
+    expect(webApp.script).toBe('npm');
 
     expect(renderApp).toBeDefined();
     expect(renderApp.script).toBe('scripts/render-worker.ts');
@@ -2600,6 +2632,34 @@ async function main() {
     expect(publishApp).toBeDefined();
     expect(publishApp.script).toBe('scripts/publish-worker.ts');
     expect(publishApp.autorestart).toBe(true);
+  }});
+tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', title: 'Mission Branch: Worker Delegates to MissionOrchestrator', fn: async () => {
+    const workerPath = path.join(__dirname, '..', '..', 'scripts', 'render-worker.ts');
+    expect(fs.existsSync(workerPath)).toBe(true);
+    const content = fs.readFileSync(workerPath, 'utf-8');
+    expect(content).toContain("if (params.type === 'mission' || job.workflow_type === 'mission')");
+    expect(content).toContain("const { missionOrchestrator } = await import('../lib/engine/mission-orchestrator')");
+    expect(content).toContain('missionOrchestrator.executeMission(job.id, params)');
+    expect(content).not.toContain('setTimeout(');
+
+    // The route<->worker payload contract lives in scripts/lib/job-params.ts.
+    const paramsPath = path.join(__dirname, '..', '..', 'scripts', 'lib', 'job-params.ts');
+    expect(fs.existsSync(paramsPath)).toBe(true);
+    const paramsSrc = fs.readFileSync(paramsPath, 'utf-8');
+    expect(paramsSrc).toContain("type: 'mission'");
+    expect(paramsSrc).toContain('prompt: string');
+  }});
+
+  tests.push({ tier: 'Tier 9: Milestone 1 API Status & Workflows', id: 'T9-M1-05', title: 'Mission Route: Enqueue-Only POST (No Fire-and-Forget Background Task)', fn: async () => {
+    const routePath = path.join(__dirname, '..', '..', 'app', 'api', 'workflows', 'mission', 'route.ts');
+    expect(fs.existsSync(routePath)).toBe(true);
+    const content = fs.readFileSync(routePath, 'utf-8');
+    expect(content).toContain("status: 'pending'");
+    expect(content).toContain("workflow_type: 'mission'");
+    expect(content).toContain("type: 'mission'");
+    expect(content).toContain('progressUrl');
+    // The serverless-killing setTimeout fire-and-forget must not come back.
+    expect(content).not.toContain('setTimeout(');
   }});
 
   // --- Tier 9: Milestone 1 API Status Indicators & 10 Workflow Cards ---

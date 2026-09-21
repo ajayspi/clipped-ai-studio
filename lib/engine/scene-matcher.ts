@@ -39,9 +39,13 @@ export class SceneMatcher {
     const passes = splitIntoPasses(script);
     const scenes: Scene[] = [];
 
+    // A missing gateway is not fatal: lib/engine/llm.ts cascades through the
+    // directly configured provider keys (and a keyless endpoint) first.
     const omniConfig = await getOmniRouteConfig();
     if (!omniConfig.apiKey) {
-      throw new Error('OmniRoute API key is not configured. Cannot perform scene matching.');
+      console.warn(
+        '[SceneMatcher] OmniRoute gateway is not configured — using the direct provider fallback cascade.'
+      );
     }
 
     for (const [index, pass] of passes.entries()) {

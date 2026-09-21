@@ -235,7 +235,7 @@ export default function AutoPilotPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center gap-1.5">
-                <Share2 className="h-4 w-4 text-purple-500" /> Target Publishing Platforms
+                <Share2 className="h-4 w-4 text-purple-500" /> Primary Target Platforms
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[

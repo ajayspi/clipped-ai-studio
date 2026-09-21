@@ -1,93 +1,66 @@
-# Handoff Report: Milestone 1 Review (AI Video Generators & Types)
-
-**Agent**: Reviewer M1_1 (`.agents/reviewer_m1_1`)  
-**Target Milestone**: Milestone 1 (AI Video Generators & Types)  
-**Verdict**: **APPROVE**  
-**Handoff Type**: Hard Handoff (Task Complete)
-
----
+# Milestone 1 Review Handoff Report: Test Infrastructure & Mock Harness Setup
 
 ## 1. Observation
+- Target Files Inspected:
+  - `package.json`:
+    - Line 12: `"test:unit": "vitest run"`
+    - Lines 45-59: Added devDependencies:
+      ```json
+      "@testing-library/dom": "^10.4.0",
+      "@testing-library/jest-dom": "6.6.3",
+      "@testing-library/react": "^16.2.0",
+      "@vitejs/plugin-react": "^4.3.4",
+      "jsdom": "^26.0.0",
+      "vite-tsconfig-paths": "^5.1.4",
+      "vitest": "^3.0.7"
+      ```
+  - `vitest.config.mts`:
+    - Configured with `plugins: [tsconfigPaths(), react()]`
+    - Configured with `environment: 'jsdom'`, `globals: true`, `setupFiles: ['./test/setup.ts']`, and `include: ['test/**/*.test.{ts,tsx}']`.
+  - `test/setup.ts`:
+    - Imports `@testing-library/jest-dom/vitest`.
+    - Mocks `next/navigation`: `useRouter` (with `push`, `replace`, `prefetch`, `back`, `forward`, `refresh`), `usePathname`, `useSearchParams`, `useParams`.
+    - Mocks `next/font/google`, `next/font/local`, `next/font`.
+    - Polyfills `ResizeObserver`, `IntersectionObserver`, `window.matchMedia`, `navigator.clipboard`, `window.Audio`, and `HTMLMediaElement.prototype.play`/`pause`/`load`.
+    - Intercepts `globalThis.fetch` for `/api/workspaces`, `/api/jobs`, `/api/settings/keys`, `/api/workflows/mission`, and fallback response.
+  - `test/sanity.test.ts`:
+    - Contains 4 tests verifying React component rendering, Next.js routing mocks, browser API polyfills, and global fetch fallback mock.
+- Verification Command:
+  - Command: `node ./node_modules/vitest/vitest.mjs run`
+  - Verbatim output:
+    ```
+     RUN  v3.2.7 C:/Users/vigilare/.gemini/antigravity/scratch/clipped
 
-Direct code observations from inspected files:
+     ✓ test/sanity.test.ts (4 tests) 58ms
 
-1. **`lib/engine/types.ts`**:
-   - Lines 57-100: Exports `AIVideoModel = 'kling-v1' | 'luma-dream' | 'fal-flux'`, `AspectRatio = '16:9' | '9:16' | '1:1'`, `CameraMotion`, `AIVideoGenerationRequest`, and `AIVideoGenerationResponse`.
-   - Lines 102-299: Exports complete types for all downstream workflows (Stories, Bulk Planner, Micro-Drama, Shorts Extractor, Auto Pilot) and database records (`RenderJobRecord`, `RenderJobStatus`, `WorkflowType`).
-
-2. **`lib/engine/prompts.ts`**:
-   - Lines 9-49: `SYSTEM_PROMPTS` object defines structured system prompts for all 6 workflows.
-   - Lines 90-133: `buildAIVideoPrompt` constructs detailed cinematic prompts combining character anchors, visual styles, motion mappings (e.g. `zoom_in` -> `slow dramatic zoom in`), and quality keywords (`masterpiece, ultra-detailed, 24fps film grain, photorealistic lighting`).
-
-3. **`lib/engine/video-generator.ts`**:
-   - Lines 21-86: `generateAIVideo(request)` routes between Kling AI (`generateWithKling`), Luma (`generateWithLuma`), and Fal.ai (`generateWithFal`).
-   - Lines 40-43 & 278-307: `generateDryRun` provides cost-safe deterministic fallback returning sample videos formatted for 16:9, 9:16, or 1:1 aspect ratios when API keys are absent or `mock: true`.
-   - Lines 91-127: `generateScenes` processes multi-scene scripts and returns populated `Scene[]` array with `videoUrl` and `selectedVideo`.
-
-4. **`app/api/workflows/ai-videos/route.ts`**:
-   - Lines 23-29: Rejects empty or whitespace script with HTTP 400 `{ error: "Script or prompt is required" }`.
-   - Lines 35-58: Synchronously inserts a record into Supabase `render_jobs` with `{ id: jobId, status: 'pending', progress: 0, logs: ... }` before background execution.
-   - Lines 61-104: Fires background task via `setTimeout(..., 0)` executing `videoGenerator.generateAIVideo` and updating DB with `completed` or `failed`.
-   - Lines 107-111: Returns immediate HTTP 200 response with `{ success: true, jobId, message }`.
-
-5. **`app/(app)/create/ai-videos/page.tsx`**:
-   - Lines 17-66: Client component with form state, validation, `fetch("/api/workflows/ai-videos", ...)`, and router redirect to `/dashboard?job=${data.jobId}`.
-   - Lines 68-327: Interactive UI with model selection cards, aspect ratio toggles, camera motion dropdown, dry-run checkbox, and loading spinners.
-
-6. **`tests/e2e/standalone-runner.js`**:
-   - Lines 265-285, 397-417, 520-533, 602-616: Test suites covering Tier 1 feature contracts, Tier 2 boundary cases, Tier 3 pairwise configurations, and API route 200/400 responses.
-
----
+     Test Files  1 passed (1)
+          Tests  4 passed (4)
+       Start at  03:27:01
+       Duration  6.91s (transform 150ms, setup 1.33s, collect 2.34s, tests 58ms, environment 1.63s, prepare 924ms)
+    ```
+  - Exit code: 0.
 
 ## 2. Logic Chain
-
-1. **Contract Conformance**:
-   - Observation 1 matches `PROJECT.md §58-62` and `PROJECT.md §88-93`.
-   - Observation 3 confirms `videoGenerator.generateAIVideo` implements the exact signature and response contract required by `PROJECT.md §1`.
-   - Observation 4 confirms that `app/api/workflows/ai-videos/route.ts` fulfills the synchronous DB logging requirement before async background processing.
-
-2. **Error Handling & Resilience**:
-   - Observation 4 (lines 23-29) ensures invalid payloads return HTTP 400 Bad Request.
-   - Observation 3 (lines 46-85) ensures missing environment variables (`KLING_API_KEY`, etc.) or network failures trigger deterministic mock fallbacks rather than crashing the runtime.
-
-3. **User Flow & Usability**:
-   - Observation 5 confirms the user interface connects to the API endpoint and redirects to the dashboard with the generated `jobId`.
-
-4. **Integrity & Authenticity**:
-   - No hardcoded test bypasses, dummy stubs, or fake outputs were detected. The live fetch integrations to Kling (`api.klingai.com`), Luma (`api.lumalabs.ai`), and Fal (`fal.run`) are authentically implemented with proper authentication and payload parsing.
-
----
+1. *Observation 1*: The required dependencies (`vitest`, `@testing-library/react`, `jsdom`, `vite-tsconfig-paths`, etc.) are installed and declared in `package.json`.
+2. *Observation 2*: `vitest.config.mts` properly establishes the JSDOM test environment, tsconfig path mapping, and imports the setup file `./test/setup.ts`.
+3. *Observation 3*: `test/setup.ts` fulfills the contract for Next.js routing mocks, font stubs, DOM polyfills, and API mock fallbacks required by Next.js client components.
+4. *Observation 4*: `test/sanity.test.ts` exercises all setup subsystems (React rendering via JSDOM, next/navigation, browser polyfills, and fetch mock).
+5. *Observation 5*: Running `node ./node_modules/vitest/vitest.mjs run` executes the suite cleanly with exit code 0, 1 test file passed, and 4 tests passed in 58ms.
+6. *Observation 6*: Adversarial inspection detected zero integrity violations, no dummy facades, and no hardcoded test cheats.
 
 ## 3. Caveats
-
-- Live API calls to Kling, Luma, and Fal were verified structurally and via dry-run simulation since active production API keys for commercial generative video services are not set in the local development environment.
-
----
+- Windows host environments may require using `node ./node_modules/vitest/vitest.mjs run` in headless automation tasks if shell permissions for `pnpm.cmd` prompt interactively. Both invoke the exact same Vitest runner.
+- The global fetch mock returns empty array/null objects by default; downstream tests in Milestones 2 and 3 can use `vi.spyOn(globalThis, 'fetch')` or local test overrides if specific mock payloads are required.
 
 ## 4. Conclusion
+**Verdict: APPROVE**
 
-**Verdict**: **APPROVE**  
-Milestone 1 successfully delivers all required components (`types.ts`, `prompts.ts`, `video-generator.ts`, `/api/workflows/ai-videos`, `/create/ai-videos`). The code is type-safe, adheres to project architecture, implements proper error handling and fallback behaviors, and passes all verification criteria.
-
----
+Milestone 1 implementation is complete, accurate, robust, and verified. The mock harness and test infrastructure fully satisfy the specifications in `PROJECT.md` and `ORIGINAL_REQUEST.md`. Downstream workers can immediately proceed with Milestones 2 and 3.
 
 ## 5. Verification Method
-
-To independently verify:
-
-1. **Inspect Source Files**:
-   - `lib/engine/types.ts`
-   - `lib/engine/prompts.ts`
-   - `lib/engine/video-generator.ts`
-   - `app/api/workflows/ai-videos/route.ts`
-   - `app/(app)/create/ai-videos/page.tsx`
-
-2. **Execute E2E Standalone Test Suite**:
+1. Execute the Vitest test runner:
    ```bash
-   node tests/e2e/standalone-runner.js
+   node ./node_modules/vitest/vitest.mjs run
    ```
-
-3. **Review Invalidation Conditions**:
-   - If `lib/engine/video-generator.ts` fails to export `videoGenerator` singleton with `generateAIVideo`.
-   - If `app/api/workflows/ai-videos/route.ts` does not insert a pending job record to Supabase before background dispatch.
-   - If missing API keys result in unhandled exceptions instead of deterministic dry-run fallback.
+2. Confirm exit code is 0 and output reports `1 passed (1)` test file and `4 passed (4)` tests.
+3. Invalidation condition: Any failure to resolve `@/*` aliases, missing `next/navigation` hooks, or test exit code != 0.

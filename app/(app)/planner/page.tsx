@@ -1,10 +1,14 @@
-﻿import { Calendar, Plus, Play, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { Calendar, Plus, Play, Clock, CheckCircle2, XCircle } from "lucide-react";
 import { supabase } from "@/lib/db";
 import { ScheduleModal } from "@/components/planner/ScheduleModal";
 import { format, addDays, startOfWeek, isSameDay } from "date-fns";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+function isValidDate(d: any): d is Date {
+  return d instanceof Date && !isNaN(d.getTime());
+}
 
 export default async function PlannerPage() {
   // Fetch pending and published posts
@@ -33,7 +37,11 @@ export default async function PlannerPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mt-8">
         {weekDays.map((day, i) => {
-          const dayPosts = posts.filter(p => isSameDay(new Date(p.scheduled_for), day));
+          const dayPosts = posts.filter((p) => {
+            if (!p?.scheduled_for) return false;
+            const d = new Date(p.scheduled_for);
+            return isValidDate(d) && isSameDay(d, day);
+          });
           
           return (
             <div key={i} className="flex flex-col border rounded-xl bg-card overflow-hidden min-h-[400px]">
@@ -56,12 +64,14 @@ export default async function PlannerPage() {
                     } catch(e) {}
                     
                     const isPublished = post.status === 'published';
+                    const postDate = post.scheduled_for ? new Date(post.scheduled_for) : null;
+                    const formattedTime = isValidDate(postDate) ? format(postDate, 'h:mm a') : 'Time TBD';
                     
                     return (
                       <div key={post.id} className="group relative border rounded-lg p-3 bg-background shadow-sm hover:shadow-md transition-all">
                         <div className="flex justify-between items-start mb-2">
                           <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-accent text-accent-foreground">
-                            {format(new Date(post.scheduled_for), 'h:mm a')}
+                            {formattedTime}
                           </span>
                           {isPublished ? (
                             <CheckCircle2 className="w-4 h-4 text-green-500" />

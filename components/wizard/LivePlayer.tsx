@@ -1,85 +1,25 @@
 "use client"
 
 import React, { useMemo, useRef, useState, useEffect } from 'react'
-import { Player } from '@remotion/player'
-import { AbsoluteFill, Sequence, Video as RemotionVideo, Audio, useCurrentFrame, useVideoConfig } from 'remotion'
 import { useWizardStore } from './wizard-store'
 import { motion } from 'framer-motion'
 
-import { MainComposition } from '@/remotion/Composition'
-
-// The LivePlayer wrapping the Remotion Player with Framer Motion interactive overlay
 export function LivePlayer() {
   const w = useWizardStore()
   const containerRef = useRef<HTMLDivElement>(null)
-  const fps = 30
-  
-  // Calculate total duration
-  const totalDuration = useMemo(() => {
-    return Math.max(1, w.beats.reduce((acc, beat) => acc + beat.duration, 0))
-  }, [w.beats])
-  
-  const durationInFrames = Math.max(1, Math.floor(totalDuration * fps))
   
   // Only interactive if we are on the subtitles step (step index 3)
   const isInteractive = w.step === 3
 
   // Calculate dynamic dimensions
-  const compWidth = w.aspectRatio === '16:9' ? 1920 : 1080;
-  const compHeight = w.aspectRatio === '9:16' ? 1920 : 1080;
   const aspectClass = w.aspectRatio === '16:9' ? 'aspect-video' : (w.aspectRatio === '1:1' ? 'aspect-square' : 'aspect-[9/16]');
 
   return (
     <div className={`relative w-full ${aspectClass} bg-black rounded-lg overflow-hidden border shadow-lg group mx-auto`} ref={containerRef} style={{ maxWidth: w.aspectRatio === '16:9' ? '100%' : '400px' }}>
-      <Player
-        component={MainComposition}
-        durationInFrames={durationInFrames}
-        compositionWidth={compWidth}
-        compositionHeight={compHeight}
-        fps={fps}
-        controls
-        autoPlay
-        loop
-        inputProps={{
-          beats: w.beats.map(b => ({
-            id: b.id,
-            text: b.text,
-            duration: b.duration,
-            clipUrl: b.candidates?.[0]?.url
-          })),
-          burnSubtitles: w.burnSubtitles,
-          subtitleStyle: {
-            y: w.subtitleY,
-            color: w.subtitleColor,
-            highlightColor: w.subtitleHighlightColor,
-            glow: w.subtitleGlow,
-            glowColor: w.subtitleGlowColor,
-            size: w.subtitleSize,
-            outlineWidth: w.subtitleOutlineWidth,
-            outlineColor: w.subtitleOutline,
-            isBox: w.subtitleBox,
-            boxColor: w.subtitleBoxColor,
-            boxOpacity: w.subtitleBoxOpacity,
-            boxRadius: w.subtitleBoxRadius,
-            letterSpacing: w.subtitleLetterSpacing,
-            uppercase: w.subtitleUppercase,
-            maxWidth: w.subtitleMaxWidth,
-          },
-          watermarkUrl: w.watermarkUrl || undefined,
-          watermarkConfig: w.watermarkUrl ? {
-            url: w.watermarkUrl,
-            position: w.watermarkPosition,
-            opacity: w.watermarkOpacity,
-            scale: w.watermarkScale,
-            margin: w.watermarkMargin,
-            handle: w.showWatermarkHandle ? w.watermarkHandle : undefined,
-          } : undefined,
-        }}
-        style={{
-          width: '100%',
-          height: '100%',
-        }}
-      />
+      
+      <div className="absolute inset-0 flex items-center justify-center text-white/50 p-4 text-center">
+        <p>FFmpeg Preview (Worker Processing...)</p>
+      </div>
       
       {/* Interactive Overlay for Subtitle Positioning */}
       {isInteractive && w.burnSubtitles && (
