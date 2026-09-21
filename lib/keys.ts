@@ -32,7 +32,7 @@ export async function getOmniRouteConfig(bypassCache = false): Promise<OmniRoute
   try {
     const { data: rows, error } = await dbClient
       .from('settings')
-      .select('provider, api_key, is_active, base_url')
+      .select('provider, api_key, is_active')
       .in('provider', ['omniroute', 'omniroute_endpoint_url', 'omniroute_url', 'omniroute_api_key']);
 
     if (!error && Array.isArray(rows) && rows.length > 0) {
