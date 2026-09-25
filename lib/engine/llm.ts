@@ -85,7 +85,10 @@ export function parseJson<T>(content: string, fallback?: T): T {
 //         gracefully instead of hard-failing when no gateway is running.
 // A dead or unconfigured gateway must never be able to block video generation.
 
-const GATEWAY_TIMEOUT_MS = 12_000;
+// OmniRoute's speaker "best-model" combos (Omni → gemini-pro-agent, ajay → gemini-3.1-pro-low)
+// take ~8s (short) to ~30s (400-token script-gen) through the gateway. 12s caused the tier to
+// always fall back to OpenRouter. 60s gives the unified router room without blocking renders.
+const GATEWAY_TIMEOUT_MS = 60_000;
 const PROVIDER_TIMEOUT_MS = 9_000;
 const FALLBACK_BUDGET_MS = 30_000; // total wall-clock budget for the fallback tiers
 const CHAIN_TTL_MS = 20_000;
