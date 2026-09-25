@@ -1,6 +1,7 @@
 # Clipped AI Video Studio & OmniRoute — Project Gist & Master Architecture
 
 > **Repository:** `clipped-omni-router`  
+> **Operations Companion:** [`MAINTENANCE.md`](MAINTENANCE.md) — master maintenance/ops document (commands, quirks, work history, procedures).  
 > **Framework:** Next.js 15 (React 19, App Router, TypeScript)  
 > **Video Engine:** Remotion (`@remotion/bundler`, `@remotion/renderer`, `@remotion/player`) + FFmpeg  
 > **Database & Auth:** Supabase PostgreSQL (Multi-tenant, Dynamic Client Routing, Cookie/LocalStorage sync)  
