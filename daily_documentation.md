@@ -7,6 +7,20 @@
 
 ---
 
+## 📅 2026-09-26 (Today)
+- **Detailed Log:** [`docs/devlogs/2026-09-24_to_2026-09-26.md`](file:///c:/Users/vigilare/.gemini/antigravity/scratch/clipped-omni-router/docs/devlogs/2026-09-24_to_2026-09-26.md)
+- **Directives & Prompts:**
+  - Bring scoped lint/typecheck to zero (WP4) and prove the full acceptance chain green.
+  - Write a master maintenance document covering all work carried out and all project aspects; push it to Notion as a new file.
+  - Push to GitHub and maintain the repository; create a Notion project hub.
+- **Key Changes & Features:**
+  - **WP4 Toolchain**: `pnpm lint:scoped` → 0 across 197 files; `pnpm typecheck` (via new `tsconfig.check.json`) → 0 (21 errors fixed). Harness `then`-arrow `this`-binding runtime bug fixed in BOTH `tests/e2e/test-harness.ts` and `standalone-runner.js`. New `types/ambient.d.ts` (fluent-ffmpeg / node-edge-tts / youtube-transcript). `render-worker.ts` compId block re-restored (T8-WRK-02).
+  - **Acceptance chain green**: lint 0 → tsc 0 → vitest 189/189 → `pnpm test` 201/201 → build exit 0 (commit `62d2c7d4`).
+  - **Master maintenance doc**: `docs/MAINTENANCE.md` (292 lines) — architecture, commands/verify chain, quirks, environment, deployments, complete work history, maintenance procedures. Mirrored to Notion Files DB as a page (146 blocks, sync-engine property shape).
+  - **GitHub sync**: `origin/main` fast-forwarded `a745a0d3..31191087`; `docs/agent-guide` also pushed (in sync).
+  - **Notion project hub**: "Clipped AI Studio — Project Documentation" with 9 subpages (Overview → Roadmap & Change Log) + quick-nav, under the workspace projects parent.
+  - **AGENTS.md learning-loop updates**: Files DB not shared with Notion MCP integration; 2000-char code-block cap; `ntn pages create` first-heading title trap; `child_page` blocks rejected in append payloads.
+
 ## 📅 2026-09-08 (Today)
 - **Detailed Log:** [`docs/devlogs/2026-09-08.md`](file:///c:/Users/vigilare/.gemini/antigravity/scratch/clipped-omni-router/docs/devlogs/2026-09-08.md)
 - **Directives & Prompts:**
