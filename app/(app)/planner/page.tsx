@@ -1,12 +1,12 @@
-import { Calendar, Plus, Play, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { Clock, CheckCircle2, XCircle } from "lucide-react";
 import { supabase } from "@/lib/db";
 import { ScheduleModal } from "@/components/planner/ScheduleModal";
-import { format, addDays, startOfWeek, isSameDay } from "date-fns";
+import { format, addDays, isSameDay } from "date-fns";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function isValidDate(d: any): d is Date {
+function isValidDate(d: unknown): d is Date {
   return d instanceof Date && !isNaN(d.getTime());
 }
 
@@ -58,10 +58,10 @@ export default async function PlannerPage() {
                   </div>
                 ) : (
                   dayPosts.map(post => {
-                    let parsed: any = {};
+                    let parsed: { subject?: string } = {};
                     try {
                         parsed = typeof post.render_jobs?.logs === 'string' ? JSON.parse(post.render_jobs.logs) : post.render_jobs?.logs || {};
-                    } catch(e) {}
+                    } catch {}
                     
                     const isPublished = post.status === 'published';
                     const postDate = post.scheduled_for ? new Date(post.scheduled_for) : null;

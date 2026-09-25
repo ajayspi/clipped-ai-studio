@@ -63,7 +63,6 @@ export async function POST(req: Request) {
       voice: voice || null,
       voiceProvider: voiceProvider || null,
       subtitleSettings,
-      burnSubtitles: subtitleSettings.burnSubtitles,
       ...subtitleSettings,
     }
 
@@ -71,7 +70,7 @@ export async function POST(req: Request) {
     const jobId = crypto.randomUUID()
     
     // Insert a generating_plan record with orchestration_state and logs
-    const insertPayload: Record<string, any> = {
+    const insertPayload: Record<string, unknown> = {
       id: jobId,
       status: 'generating_plan',
       progress: 0,
@@ -108,11 +107,10 @@ export async function POST(req: Request) {
           musicSource: musicSource || 'Random Background Music',
           musicVolume: musicVolume || 20,
           workflow: workflow || 'footage',
-          burnSubtitles: subtitleSettings.burnSubtitles,
           ...subtitleSettings,
         }
 
-        const updatePayload: Record<string, any> = {
+        const updatePayload: Record<string, unknown> = {
           status: 'pending',
           progress: 10,
           orchestration_state: {
@@ -140,10 +138,10 @@ export async function POST(req: Request) {
       message: "Job started successfully" 
     })
     
-  } catch (error: any) {
+  } catch (error) {
     console.error("Workflow trigger error:", error)
     return NextResponse.json(
-      { error: error.message || "Failed to trigger workflow" },
+      { error: error instanceof Error ? error.message : "Failed to trigger workflow" },
       { status: 500 }
     )
   }

@@ -4,6 +4,12 @@ import { calculateJobCost } from '@/lib/engine/cost-estimator';
 
 export const dynamic = 'force-dynamic';
 
+interface ParsedJobLogs {
+  duration?: number
+  finalVideoUrl?: string
+  workflowType?: string
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -27,9 +33,12 @@ export async function GET(req: Request) {
     }
 
     const formattedJobs = jobs.map((job) => {
-      let logs: any = {};
+      let logs: ParsedJobLogs = {};
       try {
-        logs = typeof job.logs === 'string' ? JSON.parse(job.logs) : (job.logs || {});
+        logs =
+          typeof job.logs === 'string'
+            ? (JSON.parse(job.logs) as ParsedJobLogs)
+            : ((job.logs as ParsedJobLogs) || {});
       } catch {}
 
       const cost = calculateJobCost(job);
@@ -56,7 +65,7 @@ export async function GET(req: Request) {
       jobs: formattedJobs,
       total: formattedJobs.length,
     });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'Internal Server Error' }, { status: 500 });
   }
 }

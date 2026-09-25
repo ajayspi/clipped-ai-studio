@@ -50,7 +50,7 @@ const STAGE_META: Record<
   },
 };
 
-export function MissionStepper({ steps, currentStage }: MissionStepperProps) {
+export function MissionStepper({ steps }: MissionStepperProps) {
   // Ensure we display all 5 steps in order even if not yet populated
   const defaultStages: Array<{ stage: MissionStage; label: string }> = [
     { stage: "script_generation", label: "Script Generation" },
@@ -72,7 +72,7 @@ export function MissionStepper({ steps, currentStage }: MissionStepperProps) {
       </div>
 
       <div className="space-y-3">
-        {defaultStages.map((def, idx) => {
+        {defaultStages.map((def) => {
           const stepData = steps.find((s) => s.stage === def.stage) || {
             stage: def.stage,
             label: def.label,

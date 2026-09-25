@@ -14,10 +14,8 @@ import {
   Zap,
   Flame,
   Eye,
-  CheckCircle2,
   Box,
   MoveVertical,
-  Maximize2,
 } from 'lucide-react'
 import { useWizardStore, SUBTITLE_PRESETS, SubtitlePresetConfig } from './wizard-store'
 

@@ -8,6 +8,29 @@ import {
 } from './types';
 import { SYSTEM_PROMPTS, buildStoryPartsPrompt } from './prompts';
 
+interface StoryScenePayload {
+  text?: string;
+  description?: string;
+  visualPrompt?: string;
+  cameraMotion?: string;
+  duration?: number;
+  emotion?: string;
+  keywords?: unknown[];
+}
+
+interface StoryPartPayload {
+  title?: string;
+  hook?: string;
+  script?: string;
+  cliffhanger?: string;
+  scenes?: StoryScenePayload[];
+}
+
+interface StorySeriesPayload {
+  seriesTitle?: string;
+  parts?: StoryPartPayload[];
+}
+
 /**
  * Multi-part story series generator.
  * Creates serialized fiction and non-fiction video narratives with opening hooks,
@@ -52,8 +75,8 @@ export class StoriesOrchestrator {
         if (response && response.success && response.parts && response.parts.length > 0) {
           return response;
         }
-      } catch (err: any) {
-        console.warn(`[StoriesOrchestrator] OpenAI generation failed (${err?.message || err}). Using cost-safe dry-run generator.`);
+      } catch (err) {
+        console.warn(`[StoriesOrchestrator] OpenAI generation failed (${err instanceof Error ? err.message : String(err)}). Using cost-safe dry-run generator.`);
       }
     } else {
       console.log(`[StoriesOrchestrator] OPENAI_API_KEY not configured. Using cost-safe dry-run generator.`);
@@ -82,10 +105,10 @@ export class StoriesOrchestrator {
       throw new Error('No content returned from OmniRoute');
     }
 
-    const parsed = parseJson<Record<string, any>>(content);
+    const parsed = parseJson<StorySeriesPayload>(content);
     const seriesTitle = parsed.seriesTitle || `${topic} (${storyType.toUpperCase()} Series)`;
 
-    const rawParts: any[] = Array.isArray(parsed.parts) ? parsed.parts : [];
+    const rawParts: StoryPartPayload[] = Array.isArray(parsed.parts) ? parsed.parts : [];
     const parts: StoryPart[] = [];
 
     for (let i = 0; i < partsCount; i++) {

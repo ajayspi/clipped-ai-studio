@@ -19,10 +19,20 @@ import {
   Video,
 } from './types';
 import { supabase } from '@/lib/db';
+import type { MediaAsset } from '@/lib/media/types';
 import { ttsEngine } from './tts';
 import { videoSourcer } from './video-sourcer';
-import { imageGenerator } from './image-generator';
 import { complete, parseJson } from '@/lib/ai/llm';
+
+// Shape of the scenes parsed from the LLM JSON when planning a mission.
+interface MissionRawScene {
+  id?: string;
+  text?: string;
+  keywords?: string[];
+  description?: string;
+  cameraMotion?: string;
+  emotion?: string;
+}
 
 export interface MissionOptions {
   prompt: string;
@@ -127,7 +137,7 @@ export class MissionOrchestrator {
         started_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
       });
-    } catch (err) {
+    } catch {
       // Graceful fallback for offline / mock DB test environments
     }
 
@@ -150,7 +160,22 @@ export class MissionOrchestrator {
         .single();
 
       if (!error && data) {
-        let parsedLogs: any = {};
+        // Parsed shape of the JSON.stringify'd MissionJobState previously
+        // persisted into render_jobs.logs. Supabase rows are untyped, so this
+        // local contract replaces the bare `any` with the fields we read back.
+        type ParsedMissionLogs = {
+          prompt?: string;
+          aspectRatio?: AspectRatio;
+          style?: string;
+          voice?: string;
+          currentStage?: MissionStage;
+          steps?: MissionStepStatus[];
+          script?: string;
+          scenes?: Scene[];
+          audioUrl?: string;
+          videoUrl?: string;
+        };
+        let parsedLogs: ParsedMissionLogs = {};
         try {
           parsedLogs = typeof data.logs === 'string' ? JSON.parse(data.logs) : data.logs;
         } catch {}
@@ -174,7 +199,7 @@ export class MissionOrchestrator {
         this.memoryStore.set(jobId, state);
         return state;
       }
-    } catch (dbErr) {
+    } catch {
       // Ignore Supabase fetch errors in offline mode
     }
 
@@ -376,9 +401,9 @@ export class MissionOrchestrator {
 
       this.memoryStore.set(jobId, state);
       return state;
-    } catch (error: any) {
+    } catch (error) {
       console.error(`[MissionOrchestrator] Mission ${jobId} failed:`, error);
-      state.error = error?.message || 'Unknown error during mission orchestration';
+      state.error = error instanceof Error ? error.message : 'Unknown error during mission orchestration';
       state.currentStage = 'ready';
       this.memoryStore.set(jobId, state);
 
@@ -435,7 +460,7 @@ Return ONLY a valid JSON object with the following schema:
             keywords: parsed.keywords || [cleanPrompt, 'viral', 'story'],
           };
         }
-      } catch (err) {
+      } catch {
         // Fallback to deterministic script generator
       }
     }
@@ -485,7 +510,7 @@ Return ONLY a valid JSON object:
           json: true,
         });
 
-        const parsed = parseJson<{ scenes?: any[] }>(raw);
+        const parsed = parseJson<{ scenes?: MissionRawScene[] }>(raw);
         if (Array.isArray(parsed.scenes) && parsed.scenes.length >= 2) {
           return parsed.scenes.map((s, idx) => {
             const wordCount = (s.text || '').split(/\s+/).filter(Boolean).length;
@@ -502,7 +527,7 @@ Return ONLY a valid JSON object:
             };
           });
         }
-      } catch (err) {
+      } catch {
         // Fallback to rule-based segmentation
       }
     }
@@ -562,11 +587,13 @@ Return ONLY a valid JSON object:
     const orientation = aspectRatio === '16:9' ? 'landscape' : aspectRatio === '1:1' ? 'square' : 'portrait';
     const samplePool = DRY_RUN_SAMPLE_VIDEOS[orientation] || DRY_RUN_SAMPLE_VIDEOS.portrait;
 
-    let selectSceneMedia: any = null;
+    let selectSceneMedia:
+      | ((scene: Scene, options?: { allowGenerated?: boolean; aspectRatio?: AspectRatio }) => Promise<MediaAsset>)
+      | null = null;
     try {
       const ms = await import('../media/media-selector');
       selectSceneMedia = ms.selectSceneMedia;
-    } catch (e) {}
+    } catch {}
 
     const enrichedScenes: Scene[] = [];
 
@@ -586,7 +613,7 @@ Return ONLY a valid JSON object:
             scene.videoUrl = best.url;
             scene.imageUrl = best.thumbnail || thumbUrl;
           }
-        } catch (err) {
+        } catch {
           // Fallback to next tier
         }
 
@@ -597,7 +624,7 @@ Return ONLY a valid JSON object:
             if (asset.kind === 'video') {
               scene.videoUrl = asset.url;
               if (!scene.selectedVideo) {
-                scene.selectedVideo = { id: asset.id, url: asset.url, title: 'Video Asset', platform: asset.provider };
+                scene.selectedVideo = { id: asset.id, url: asset.url, title: 'Video Asset', platform: asset.provider as Video['platform'] };
               }
             } else if (asset.kind === 'image') {
               scene.imageUrl = asset.url;
@@ -674,7 +701,7 @@ Return ONLY a valid JSON object:
             updatedScenes.push(scene);
             continue;
           }
-        } catch (err) {
+        } catch {
           // Fallback to synthetic audio duration
         }
       }

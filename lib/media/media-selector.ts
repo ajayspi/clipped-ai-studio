@@ -6,7 +6,7 @@ import { getApiKey } from '@/lib/keys';
 
 export async function selectSceneMedia(
   scene: Scene,
-  options: { allowGenerated?: boolean; aspectRatio?: string } = {}
+  options: { allowGenerated?: boolean; aspectRatio?: '16:9' | '9:16' | '1:1' } = {}
 ): Promise<MediaAsset> {
   // 1. Existing video
   if (scene.selectedVideo?.url) {
@@ -30,7 +30,7 @@ export async function selectSceneMedia(
   const stockImages = await searchImages({
     query: searchQuery,
     limit: 1,
-    aspectRatio: options.aspectRatio,
+    aspectRatio: options.aspectRatio || '9:16',
   }, {
     ...(pexelsKey ? { PEXELS_API_KEY: pexelsKey } : {}),
     ...(pixabayKey ? { PIXABAY_API_KEY: pixabayKey } : {})

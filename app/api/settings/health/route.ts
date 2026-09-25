@@ -11,6 +11,24 @@ import { PROVIDER_REGISTRY, checkProviderHealth } from '@/lib/api-router';
 
 export const dynamic = 'force-dynamic';
 
+interface ProviderHealthResult {
+  id: string;
+  name: string;
+  category: string;
+  isFree: boolean;
+  isConfigured: boolean;
+  isActive: boolean;
+  priority: number;
+  defaultPriority: number;
+  models: string[];
+  isHealthy: boolean;
+  latencyMs: number;
+  checkedAt: string;
+  error: string | null;
+}
+
+type ProviderCheck = { id: string } & Awaited<ReturnType<typeof checkProviderHealth>>;
+
 export async function GET() {
   // Load all saved API keys
   const { data: settings } = await supabaseAdmin
@@ -25,7 +43,7 @@ export async function GET() {
 
   // Check all providers in parallel (uses cache)
   const results = await Promise.allSettled(
-    PROVIDER_REGISTRY.map(async (provider) => {
+    PROVIDER_REGISTRY.map(async (provider): Promise<ProviderHealthResult> => {
       const saved = keyMap.get(provider.id);
       const health = await checkProviderHealth(provider.id, saved?.key || '');
       return {
@@ -49,7 +67,7 @@ export async function GET() {
 
   const providers = results
     .filter((r) => r.status === 'fulfilled')
-    .map((r) => (r as PromiseFulfilledResult<any>).value);
+    .map((r) => (r as PromiseFulfilledResult<ProviderHealthResult>).value);
 
   // Summary counts
   const summary = {
@@ -80,7 +98,7 @@ export async function POST(req: Request) {
 
   // Toggle active / update priority
   if (action === 'toggle' || action === 'update') {
-    const updateFields: any = {};
+    const updateFields: { is_active?: boolean; priority?: number } = {};
     if (isActive !== undefined) updateFields.is_active = isActive;
     if (priority !== undefined) updateFields.priority = priority;
 
@@ -109,7 +127,7 @@ export async function POST(req: Request) {
     }
 
     const results = await Promise.allSettled(
-      targets.map(async (id: string) => {
+      targets.map(async (id: string): Promise<ProviderCheck> => {
         const key = apiKey || keyMap.get(id) || '';
         // Force fresh check by deleting cache (re-check by calling with fresh object)
         const health = await checkProviderHealth(id, key);
@@ -119,7 +137,7 @@ export async function POST(req: Request) {
 
     const checks = results
       .filter((r) => r.status === 'fulfilled')
-      .map((r) => (r as PromiseFulfilledResult<any>).value);
+      .map((r) => (r as PromiseFulfilledResult<ProviderCheck>).value);
 
     return NextResponse.json({ success: true, checks });
   }

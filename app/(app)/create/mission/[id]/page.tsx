@@ -15,12 +15,12 @@ export default function MissionProgressPage({
 }: {
   params: Promise<{ id: string }> | { id: string };
 }) {
-  const unwrappedParams = params && typeof (params as any).then === 'function' ? use(params as Promise<{ id: string }>) : params;
-  const jobId = (unwrappedParams as any)?.id || "";
+  const unwrappedParams = params && typeof (params as Promise<{ id: string }>).then === 'function' ? use(params as Promise<{ id: string }>) : params;
+  const jobId = (unwrappedParams as { id: string }).id || "";
   const searchParams = useSearchParams();
 
   const [job, setJob] = useState<MissionJobState | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [, setLoading] = useState<boolean>(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Fallback bootstrap if triggered via query params
@@ -96,7 +96,7 @@ export default function MissionProgressPage({
         });
         setFetchError(null);
       }
-    } catch (err: any) {
+    } catch (err) {
       console.warn("Polling error:", err);
     } finally {
       setLoading(false);
@@ -104,7 +104,9 @@ export default function MissionProgressPage({
   };
 
   useEffect(() => {
-    pollJobStatus();
+    // Defer the initial poll one macrotask so its setStates don't run
+    // synchronously inside the effect body; polling stays on the interval.
+    setTimeout(pollJobStatus, 0);
 
     // Poll every 1000ms until completion or failure
     const interval = setInterval(() => {
@@ -116,6 +118,9 @@ export default function MissionProgressPage({
     }, 1000);
 
     return () => clearInterval(interval);
+    // pollJobStatus is a per-render closure and `job` is intentionally coarse:
+    // adding either would restart the interval on every poll response.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobId, job?.overallProgress, job?.error]);
 
   const handleRetry = async () => {
@@ -133,8 +138,8 @@ export default function MissionProgressPage({
         }),
       });
       pollJobStatus();
-    } catch (err: any) {
-      setFetchError(err.message || "Failed to retry mission");
+    } catch (err) {
+      setFetchError(err instanceof Error ? err.message : "Failed to retry mission");
     } finally {
       setLoading(false);
     }

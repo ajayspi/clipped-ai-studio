@@ -4,8 +4,6 @@ import React, { useState } from "react";
 import {
   Video,
   Download,
-  Share2,
-  Trash2,
   Loader2,
   Play,
   Smartphone,
@@ -14,24 +12,38 @@ import {
   Folder,
   FolderPlus,
   Zap,
-  MoreVertical,
 } from "lucide-react";
 import { PublishModal } from "./PublishModal";
 import { motion, AnimatePresence } from "framer-motion";
+
+interface DashboardVideo {
+  id: string;
+  video_id?: string;
+  workspace_id?: string | null;
+  workspace_name?: string;
+  output_url?: string | null;
+  thumbnail?: string | null;
+  title?: string;
+  workflowType?: string;
+  workflow_type?: string;
+  status?: string;
+  created_at?: string;
+  clipCount?: number;
+}
 
 export function DashboardCard({
   video,
   workspaces = [],
   onMoveWorkspace,
 }: {
-  video: any;
+  video: DashboardVideo;
   workspaces?: Array<{ id: string; name: string; color?: string }>;
   onMoveWorkspace?: (videoId: string, workspaceId: string) => void;
 }) {
   const [isPublishOpen, setIsPublishOpen] = useState(false);
   const [publishTab, setPublishTab] = useState<"publish" | "export">("publish");
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
-  const [moving, setMoving] = useState(false);
+  const [, setMoving] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
 
   const currentWorkspace = workspaces.find((w) => w.id === video.workspace_id) || (video.workspace_name ? { name: video.workspace_name, color: '#8b5cf6' } : null);
@@ -82,6 +94,7 @@ export function DashboardCard({
               onEnded={() => setIsPlaying(false)}
             />
           ) : video.thumbnail ? (
+            // eslint-disable-next-line @next/next/no-img-element -- Rendered-video thumbnail (data:/signed URL)
             <img
               src={video.thumbnail}
               alt={video.title}
@@ -235,7 +248,7 @@ export function DashboardCard({
         isOpen={isPublishOpen}
         onClose={() => setIsPublishOpen(false)}
         jobId={video.id}
-        videoTitle={video.title}
+        videoTitle={video.title || ''}
         defaultTab={publishTab}
       />
     </>

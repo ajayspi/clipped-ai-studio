@@ -28,6 +28,16 @@ const TEMP_DIR = path.resolve(ROOT_DIR, 'tmp_renders');
 if (!fs.existsSync(RENDER_DIR)) fs.mkdirSync(RENDER_DIR, { recursive: true });
 if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true });
 
+// Structural adapter for the shared RPC job helpers (lib/jobs/render-job.ts): the
+// untyped supabase client exposes .rpc() but not the exact { data, error } Promise
+// shape the helpers require, so bridge it once here instead of `as any` per call.
+const renderJobRpc = {
+  rpc: async (name: string, params: Record<string, unknown>) => {
+    const res = await supabase.rpc(name, params);
+    return { data: res.data, error: res.error };
+  },
+}
+
 async function downloadFile(url: string, dest: string) {
   if (url.startsWith('data:')) {
     const commaIndex = url.indexOf(',');
@@ -56,6 +66,75 @@ export interface SubtitleConfig {
   subtitleSize?: number;
   subtitleY?: number;
   subtitleUppercase?: boolean;
+}
+
+// Orchestration payload shapes. These arrive as opaque JSON in job.logs
+// (written by the orchestrator), so every field is optional.
+interface RenderBeat {
+  id?: string;
+  text?: string;
+  prompt?: string;
+  script?: string;
+  narration?: string;
+  duration?: number;
+  voice?: string;
+  clipUrl?: string;
+  imageUrl?: string;
+  videoUrl?: string;
+  url?: string;
+  urls?: string[];
+  candidates?: Array<{ url?: string }>;
+  selectedVideo?: { url?: string; platform?: string; previewUrl?: string };
+}
+
+interface RenderScene {
+  id?: string;
+  text?: string;
+  narration?: string;
+  prompt?: string;
+  script?: string;
+  duration?: number;
+  clipUrl?: string;
+  videoUrl?: string;
+  url?: string;
+  selectedVideo?: { url?: string; previewUrl?: string };
+}
+
+interface RenderParams {
+  message?: string;
+  script?: string;
+  duration?: number;
+  aspectRatio?: string;
+  voice?: string;
+  voiceProvider?: string;
+  voiceSpeed?: number;
+  voiceVolume?: number;
+  musicVolume?: string;
+  musicSource?: string;
+  beats?: RenderBeat[];
+  input?: { script?: string; duration?: number; beats?: RenderBeat[] };
+  analysis?: { scenes?: RenderScene[] };
+  result?: { scenes?: RenderScene[] };
+  scenes?: RenderScene[];
+  subtitleSettings?: SubtitleConfig;
+  burnSubtitles?: boolean;
+  subtitlePreset?: string;
+  subtitleColor?: string;
+  subtitleHighlightColor?: string;
+  subtitleGlow?: boolean;
+  subtitleGlowColor?: string;
+  subtitleOutline?: boolean | string;
+  subtitleOutlineWidth?: number;
+  subtitleBox?: boolean;
+  subtitleBoxColor?: string;
+  subtitleSize?: number;
+  subtitleY?: number;
+}
+
+interface RenderOrchestrationState {
+  subtitleSettings?: SubtitleConfig;
+  voice?: string;
+  voiceProvider?: string;
 }
 
 export function escapeFfmpegDrawtext(text: string): string {
@@ -158,8 +237,8 @@ async function startWorker() {
   while (true) {
     try {
       await pollAndProcess()
-    } catch (err: any) {
-      console.error('Worker error:', err?.message || err)
+    } catch (err) {
+      console.error('Worker error:', err instanceof Error ? err.message : String(err))
     }
     await new Promise(resolve => setTimeout(resolve, 5000))
   }
@@ -167,7 +246,7 @@ async function startWorker() {
 
 async function pollAndProcess() {
   const leaseToken = crypto.randomUUID()
-  const claim = await claimRenderJob(supabase as any, {
+  const claim = await claimRenderJob(renderJobRpc, {
     workerId,
     leaseToken,
     leaseMs: 300000,
@@ -190,18 +269,18 @@ async function pollAndProcess() {
   if (!fs.existsSync(jobTempDir)) fs.mkdirSync(jobTempDir, { recursive: true });
 
   try {
-    let params: any = {}
+    let params: RenderParams = {}
     if (typeof job.logs === 'string') {
       try { params = JSON.parse(job.logs) } catch { params = { message: job.logs } }
     } else if (job.logs && typeof job.logs === 'object') {
-      params = job.logs
+      params = job.logs as RenderParams
     }
 
-    let orchState: any = {}
+    let orchState: RenderOrchestrationState = {}
     if (typeof job.orchestration_state === 'string') {
       try { orchState = JSON.parse(job.orchestration_state) } catch { orchState = {} }
     } else if (job.orchestration_state && typeof job.orchestration_state === 'object') {
-      orchState = job.orchestration_state
+      orchState = job.orchestration_state as RenderOrchestrationState
     }
 
     const subtitleSettings: SubtitleConfig = orchState.subtitleSettings || params.subtitleSettings || {
@@ -219,7 +298,7 @@ async function pollAndProcess() {
       subtitleY: params.subtitleY,
     }
     
-    let keys: any[] | null = null
+    let keys: Array<{ provider: string | null; api_key: string | null }> | null = null
     try {
       const { data } = await supabase.from('settings').select('provider, api_key').is('user_id', null)
       keys = data
@@ -234,10 +313,10 @@ async function pollAndProcess() {
     const { TTSEngine } = await import('../lib/engine/tts')
     const ttsEngine = new TTSEngine()
     
-    let beatsList: any[] = params.beats || (params.input && params.input.beats) || []
+    let beatsList: RenderBeat[] = params.beats || (params.input && params.input.beats) || []
     if (beatsList.length === 0 && (params.analysis?.scenes || params.result?.scenes || params.scenes)) {
       const scenes = params.analysis?.scenes || params.result?.scenes || params.scenes || []
-      beatsList = scenes.map((s: any, idx: number) => ({
+      beatsList = scenes.map((s: RenderScene, idx: number) => ({
         id: s.id || `scene-${idx + 1}`,
         text: s.text || s.narration || s.prompt || s.script || '',
         duration: s.duration || 3,
@@ -257,6 +336,7 @@ async function pollAndProcess() {
     if (params.aspectRatio === '16:9') compId = 'MainRender-16x9'
     if (params.aspectRatio === '1:1') compId = 'MainRender-1x1'
 
+    console.log(`   -> Remotion composition binding: ${compId}`)
     console.log(`🎙️ Generating TTS for ${beatsList.length} beats...`)
     
     const beatClips: string[] = [];
@@ -292,12 +372,12 @@ async function pollAndProcess() {
         });
         audioUrl = ttsRes.audioUrl || '';
         duration = ttsRes.duration || b.duration || 3;
-      } catch (err: any) {
-        console.error("TTS generation failed:", err?.message || err)
+      } catch (err) {
+        console.error("TTS generation failed:", err instanceof Error ? err.message : String(err))
       }
 
         // Extract URL from Orchestrator VideoMatch format, or fallback
-        let mediaUrl = b?.selectedVideo?.url || b?.imageUrl || b?.videoUrl || b.clipUrl || b.urls?.[0] || b.candidates?.[0]?.url;
+        let mediaUrl = b?.selectedVideo?.url || b?.imageUrl || b?.videoUrl || b.clipUrl || b.urls?.[0] || b.candidates?.[0]?.url || '';
         
         if (!mediaUrl) {
           const fullPrompt = `${text}, educational tech style, paradox style, consistent character anchor, minimalist stick man character`;
@@ -313,8 +393,8 @@ async function pollAndProcess() {
             } else {
               throw new Error("Invalid OmniRoute response");
             }
-          } catch (err: any) {
-            console.error("     -> OmniRoute local failed, falling back to Pollinations:", err.message);
+          } catch (err) {
+            console.error("     -> OmniRoute local failed, falling back to Pollinations:", err instanceof Error ? err.message : String(err));
             mediaUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=1024&height=1024&nologo=true`;
           }
         }
@@ -387,7 +467,7 @@ async function pollAndProcess() {
 
           cmd.save(clipPath)
             .on('end', () => resolve())
-            .on('error', (err) => reject(err));
+            .on('error', (err: Error) => reject(err));
         });
 
       beatClips.push(clipPath);
@@ -411,7 +491,7 @@ async function pollAndProcess() {
           .outputOptions('-c copy')
           .save(concatTempPath)
           .on('end', () => resolve())
-          .on('error', (err) => reject(err));
+          .on('error', (err: Error) => reject(err));
       });
 
       // Apply Background Music with Audio Ducking
@@ -461,7 +541,7 @@ async function pollAndProcess() {
             ])
             .save(outputPath)
             .on('end', () => resolve())
-            .on('error', (err) => reject(err));
+            .on('error', (err: Error) => reject(err));
         });
       } else {
         // Just move the concat temp file to output
@@ -470,7 +550,7 @@ async function pollAndProcess() {
   
       console.log(`🎬 Render complete: ${outputPath}`)
 
-    await completeRenderJob(supabase as any, {
+    await completeRenderJob(renderJobRpc, {
       jobId: job.id,
       workerId,
       leaseToken,
@@ -478,17 +558,17 @@ async function pollAndProcess() {
       logs: { ...params, finalVideoUrl: publicUrl, duration: totalDurationSeconds },
     })
 
-  } catch (err: any) {
-    const errorMsg = err?.message || String(err)
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err)
     console.error(`❌ Job ${job.id} failed:`, errorMsg)
-    await failRenderJob(supabase as any, {
+    await failRenderJob(renderJobRpc, {
       jobId: job.id,
       workerId,
       leaseToken,
       errorMessage: errorMsg,
     })
   } finally {
-    try { fs.rmSync(jobTempDir, { recursive: true, force: true }); } catch (e) {}
+    try { fs.rmSync(jobTempDir, { recursive: true, force: true }); } catch {}
   }
 }
 

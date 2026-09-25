@@ -7,7 +7,7 @@ interface SettingsCardProps {
   iconClassName?: string;
 }
 
-export function SettingsCard({ icon: Icon, title, children, iconClassName = "text-emerald-500" }: SettingsCardProps) {
+export function SettingsCard({ icon: Icon, title, children }: SettingsCardProps) {
   return (
     <div className="rounded-xl border bg-card p-5 shadow-sm space-y-4">
       <h3 className="font-semibold text-sm flex items-center gap-2 mb-4">

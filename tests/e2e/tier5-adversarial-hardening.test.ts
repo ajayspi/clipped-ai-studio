@@ -515,11 +515,8 @@ export async function registerTier5Tests() {
     title: 'Adversarial: Supabase Update Error Handling During Background Completion',
     description: 'Verifies background job completion handles Supabase update failure without unhandled promise crash',
     fn: async () => {
-      let loggedError = false;
       const origConsole = console.error;
-      console.error = (...args: any[]) => {
-        loggedError = true;
-      };
+      console.error = () => {};
 
       try {
         const jobId = `job-test-db-update-${Date.now()}`;
@@ -590,7 +587,6 @@ export async function registerTier5Tests() {
       const allRequests: Promise<any>[] = [];
       for (let burst = 0; burst < 10; burst++) {
         for (const wf of workflows) {
-          const req = createMockRequest(wf.payload);
           allRequests.push(
             (async () => {
               const jobId = `burst-job-${wf.route}-${burst}-${Math.random().toString(36).substring(2, 6)}`;

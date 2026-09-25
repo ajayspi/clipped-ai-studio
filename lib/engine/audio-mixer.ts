@@ -5,7 +5,7 @@
  * Includes cost-safe dry-run execution and missing FFmpeg binary fallback.
  */
 
-import { execSync, spawn } from 'child_process';
+import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -59,7 +59,7 @@ export interface AudioMixResponse {
     sampleRate?: number;
     channels?: number;
     bitrate?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   error?: string;
 }
@@ -358,7 +358,7 @@ export class AudioMixer {
           bitrate: '192k',
         },
       };
-    } catch (err: any) {
+    } catch (err) {
       // If live ffmpeg run fails, fallback safely to mock buffer
       const fallbackBuffer = this.generateMockAudioBuffer(duration);
       return {
@@ -379,7 +379,7 @@ export class AudioMixer {
           sampleRate: 44100,
           channels: 2,
           bitrate: '192k',
-          errorEncountered: err?.message || String(err),
+          errorEncountered: (err instanceof Error ? err.message : undefined) || String(err),
         },
       };
     } finally {

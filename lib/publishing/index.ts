@@ -13,9 +13,9 @@ import {
   VideoPrivacy,
   ValidationError,
 } from './types';
-import { YouTubePublisher, youtubePublisher } from './youtube';
-import { InstagramPublisher, instagramPublisher } from './instagram';
-import { TikTokPublisher, tiktokPublisher } from './tiktok';
+import { youtubePublisher } from './youtube';
+import { instagramPublisher } from './instagram';
+import { tiktokPublisher } from './tiktok';
 import { supabase } from '../db';
 
 // Re-export all sub-modules
@@ -57,7 +57,7 @@ export interface MultiPublishRequest {
   platforms?: SocialPlatform[];
   isDryRun?: boolean; // Defaults to true
   credentialsMap?: Partial<Record<SocialPlatform, SocialCredentials>>;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface MultiPublishResult {
@@ -151,8 +151,8 @@ export class SocialPublisherManager {
         const res = await this.publish(req);
         results[req.platform] = res;
         responses.push(res);
-      } catch (err: any) {
-        const errorMsg = err?.message || String(err);
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
         errors[req.platform] = errorMsg;
         const failedRes: PublishResponse = {
           success: false,

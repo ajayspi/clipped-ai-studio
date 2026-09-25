@@ -44,7 +44,7 @@ export async function POST(req: Request) {
       targetWorkspaceId,
       message: `Successfully moved ${videoIds.length} video(s) to workspace.`,
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to move videos' }, { status: 500 });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to move videos' }, { status: 500 });
   }
 }

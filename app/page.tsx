@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Video, Zap, Shield, ExternalLink, Play, Sparkles, Wand2, Rocket, Layers, Scissors, Clapperboard, CheckCircle2, Activity, Cpu, Globe, Languages, Database, Gauge } from "lucide-react";
+import Image from "next/image";
+import { Video, Zap, Play, Sparkles, Wand2, Rocket, Layers, Scissors, Clapperboard, Cpu, Languages, Database, Gauge } from "lucide-react";
 import { Particles } from "@/components/ui/particles";
 import { motion } from "framer-motion";
 
@@ -14,10 +15,13 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-black/70 z-10" />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent z-20" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-transparent z-20" />
-        <img 
+                <Image 
           src="/hero-bg.jpg" 
           alt="Cinematic abstract AI nodes" 
-          className="w-full h-full object-cover opacity-60"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover opacity-60"
         />
         <Particles className="z-30 opacity-70" />
       </div>
@@ -154,7 +158,7 @@ export default function HomePage() {
         <div className="w-full max-w-7xl mx-auto px-6 mt-40">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold mb-4">Unmatched AI Performance.</h2>
-            <p className="text-white/50 max-w-2xl mx-auto text-lg">Clipped isn't just a wrapper. We orchestrate a pipeline of 7 specialized models to render studio-quality output in seconds.</p>
+            <p className="text-white/50 max-w-2xl mx-auto text-lg">Clipped isn&apos;t just a wrapper. We orchestrate a pipeline of 7 specialized models to render studio-quality output in seconds.</p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -188,7 +192,7 @@ export default function HomePage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {/* Card 1 */}
               <div className="group relative rounded-3xl overflow-hidden border border-white/10 aspect-[9/16] bg-zinc-900">
-                <img src="/thumbnail_history.jpg" alt="History Short" className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
+                <Image src="/thumbnail_history.jpg" alt="History Short" fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-8">
                   <div className="inline-flex px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-bold uppercase tracking-wider mb-3 backdrop-blur-md border border-primary/30">History Shorts</div>
@@ -199,7 +203,7 @@ export default function HomePage() {
 
               {/* Card 2 */}
               <div className="group relative rounded-3xl overflow-hidden border border-white/10 aspect-[9/16] bg-zinc-900 md:translate-y-12">
-                <img src="/thumbnail_drama.jpg" alt="Cyberpunk Drama" className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
+                <Image src="/thumbnail_drama.jpg" alt="Cyberpunk Drama" fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-8">
                   <div className="inline-flex px-3 py-1 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold uppercase tracking-wider mb-3 backdrop-blur-md border border-purple-500/30">Micro-Dramas</div>
@@ -210,7 +214,7 @@ export default function HomePage() {
 
               {/* Card 3 */}
               <div className="group relative rounded-3xl overflow-hidden border border-white/10 aspect-[9/16] bg-zinc-900">
-                <img src="/thumbnail_brain.jpg" alt="Educational Brain" className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
+                <Image src="/thumbnail_brain.jpg" alt="Educational Brain" fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-8">
                   <div className="inline-flex px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-wider mb-3 backdrop-blur-md border border-blue-500/30">Educational</div>

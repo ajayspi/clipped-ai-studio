@@ -1,5 +1,10 @@
 ﻿import type { MediaAsset, MediaJob, FalSubmitOptions } from './types';
 
+interface FalStatusResponse {
+  status: string;
+  error?: string;
+}
+
 /**
  * Submits a job to the fal.ai asynchronous queue API and polls until completion.
  * Does NOT require any fal SDK dependencies. Uses native fetch.
@@ -50,7 +55,7 @@ export async function submitAndWait(
   const statusUrl = `https://queue.fal.run/${model}/requests/${requestId}/status`;
   const startTime = Date.now();
   
-  let statusData: any;
+  let statusData: FalStatusResponse = { status: 'pending' };
   while (true) {
     if (Date.now() - startTime > timeoutMs) {
       return {

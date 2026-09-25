@@ -138,11 +138,11 @@ describe('Creation Generator Routes (app/(app)/create/{auto,bulk,drama,shorts,ur
     it('mounts cleanly and renders all form controls', () => {
       render(<BulkPage />);
 
-      expect(screen.getByRole('heading', { level: 1, name: /bulk content planner/i })).toBeInTheDocument();
-      expect(screen.getByLabelText(/content niche or industry domain/i)).toBeInTheDocument();
-      expect(screen.getByText(/content batch size: 7 videos/i)).toBeInTheDocument();
-      expect(screen.getByText(/publishing cadence/i)).toBeInTheDocument();
-      expect(screen.getByText(/target distribution platforms/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: /zero-click newsroom & bulk planner/i })).toBeInTheDocument();
+      expect(screen.getByLabelText(/industry domain \/ viral niche/i)).toBeInTheDocument();
+      expect(screen.getByText(/content batch size: 7 days/i)).toBeInTheDocument();
+      expect(screen.getByText(/pacing & cadence/i)).toBeInTheDocument();
+      expect(screen.getByText(/target distribution networks/i)).toBeInTheDocument();
     });
 
     it('adjusts batch size, selects platforms, toggles mock mode, and submits to /api/workflows/bulk-plan', async () => {
@@ -150,10 +150,16 @@ describe('Creation Generator Routes (app/(app)/create/{auto,bulk,drama,shorts,ur
       const fetchSpy = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
         if (url.includes('/api/workflows/bulk-plan') && init?.method === 'POST') {
           return Promise.resolve(
-            new Response(JSON.stringify({ success: true, jobId: 'bulk-job-456' }), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' },
-            })
+            new Response(
+              JSON.stringify({
+                success: true,
+                plan: {
+                  planTitle: 'Productivity & Deep Work 14-Day Plan',
+                  items: [],
+                },
+              }),
+              { status: 200, headers: { 'Content-Type': 'application/json' } }
+            )
           );
         }
         return originalFetch(url, init);
@@ -163,16 +169,16 @@ describe('Creation Generator Routes (app/(app)/create/{auto,bulk,drama,shorts,ur
       render(<BulkPage />);
 
       // Fill in niche
-      const nicheInput = screen.getByLabelText(/content niche or industry domain/i);
+      const nicheInput = screen.getByLabelText(/industry domain \/ viral niche/i);
       fireEvent.change(nicheInput, { target: { value: 'Productivity & Deep Work' } });
 
-      // Select 14 videos batch size
-      const batch14Btn = screen.getByRole('button', { name: /14 videos/i });
+      // Select 14-day batch size
+      const batch14Btn = screen.getByRole('button', { name: /14 days/i });
       fireEvent.click(batch14Btn);
-      expect(screen.getByText(/content batch size: 14 videos/i)).toBeInTheDocument();
+      expect(screen.getByText(/content batch size: 14 days/i)).toBeInTheDocument();
 
       // Submit
-      const submitBtn = screen.getByRole('button', { name: /generate 14-day bulk content plan/i });
+      const submitBtn = screen.getByRole('button', { name: /launch 14-day newsroom plan/i });
       fireEvent.click(submitBtn);
 
       await waitFor(() => {
@@ -183,8 +189,13 @@ describe('Creation Generator Routes (app/(app)/create/{auto,bulk,drama,shorts,ur
             body: expect.stringContaining('"contentCount":14'),
           })
         );
-        expect(router.push).toHaveBeenCalledWith('/dashboard?job=bulk-job-456');
       });
+
+      // Success renders the generated plan (current design; no navigation)
+      await waitFor(() => {
+        expect(screen.getByText('Push All to Render Engine')).toBeInTheDocument();
+      });
+      expect(screen.getByText('Productivity & Deep Work 14-Day Plan')).toBeInTheDocument();
 
       global.fetch = originalFetch;
     });
@@ -206,8 +217,8 @@ describe('Creation Generator Routes (app/(app)/create/{auto,bulk,drama,shorts,ur
 
       render(<BulkPage />);
 
-      fireEvent.change(screen.getByLabelText(/content niche or industry domain/i), { target: { value: 'Mindfulness' } });
-      const submitBtn = screen.getByRole('button', { name: /generate 7-day bulk content plan/i });
+      fireEvent.change(screen.getByLabelText(/industry domain \/ viral niche/i), { target: { value: 'Mindfulness' } });
+      const submitBtn = screen.getByRole('button', { name: /launch 7-day newsroom plan/i });
       fireEvent.click(submitBtn);
 
       await waitFor(() => {

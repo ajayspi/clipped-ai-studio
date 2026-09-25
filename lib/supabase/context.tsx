@@ -95,14 +95,14 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
 
         const data: TestConnectionResult = await res.json();
         return data;
-      } catch (err: any) {
+      } catch (err) {
         return {
           success: false,
           reachable: false,
           latencyMs: null,
           url: targetUrl,
           schema: { isHealthy: false, tables: {}, missingTables: ['videos', 'render_jobs', 'settings', 'api_credits', 'scheduled_posts', 'users'] },
-          message: err.message || 'Network error while testing connection.',
+          message: (err instanceof Error ? err.message : undefined) || 'Network error while testing connection.',
         };
       }
     },
@@ -205,6 +205,9 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         if (parsed.customConfigured && parsed.url && parsed.anonKey) {
           const cleanUrl = parsed.url.trim().replace(/\/+$/, '');
           const cleanKey = parsed.anonKey.trim();
+          // Custom config hydration from localStorage on client mount
+          // (window-only): lazy initializers would break SSR hydration parity.
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setUrl(cleanUrl);
           setAnonKey(cleanKey);
           setIsCustom(true);

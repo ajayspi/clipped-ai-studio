@@ -20,6 +20,7 @@ export interface Scene {
   emotion?: string;
   cameraMotion?: string;
   visualPrompt?: string;
+  imagePrompt?: string;
   selectedVideo?: Video;
   imageUrl?: string;
   videoUrl?: string;
@@ -100,7 +101,7 @@ export interface AIVideoGenerationResponse {
   prompt: string;
   modelUsed: string;
   duration: number;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   error?: string;
 }
 
@@ -132,7 +133,7 @@ export interface StorySeriesResponse {
   success: boolean;
   seriesTitle: string;
   parts: StoryPart[];
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   error?: string;
 }
 
@@ -167,7 +168,7 @@ export interface BulkPlanResponse {
   planTitle: string;
   items: BulkPlanItem[];
   batchJobIds: string[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   error?: string;
 }
 
@@ -210,7 +211,7 @@ export interface DramaSeriesResponse {
     visualAnchor: string;
   }>;
   episodes: DramaEpisode[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   error?: string;
 }
 
@@ -244,7 +245,7 @@ export interface ShortsExtractionResponse {
   success: boolean;
   originalDuration: number;
   clips: ExtractedClip[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   error?: string;
 }
 
@@ -271,7 +272,7 @@ export interface AutoPilotResponse {
   nextRun: string;
   generatedJobId?: string;
   status: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   error?: string;
 }
 
@@ -302,7 +303,7 @@ export interface RenderJobRecord {
   video_id?: string | null;
   status: RenderJobStatus;
   progress: number;
-  logs?: any;
+  logs?: string | Record<string, unknown> | null;
   error_message?: string | null;
   started_at?: string;
   completed_at?: string;
@@ -399,7 +400,7 @@ export interface AvatarGenerationResponse {
   duration: number;
   layout: AvatarLayout;
   providerUsed: AvatarProvider | string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   error?: string;
 }
 
@@ -500,7 +501,7 @@ export interface WhiteboardGenerationResponse {
   characterSheet: CharacterReferenceSheet;
   storyboard: WhiteboardStoryboardBeat[];
   duration: number;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   error?: string;
 }
 

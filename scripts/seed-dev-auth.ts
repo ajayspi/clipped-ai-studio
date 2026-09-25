@@ -39,12 +39,18 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
 })
 
 async function seedDefaultUser() {
-  const existing = await supabase.auth.admin.getUserByEmail(email)
-  if (existing.error && existing.error.status !== 404) {
-    throw existing.error
+  const { data: userPage, error: listError } = await supabase.auth.admin.listUsers({
+    page: 1,
+    perPage: 1000,
+  })
+  if (listError) {
+    throw listError
   }
 
-  let userId = existing.data.user?.id
+  const existing = (userPage?.users ?? []).find(
+    (u) => u.email?.toLowerCase() === email.toLowerCase()
+  )
+  let userId = existing?.id
   if (userId) {
     const updated = await supabase.auth.admin.updateUserById(userId, {
       email,

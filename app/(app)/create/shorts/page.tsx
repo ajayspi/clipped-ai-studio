@@ -82,8 +82,8 @@ export default function ShortsPage() {
 
       const data = await res.json()
       router.push(`/dashboard?job=${data.jobId}`)
-    } catch (err: any) {
-      setError(err.message || "An error occurred during shorts extraction")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred during shorts extraction")
       setLoading(false)
     }
   }

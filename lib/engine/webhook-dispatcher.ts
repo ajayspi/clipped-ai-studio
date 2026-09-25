@@ -6,7 +6,7 @@ export type WebhookEventType =
   | 'video.generation.failed'
   | 'video.published';
 
-export interface WebhookPayload<T = any> {
+export interface WebhookPayload<T = unknown> {
   event: WebhookEventType;
   timestamp: string;
   data: T;
@@ -52,7 +52,7 @@ export function verifyHmacSignature(payloadString: string, signature: string, se
  * @param secret HMAC secret key (defaults to environment or standard default)
  * @param maxRetries Maximum number of retry attempts (default 3)
  */
-export async function dispatchWebhook<T = any>(
+export async function dispatchWebhook<T = unknown>(
   url: string,
   event: WebhookEventType,
   data: T,
@@ -114,8 +114,13 @@ export async function dispatchWebhook<T = any>(
       }
 
       lastError = `Server responded with HTTP ${response.status}`;
-    } catch (err: any) {
-      lastError = err.name === 'AbortError' ? 'Webhook delivery timeout' : err.message;
+    } catch (err) {
+      lastError =
+        err instanceof Error
+          ? err.name === 'AbortError'
+            ? 'Webhook delivery timeout'
+            : err.message
+          : String(err);
     }
 
     // Wait with exponential backoff if more attempts remain (100ms, 300ms, 900ms...)

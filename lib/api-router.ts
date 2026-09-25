@@ -41,7 +41,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     name: 'Anthropic Claude',
     category: 'llm',
     healthEndpoint: 'https://api.anthropic.com/v1/models',
-    healthAuthHeader: (k) => ``,  // Uses x-api-key header
+    healthAuthHeader: () => ``,  // Uses x-api-key header
     baseUrl: 'https://api.anthropic.com/v1',
     defaultPriority: 88,
     models: ['claude-opus-4-5', 'claude-sonnet-4-5', 'claude-haiku-4-5'],
@@ -51,7 +51,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     name: 'Google Gemini',
     category: 'llm',
     healthEndpoint: 'https://generativelanguage.googleapis.com/v1beta/models',
-    healthAuthHeader: (k) => ``,  // Uses ?key= param
+    healthAuthHeader: () => ``,  // Uses ?key= param
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
     defaultPriority: 85,
     models: ['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'],
@@ -655,13 +655,13 @@ export async function checkProviderHealth(
     };
     healthCache.set(providerId, status);
     return status;
-  } catch (err: any) {
+  } catch (err) {
     const status: HealthStatus = {
       providerId,
       isHealthy: false,
       latencyMs: Date.now() - startMs,
       checkedAt: Date.now(),
-      error: err.message || 'Timeout',
+      error: (err instanceof Error ? err.message : undefined) || 'Timeout',
     };
     healthCache.set(providerId, status);
     return status;
@@ -753,6 +753,9 @@ export async function getAllProviderHealth(
   );
 
   return results
-    .filter((r) => r.status === 'fulfilled')
-    .map((r) => (r as PromiseFulfilledResult<any>).value);
+    .filter(
+      (r): r is PromiseFulfilledResult<ProviderConfig & HealthStatus & { apiKey: string | undefined }> =>
+        r.status === 'fulfilled'
+    )
+    .map((r) => r.value);
 }

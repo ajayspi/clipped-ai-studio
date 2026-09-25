@@ -13,6 +13,24 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    // Legacy plain-JS test runners (CommonJS node scripts, not TS modules):
+    // require() and unused locals are idiomatic there.
+    files: ["tests/**/*.js", "test/**/*.js"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+      "@typescript-eslint/no-unused-vars": "off",
+    },
+  },
+  {
+    // Test code legitimately casts mocks/query builders to loose shapes
+    // (vi.mock adapters, thenable query-builder assertions, harness helpers).
+    // Product code (app/lib/components/scripts) keeps strict typing.
+    files: ["test/**/*.{ts,tsx}", "tests/**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

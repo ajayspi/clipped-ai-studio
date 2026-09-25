@@ -1,12 +1,21 @@
 import { NextResponse } from 'next/server'
 import { complete, parseJson } from '@/lib/ai/llm'
 
+interface ScriptOutline {
+  sections: Array<{ title?: string; covers?: string }>
+  keywords?: string[]
+}
+
+interface ScriptResult {
+  narration?: string
+  keywords?: string[]
+}
+
 export async function POST(req: Request) {
   try {
     const { 
       subject, 
       tone = 'Documentary', 
-      language = 'Auto Detect', 
       targetDuration = 30, 
       paragraphCount = 4, 
       workflowType = 'footage',
@@ -30,7 +39,7 @@ export async function POST(req: Request) {
         maxTokens: 2000
       }, provider, model)
       
-      const outline = parseJson<any>(outlineRaw)
+      const outline = parseJson<ScriptOutline>(outlineRaw)
       const sections = outline.sections || []
       const keywords = outline.keywords || []
       
@@ -43,7 +52,7 @@ export async function POST(req: Request) {
           user: `Write section ${index + 1} of ${sections.length} about: ${subject}. This section covers: ${section.covers}. Tone: ${tone}. Return ONLY valid JSON: {"narration":"..."}`,
           json: true
         }, provider, model)
-        const parsed = parseJson<any>(raw)
+        const parsed = parseJson<ScriptResult>(raw)
         narration += (parsed.narration || "") + "\n\n"
       }
       
@@ -65,13 +74,13 @@ export async function POST(req: Request) {
       maxTokens: 1000
     }, provider, model)
 
-    const parsed = parseJson<any>(raw)
+    const parsed = parseJson<ScriptResult>(raw)
     return NextResponse.json({
       narration: parsed.narration || "",
       keywords: parsed.keywords || []
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Script API Error:', error)
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 })
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal Server Error' }, { status: 500 })
   }
 }

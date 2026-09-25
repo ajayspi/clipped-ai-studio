@@ -12,7 +12,7 @@ interface Particle {
   alpha: number;
 }
 
-export function Particles({ className = "" }: { className?: string }) {
+export function Particles(props: { className?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -98,6 +98,7 @@ export function Particles({ className = "" }: { className?: string }) {
   return (
     <canvas
       ref={canvasRef}
+      {...props}
       className="absolute inset-0 pointer-events-none z-0"
       style={{ opacity: 0.8 }}
     />

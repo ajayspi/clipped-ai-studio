@@ -1,6 +1,18 @@
-import { Video, Zap, Eye, Clock, Download, Share2, Trash2, Loader2, Play, Sparkles, Folder } from "lucide-react"
+import { Video, Sparkles, Folder } from "lucide-react"
 import { supabase } from "@/lib/db"
 import { DashboardCard } from "@/components/dashboard/DashboardCard"
+
+interface WorkspaceSummary {
+  id: string;
+  name: string;
+  color?: string | null;
+}
+
+interface ParsedLogs {
+  videos?: Array<{ video?: string; thumbnail?: string; previewUrl?: string }>;
+  subject?: string;
+  workflowType?: string;
+}
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -18,7 +30,7 @@ export default async function DashboardPage() {
     .select('*')
     .order('created_at', { ascending: true })
 
-  const workspaces = (dbWorkspaces || []).map((w: any) => ({
+  const workspaces = (dbWorkspaces || []).map((w: WorkspaceSummary) => ({
     id: w.id,
     name: w.name,
     color: w.color || '#8b5cf6',
@@ -26,13 +38,13 @@ export default async function DashboardPage() {
 
   // Parse jobs to extract thumbnail and video data
   const videos = (jobs || []).map(job => {
-    let parsed: any = {}
+    let parsed: ParsedLogs = {}
     try {
       parsed = typeof job.logs === 'string' ? JSON.parse(job.logs) : job.logs
     } catch {}
     
     const firstClip = parsed?.videos?.[0]?.video || parsed?.videos?.[0]
-    const thumbnail = firstClip?.thumbnail || firstClip?.previewUrl || null
+    const thumbnail = typeof firstClip === 'string' ? null : (firstClip?.thumbnail || firstClip?.previewUrl || null)
     
     return {
       ...job,

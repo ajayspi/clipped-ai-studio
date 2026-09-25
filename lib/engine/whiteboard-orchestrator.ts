@@ -9,7 +9,6 @@ import {
 } from './types';
 import { supabase } from '@/lib/db';
 import { geminiCharacterGenerator } from '@/lib/ai/gemini-character-generator';
-import { complete, parseJson } from '@/lib/ai/llm';
 
 export interface WhiteboardJobState {
   jobId: string;
@@ -259,9 +258,9 @@ export class WhiteboardOrchestrator {
           generatedAt: new Date().toISOString(),
         },
       };
-    } catch (err: any) {
+    } catch (err) {
       jobState.status = 'failed';
-      jobState.error = err?.message || 'Whiteboard generation failed';
+      jobState.error = err instanceof Error ? err.message : 'Whiteboard generation failed';
       jobState.logs.push(`[ERROR] ${jobState.error}`);
       jobState.updatedAt = new Date().toISOString();
       this.jobs.set(jobId, jobState);
@@ -277,8 +276,10 @@ export class WhiteboardOrchestrator {
     customScript: string | undefined,
     sheet: CharacterReferenceSheet,
     markerColor: string,
-    mock?: boolean
+    _mock?: boolean
   ): Promise<WhiteboardStoryboardBeat[]> {
+    // _mock is accepted for API compatibility but unused in storyboard generation
+    void _mock;
     // If prompt is ultra long or multi-sentence, chunk intelligently
     const textToBreak = customScript || prompt;
     const sentences = textToBreak
@@ -390,7 +391,7 @@ export class WhiteboardOrchestrator {
   /**
    * Retrieves current job status from in-memory cache or Supabase
    */
-  async getJob(jobId: string): Promise<WhiteboardJobState | any | null> {
+  async getJob(jobId: string): Promise<(Partial<WhiteboardJobState> & { metadata?: Record<string, unknown> }) | null> {
     if (this.jobs.has(jobId)) {
       return this.jobs.get(jobId)!;
     }
@@ -414,7 +415,7 @@ export class WhiteboardOrchestrator {
           error: data.error_message,
         };
       }
-    } catch (err) {}
+    } catch {}
 
     return null;
   }

@@ -7,7 +7,6 @@ import { expect, registry } from './test-harness';
 import {
   QuotaManager,
   QuotaExceededError,
-  TIER_LIMITS,
 } from '../../lib/quotas';
 import {
   youtubePublisher,
@@ -79,7 +78,7 @@ export async function registerM6StressTests() {
       let blocked = false;
       try {
         await quotaManager.consumeQuota(userId, 1);
-      } catch (e) {
+      } catch {
         blocked = true;
       }
       expect(blocked).toBe(true);

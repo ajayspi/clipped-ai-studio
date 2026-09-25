@@ -9,15 +9,12 @@ import {
   Mic,
   Sliders,
   Layout,
-  Play,
   Volume2,
-  Image as ImageIcon,
   CheckCircle2,
   Loader2,
   Layers,
-  Upload,
 } from "lucide-react";
-import { AvatarProvider, AVATAR_PRESETS } from "@/lib/engine/types";
+import { AVATAR_PRESETS } from "@/lib/engine/types";
 
 const VOICES = [
   { id: "nova", label: "Nova (Warm & Engaging)", gender: "Female", accent: "American" },
@@ -113,8 +110,8 @@ export default function AvatarCreatePage() {
         setStatusMessage(data.error ? "Generation failed: " + data.error : "Generation failed");
         setGenerating(false);
       }
-    } catch (err: any) {
-      setStatusMessage(err.message || "An error occurred");
+    } catch (err) {
+      setStatusMessage(err instanceof Error ? err.message : "An error occurred");
       setGenerating(false);
     }
   };
@@ -203,6 +200,7 @@ export default function AvatarCreatePage() {
                       }`}
                     >
                       <div className="aspect-square rounded-lg overflow-hidden relative bg-slate-900">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- Preset preview from dynamic remote host (Pollinations-style) */}
                         <img
                           src={preset.previewUrl}
                           alt={preset.name}
@@ -240,6 +238,7 @@ export default function AvatarCreatePage() {
                 </div>
                 {Boolean(customImageUrl && customImageUrl.trim()) && (
                   <div className="w-24 h-24 rounded-xl overflow-hidden border border-slate-700 bg-slate-950">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- User-supplied arbitrary image URL */}
                     <img src={customImageUrl.trim()} alt="Custom Preview" className="w-full h-full object-cover" />
                   </div>
                 )}
@@ -427,6 +426,7 @@ export default function AvatarCreatePage() {
               {/* Avatar Positioning based on Layout */}
               {layout === "fullscreen" ? (
                 <div className="absolute inset-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- Generated avatar preview URL (remote/data:), not optimizable */}
                   <img
                     src={previewAvatarUrl}
                     alt="Presenter"
@@ -436,6 +436,7 @@ export default function AvatarCreatePage() {
                 </div>
               ) : layout === "pip_bottom_right" ? (
                 <div className="absolute bottom-5 right-4 w-[34%] aspect-[9/16] rounded-2xl overflow-hidden border-2 border-white/30 shadow-2xl shadow-black/80">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- Generated avatar preview URL (remote/data:), not optimizable */}
                   <img
                     src={previewAvatarUrl}
                     alt="Presenter"
@@ -447,6 +448,7 @@ export default function AvatarCreatePage() {
                 </div>
               ) : layout === "pip_bottom_left" ? (
                 <div className="absolute bottom-5 left-4 w-[34%] aspect-[9/16] rounded-2xl overflow-hidden border-2 border-white/30 shadow-2xl shadow-black/80">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- Generated avatar preview URL (remote/data:), not optimizable */}
                   <img
                     src={previewAvatarUrl}
                     alt="Presenter"
@@ -458,6 +460,7 @@ export default function AvatarCreatePage() {
                 </div>
               ) : layout === "circular_bubble" ? (
                 <div className="absolute bottom-6 right-5 w-28 h-28 rounded-full overflow-hidden border-4 border-violet-500 shadow-2xl shadow-violet-500/40">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- Generated avatar preview URL (remote/data:), not optimizable */}
                   <img
                     src={previewAvatarUrl}
                     alt="Presenter"
@@ -467,6 +470,7 @@ export default function AvatarCreatePage() {
               ) : (
                 /* Side by side */
                 <div className="absolute top-0 right-0 w-1/2 h-full border-l border-white/20 overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- Generated avatar preview URL (remote/data:), not optimizable */}
                   <img
                     src={previewAvatarUrl}
                     alt="Presenter"

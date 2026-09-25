@@ -1,8 +1,18 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
-import { SocialPublisherManager, PublishRequest } from '@/lib/publishing';
+import {
+  SocialPublisherManager,
+  PublishRequest,
+  PublishResponse,
+  SocialPlatform,
+  VideoPrivacy,
+} from '@/lib/publishing';
 
 export const dynamic = 'force-dynamic';
+
+type PublishAttemptResult =
+  | PublishResponse
+  | { success: false; platform: string; error: string; status: 'failed' };
 
 export async function POST(req: Request) {
   try {
@@ -35,7 +45,6 @@ export async function POST(req: Request) {
     let videoUrl = 'https://example.com/rendered-video.mp4';
     let videoTitle = title;
     let actualVideoId = videoId;
-    let actualJobId = jobId;
 
     if (jobId) {
       const { data: job } = await supabase
@@ -60,18 +69,18 @@ export async function POST(req: Request) {
     }
 
     const publisherManager = new SocialPublisherManager();
-    const results: Record<string, any> = {};
+    const results: Record<string, PublishAttemptResult> = {};
 
     for (const platform of targetPlatforms) {
       try {
         const publishReq: PublishRequest = {
-          platform: platform as any,
+          platform: platform as SocialPlatform,
           videoId: actualVideoId,
           videoUrl,
           title: videoTitle,
           description,
           caption: description,
-          privacy: privacy as any,
+          privacy: privacy as VideoPrivacy,
           scheduledAt,
           isDryRun: isDryRun !== false,
         };
@@ -95,11 +104,11 @@ export async function POST(req: Request) {
           ...res,
           publishedUrl: liveUrl,
         };
-      } catch (err: any) {
+      } catch (err) {
         results[platform] = {
           success: false,
           platform,
-          error: err.message,
+          error: err instanceof Error ? err.message : 'Publishing failed',
           status: 'failed',
         };
       }
@@ -120,7 +129,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const successfulCount = Object.values(results).filter((r: any) => r.success).length;
+    const successfulCount = Object.values(results).filter((r) => r.success).length;
 
     return NextResponse.json({
       success: successfulCount > 0,
@@ -129,8 +138,8 @@ export async function POST(req: Request) {
       results,
       publishedAt: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('[Publish API Error]:', error);
-    return NextResponse.json({ error: error.message || 'Publishing failed' }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Publishing failed' }, { status: 500 });
   }
 }

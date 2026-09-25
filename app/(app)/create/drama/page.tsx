@@ -122,8 +122,8 @@ export default function DramaPage() {
 
       const data = await res.json()
       router.push(`/dashboard?job=${data.jobId}`)
-    } catch (err: any) {
-      setError(err.message || "An error occurred while initiating workflow")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred while initiating workflow")
       setLoading(false)
     }
   }

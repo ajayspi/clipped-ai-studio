@@ -1,6 +1,32 @@
 ﻿import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/db'
 
+interface SourceCandidate {
+  id: string
+  url: string
+  title: string
+  platform: string
+  duration: number
+  score: number
+  reason: string
+}
+
+interface PexelsVideo {
+  id: number
+  url?: string
+  duration?: number
+  video_files?: Array<{ quality?: string; link?: string }>
+}
+
+interface PixabayVideo {
+  id: number
+  duration?: number
+  videos?: {
+    large?: { url?: string }
+    medium?: { url?: string }
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const { beatId, keywords, workflowType = 'footage' } = await req.json()
@@ -13,7 +39,7 @@ export async function POST(req: Request) {
     // To abide by our "development offline first" safe rule, we are returning simulated mock data 
     // tailored to the workflowType.
 
-    let candidates: any[] = []
+    let candidates: SourceCandidate[] = []
 
     // 1. Stock Footage Workflow
     if (workflowType === 'footage') {
@@ -34,26 +60,26 @@ export async function POST(req: Request) {
         
         if (res.ok) {
           const data = await res.json();
-          candidates = (data.video_files || data.videos || []).slice(0, 3).map((v: any, idx: number) => {
+          candidates = (data.video_files || data.videos || []).slice(0, 3).map((v: PexelsVideo, idx: number) => {
             // Find the best SD/HD file link
             const files = v.video_files || [];
-            const bestFile = files.find((f: any) => f.quality === 'hd') || files[0];
+            const bestFile = files.find((f) => f.quality === 'hd') || files[0];
             return {
               id: `pexels-${v.id}-${idx}`,
-              url: bestFile?.link || v.url,
+              url: bestFile?.link || v.url || '',
               title: v.url || `Stock clip for: ${keywords.join(', ')}`,
               platform: 'pexels',
               duration: v.duration || 15,
               score: 0.95 - (idx * 0.05),
               reason: 'Fetched from Pexels API'
             }
-          }).filter((c: any) => c.url);
+          }).filter((c: SourceCandidate) => c.url);
         }
       }
       
       // Fallback if Pexels API fails or no key - Try Pixabay
       if (candidates.length === 0) {
-        const pixabayKey = keyData?.api_key || process.env.PIXABAY_API_KEY; // If we pulled all keys, wait we only pulled api_pexels above.
+        // If we pulled all keys, wait we only pulled api_pexels above.
         
         // Fetch all keys to ensure we have pixabay
         const { data: allKeys } = await supabase.from('settings').select('provider, api_key').is('user_id', null);
@@ -64,19 +90,19 @@ export async function POST(req: Request) {
           const res = await fetch(`https://pixabay.com/api/videos/?key=${pKey}&q=${query}&video_type=film&orientation=vertical`);
           if (res.ok) {
             const data = await res.json();
-            candidates = (data.hits || []).slice(0, 3).map((v: any, idx: number) => {
+            candidates = (data.hits || []).slice(0, 3).map((v: PixabayVideo, idx: number) => {
                // Get the largest video format
                const videoUrl = v.videos?.large?.url || v.videos?.medium?.url;
                return {
                   id: `pixabay-${v.id}-${idx}`,
-                  url: videoUrl,
+                  url: videoUrl || '',
                   title: `Pixabay clip for: ${keywords.join(', ')}`,
                   platform: 'pixabay',
                   duration: v.duration || 15,
                   score: 0.90 - (idx * 0.05),
                   reason: 'Fetched from Pixabay API'
                }
-            }).filter((c: any) => c.url);
+            }).filter((c: SourceCandidate) => c.url);
           }
         }
       }
@@ -296,8 +322,8 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ candidates })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Source API Error:', error)
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 })
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal Server Error' }, { status: 500 })
   }
 }

@@ -3,7 +3,7 @@ import {
   AutoPilotConfig,
   AutoPilotResponse,
   AspectRatio,
-  Scene,
+  AIVideoGenerationResponse,
 } from './types';
 import { SYSTEM_PROMPTS } from './prompts';
 import { videoGenerator } from './video-generator';
@@ -54,7 +54,7 @@ export class AutoPilot {
     const { topic, script, hook } = await this.synthesizeTrendingContent(niche, sourceStrategy);
 
     // 5. Trigger first run / provision job metadata
-    let initialJobResult: any = null;
+    let initialJobResult: AIVideoGenerationResponse | null = null;
     try {
       if (visualPipeline === 'ai-videos') {
         initialJobResult = await videoGenerator.generateAIVideo({
@@ -66,8 +66,8 @@ export class AutoPilot {
           mock: !Boolean(process.env.KLING_API_KEY),
         });
       }
-    } catch (err: any) {
-      console.warn(`[AutoPilot] Initial video generation dry run notice: ${err?.message || err}`);
+    } catch (err) {
+      console.warn(`[AutoPilot] Initial video generation dry run notice: ${err instanceof Error ? err.message : String(err)}`);
     }
 
     // 6. Return response contract
@@ -115,7 +115,7 @@ export class AutoPilot {
     // Cron expression format: "* * * * *" (minute hour day-of-month month day-of-week)
     const cronParts = schedule.trim().split(/\s+/);
     if (cronParts.length === 5) {
-      const [minuteStr, hourStr, domStr, monthStr, dowStr] = cronParts;
+      const [minuteStr, hourStr, , , dowStr] = cronParts;
       const targetHour = parseInt(hourStr, 10);
       const targetMinute = parseInt(minuteStr, 10);
       const targetDow = dowStr !== '*' ? parseInt(dowStr, 10) : null;
@@ -181,8 +181,8 @@ export class AutoPilot {
       try {
         const liveResult = await this.synthesizeWithOpenAI(niche, sourceStrategy);
         if (liveResult) return liveResult;
-      } catch (err: any) {
-        console.warn(`[AutoPilot] Live OpenAI synthesis failed (${err?.message || err}). Falling back to deterministic synthesis.`);
+      } catch (err) {
+        console.warn(`[AutoPilot] Live OpenAI synthesis failed (${err instanceof Error ? err.message : String(err)}). Falling back to deterministic synthesis.`);
       }
     }
 

@@ -20,7 +20,8 @@ export type MediaProvider =
   | 'pixabay'
   | 'pollinations'
   | 'aihorde'
-  | 'fal-ai';
+  | 'fal-ai'
+  | 'existing';
 
 export type MediaKind = 'image' | 'video';
 

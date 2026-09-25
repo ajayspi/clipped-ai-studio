@@ -16,7 +16,7 @@ import {
   CUSTOM_ANON_KEY_COOKIE_KEY,
 } from '../../lib/supabase/client';
 import { POST as testSupabaseConnection } from '../../app/api/settings/supabase/test/route';
-import { GET as getSupabaseConfig, POST as postSupabaseConfig } from '../../app/api/settings/supabase/route';
+import { GET as getSupabaseConfig } from '../../app/api/settings/supabase/route';
 
 export async function registerMilestone1SupabaseTests() {
   // =========================================================================

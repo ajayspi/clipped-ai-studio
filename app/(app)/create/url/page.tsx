@@ -43,8 +43,8 @@ export default function UrlToVideoPage() {
       w.set("autoMode", true);
       router.push("/create/footage");
       
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }

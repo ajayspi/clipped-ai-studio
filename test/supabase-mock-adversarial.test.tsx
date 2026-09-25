@@ -1,14 +1,10 @@
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
 
 // Imports under test
 import {
   createClient,
-  getCustomCredentialsFromStorage,
-  CUSTOM_CONFIG_STORAGE_KEY,
-  CUSTOM_URL_COOKIE_KEY,
-  CUSTOM_ANON_KEY_COOKIE_KEY,
 } from '@/lib/supabase/client';
 import { useSupabase, SupabaseProvider } from '@/lib/supabase/context';
 import { supabase, supabaseAdmin, getSupabase, getSupabaseAdmin } from '@/lib/db';

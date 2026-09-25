@@ -7,7 +7,7 @@ interface WorkflowHeaderProps {
   iconClassName?: string;
 }
 
-export function WorkflowHeader({ icon: Icon, title, description, iconClassName = "text-emerald-500" }: WorkflowHeaderProps) {
+export function WorkflowHeader({ icon: Icon, title, description }: WorkflowHeaderProps) {
   return (
     <div>
       <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">

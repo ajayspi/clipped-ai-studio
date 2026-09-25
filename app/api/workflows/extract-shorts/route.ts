@@ -91,13 +91,13 @@ export async function POST(req: Request) {
         }).eq('id', jobId);
 
         console.log(`[JOB ${jobId}] Completed Extract Shorts workflow with status: ${result.success ? 'completed' : 'failed'}`);
-      } catch (err: any) {
+      } catch (err) {
         console.error(`[JOB ${jobId}] Extract Shorts workflow failed:`, err);
         try {
           await supabase.from('render_jobs').update({
             status: 'failed',
             progress: 0,
-            error_message: err?.message || 'Unknown error occurred during shorts extraction',
+            error_message: err instanceof Error ? err.message : 'Unknown error occurred during shorts extraction',
             completed_at: new Date().toISOString(),
           }).eq('id', jobId);
         } catch (updateErr) {
@@ -112,10 +112,10 @@ export async function POST(req: Request) {
       jobId,
       message: "Extract Shorts generation started",
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Workflow trigger error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to trigger workflow", success: false },
+      { error: error instanceof Error ? error.message : "Failed to trigger workflow", success: false },
       { status: 500 }
     );
   }

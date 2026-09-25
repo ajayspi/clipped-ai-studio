@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "lint:scoped": "eslint app lib components remotion scripts test tests",
+    "typecheck": "tsc -p tsconfig.check.json --noEmit",
     "test": "node tests/e2e/standalone-runner.js",
     "test:e2e": "node tests/e2e/standalone-runner.js",
     "seed": "tsx scripts/seed.ts",

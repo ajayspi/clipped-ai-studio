@@ -44,9 +44,9 @@ export async function POST(request: Request) {
 
     const data = await response.json();
     return NextResponse.json(data, { status: response.status });
-  } catch (err: any) {
+  } catch (err) {
     return NextResponse.json(
-      { success: false, message: err.message || 'Failed to process request' },
+      { success: false, message: err instanceof Error ? err.message : 'Failed to process request' },
       { status: 500 }
     );
   }

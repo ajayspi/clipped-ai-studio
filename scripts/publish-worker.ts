@@ -101,16 +101,16 @@ async function processScheduledPosts() {
 
           console.log(`🎉 [Publish-Worker] Post ${post.id} completed!`);
           
-        } catch (jobError: any) {
-          console.error('❌ [Publish-Worker] Job failed:', jobError.message);
+        } catch (jobError) {
+          console.error('❌ [Publish-Worker] Job failed:', jobError instanceof Error ? jobError.message : String(jobError));
           await supabase
             .from('scheduled_posts')
             .update({ status: 'failed' })
             .eq('id', post.id);
         }
       }
-    } catch (e: any) {
-      console.error('❌ [Publish-Worker] Fatal error:', e.message);
+    } catch (e) {
+      console.error('❌ [Publish-Worker] Fatal error:', e instanceof Error ? e.message : String(e));
       await sleep(10000);
     }
   }
@@ -124,8 +124,8 @@ async function verifyTableExists() {
       console.warn('⚠️ [Publish-Worker] Table "scheduled_posts" does not exist!');
       console.log('   Please run the SQL migration in supabase/migrations/20260831_create_scheduled_posts.sql first.');
     }
-  } catch (err: any) {
-    console.warn('⚠️ [Publish-Worker] Startup check note:', err?.message || err);
+  } catch (err) {
+    console.warn('⚠️ [Publish-Worker] Startup check note:', err instanceof Error ? err.message : String(err));
   }
 }
 

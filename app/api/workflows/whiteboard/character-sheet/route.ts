@@ -23,12 +23,12 @@ export async function POST(req: Request) {
       customDescription: sheet.customDescription,
       createdAt: sheet.createdAt,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('[API Whiteboard Character-Sheet] Error:', error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || 'Failed to generate character reference sheet',
+        error: error instanceof Error ? error.message : 'Failed to generate character reference sheet',
       },
       { status: 500 }
     );

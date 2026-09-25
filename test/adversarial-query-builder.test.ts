@@ -1,6 +1,35 @@
 import { describe, it, expect, vi } from 'vitest';
 import { supabase, supabaseAdmin, getSupabase, getSupabaseAdmin } from '@/lib/db';
 
+// postgrest-js's static types only model the canonical chain order
+// (from → select → filters → transforms). These adversarial tests drive the
+// setup mock's thenable, which accepts ANY chain order, so chains that leave
+// canonical order (limit first, catch/finally mid-chain, etc.) are viewed
+// through this permissive thenable with a concrete awaited result shape.
+interface QueryResult {
+  data: unknown;
+  error: { message: string } | null;
+  status: number;
+  statusText: string;
+  count: number | null;
+  customFlag?: boolean;
+}
+
+interface PermissiveBuilderMethods {
+  then: <R = QueryResult>(
+    onfulfilled?: (value: QueryResult) => R | PromiseLike<R>,
+    onrejected?: (reason: unknown) => R | PromiseLike<R>
+  ) => Promise<R>;
+  catch: <R = QueryResult>(onrejected?: (reason: unknown) => R | PromiseLike<R>) => Promise<QueryResult | R>;
+  finally: (onfinally?: (() => void) | undefined | null) => Promise<QueryResult>;
+}
+
+interface PermissiveBuilderChain {
+  [method: string]: (...args: unknown[]) => PermissiveBuilder;
+}
+
+type PermissiveBuilder = PermissiveBuilderMethods & PermissiveBuilderChain;
+
 describe('Adversarial Verification: Thenable Query Builder in @/lib/db', () => {
   describe('1. Arbitrary Method Chaining Order', () => {
     it('handles standard chaining: select -> eq -> order -> limit', async () => {
@@ -20,7 +49,7 @@ describe('Adversarial Verification: Thenable Query Builder in @/lib/db', () => {
     });
 
     it('handles reversed/permuted chaining: limit -> order -> eq -> select', async () => {
-      const res = await supabase
+      const res = await (supabase as unknown as PermissiveBuilder)
         .from('render_jobs')
         .limit(5)
         .order('created_at')
@@ -46,7 +75,7 @@ describe('Adversarial Verification: Thenable Query Builder in @/lib/db', () => {
     });
 
     it('handles chaining with single() in the middle: select -> single -> limit -> order -> eq', async () => {
-      const res = await supabase
+      const res = await (supabase as unknown as PermissiveBuilder)
         .from('render_jobs')
         .select('*')
         .single()
@@ -59,7 +88,7 @@ describe('Adversarial Verification: Thenable Query Builder in @/lib/db', () => {
     });
 
     it('handles maybeSingle() anywhere in chain', async () => {
-      const res = await supabase
+      const res = await (supabase as unknown as PermissiveBuilder)
         .from('settings')
         .select('*')
         .eq('key', 'groq_api_key')
@@ -131,7 +160,7 @@ describe('Adversarial Verification: Thenable Query Builder in @/lib/db', () => {
 
   describe('2. Thenable / Promise Contract Compliance', () => {
     it('conforms to Promises/A+ thenable protocol', () => {
-      const query = supabase.from('videos').select('*');
+      const query = supabase.from('videos').select('*') as unknown as PermissiveBuilder;
       expect(typeof query.then).toBe('function');
       expect(typeof query.catch).toBe('function');
       expect(typeof query.finally).toBe('function');
@@ -168,9 +197,7 @@ describe('Adversarial Verification: Thenable Query Builder in @/lib/db', () => {
 
     it('handles .catch() without throwing', async () => {
       const catchHandler = vi.fn();
-      const res = await supabase
-        .from('videos')
-        .select('*')
+      const res = await (supabase.from('videos').select('*') as unknown as PermissiveBuilder)
         .catch(catchHandler);
 
       expect(catchHandler).not.toHaveBeenCalled();
@@ -179,9 +206,7 @@ describe('Adversarial Verification: Thenable Query Builder in @/lib/db', () => {
 
     it('handles .finally() callback', async () => {
       const finallyHandler = vi.fn();
-      const res = await supabase
-        .from('videos')
-        .select('*')
+      const res = await (supabase.from('videos').select('*') as unknown as PermissiveBuilder)
         .finally(finallyHandler);
 
       expect(finallyHandler).toHaveBeenCalled();

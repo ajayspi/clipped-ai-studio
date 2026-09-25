@@ -1,12 +1,12 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 import ShortsPage from '@/app/(app)/create/shorts/page';
 import MissionProgressPage from '@/app/(app)/create/mission/[id]/page';
 import AvatarCreatePage from '@/app/(app)/create/avatar/page';
-import { AVATAR_PRESETS } from '@/lib/engine/avatar-orchestrator';
+import { AVATAR_PRESETS } from '@/lib/engine/types';
 
 async function renderMissionPage(paramsPromise: Promise<{ id: string }>) {
   let view: ReturnType<typeof render>;
@@ -497,7 +497,7 @@ describe('Adversarial Boundary Condition Tests — Milestone 3', () => {
           })
         );
         // customImageUrl should NOT be present in JSON body
-        const callArgs = fetchSpy.mock.calls.find((c: any[]) => c[0].includes('/api/workflows/avatar'));
+        const callArgs = fetchSpy.mock.calls.find((c: any[]) => c[0].includes('/api/workflows/avatar'))!;
         const bodyObj = JSON.parse(callArgs[1].body);
         expect(bodyObj.customImageUrl).toBeUndefined();
         expect(bodyObj.avatarType).toBe('preset');

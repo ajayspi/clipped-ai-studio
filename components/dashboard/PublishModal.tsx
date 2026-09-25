@@ -27,6 +27,16 @@ interface PublishModalProps {
   defaultTab?: "publish" | "export";
 }
 
+interface PublishResult {
+  publishedUrl?: string;
+}
+
+interface ExportResult {
+  downloadUrl?: string;
+  filename?: string;
+  fileSizeMb?: number;
+}
+
 export function PublishModal({
   jobId,
   videoTitle,
@@ -45,10 +55,10 @@ export function PublishModal({
   const [publishing, setPublishing] = useState(false);
   const [exporting, setExporting] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [publishResults, setPublishResults] = useState<Record<string, any>>({});
+  const [publishResults, setPublishResults] = useState<Record<string, PublishResult>>({});
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [exportData, setExportData] = useState<any | null>(null);
+  const [exportData, setExportData] = useState<ExportResult | null>(null);
 
   if (!isOpen) return null;
 
@@ -56,7 +66,7 @@ export function PublishModal({
     if (e) e.preventDefault();
     const selected = isOneClick
       ? ["youtube", "tiktok", "instagram"]
-      : Object.entries(platforms).filter(([_, v]) => v).map(([k]) => k);
+      : Object.keys(platforms).filter((k) => platforms[k]);
 
     if (selected.length === 0) {
       setError("Please select at least one platform to publish");
@@ -84,8 +94,8 @@ export function PublishModal({
 
       setPublishResults(data.results || {});
       setSuccess(true);
-    } catch (err: any) {
-      setError(err.message || "Failed to publish video");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to publish video");
     } finally {
       setPublishing(false);
     }
@@ -118,8 +128,8 @@ export function PublishModal({
         link.click();
         document.body.removeChild(link);
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to export video");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to export video");
     } finally {
       setExporting(null);
     }
@@ -210,7 +220,7 @@ export function PublishModal({
                   <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Live Channel URLs
                   </label>
-                  {Object.entries(publishResults).map(([platform, result]: [string, any]) => (
+                  {Object.entries(publishResults).map(([platform, result]) => (
                     <div
                       key={platform}
                       className="p-3 rounded-xl border bg-muted/30 flex items-center justify-between gap-3 text-xs"
@@ -230,7 +240,7 @@ export function PublishModal({
                           <>
                             <button
                               type="button"
-                              onClick={() => copyToClipboard(result.publishedUrl, platform)}
+                              onClick={() => copyToClipboard(result.publishedUrl as string, platform)}
                               className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                               title="Copy URL"
                             >

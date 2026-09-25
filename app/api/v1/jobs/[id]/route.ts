@@ -4,6 +4,23 @@ import { calculateJobCost, calculateVideoCost } from '@/lib/engine/cost-estimato
 
 export const dynamic = 'force-dynamic';
 
+interface RenderJobRecord {
+  id: string
+  status: string | null
+  progress: number | null
+  logs: string | Record<string, unknown> | null
+  created_at: string | null
+  updated_at: string | null
+}
+
+interface ParsedJobLogs {
+  duration?: number
+  finalVideoUrl?: string
+  thumbnail?: string
+  workflowType?: string
+  metadata?: Record<string, unknown>
+}
+
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -16,7 +33,7 @@ export async function GET(
     }
 
     // 1. Fetch Job from Supabase
-    let jobRecord: any = null;
+    let jobRecord: RenderJobRecord | null = null;
     try {
       const { data, error } = await supabase
         .from('render_jobs')
@@ -31,10 +48,13 @@ export async function GET(
       console.warn('[V1 Jobs Lookup Fallback]:', dbErr);
     }
 
-    let parsedLogs: any = {};
+    let parsedLogs: ParsedJobLogs = {};
     if (jobRecord) {
       try {
-        parsedLogs = typeof jobRecord.logs === 'string' ? JSON.parse(jobRecord.logs) : (jobRecord.logs || {});
+        parsedLogs =
+          typeof jobRecord.logs === 'string'
+            ? (JSON.parse(jobRecord.logs) as ParsedJobLogs)
+            : ((jobRecord.logs as ParsedJobLogs) || {});
       } catch {}
     }
 
@@ -77,10 +97,10 @@ export async function GET(
       },
       metadata: parsedLogs?.metadata || {},
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('[V1 Job Status API Error]:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to retrieve job status' },
+      { success: false, error: error instanceof Error ? error.message : 'Failed to retrieve job status' },
       { status: 500 }
     );
   }

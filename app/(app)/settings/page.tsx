@@ -5,10 +5,7 @@ import {
   CheckCircle2,
   XCircle,
   Loader2,
-  Settings,
   Image as ImageIcon,
-  Mic,
-  Layout,
   PieChart,
   Palette,
   Database,
@@ -17,7 +14,6 @@ import {
   Copy,
   Check,
   RotateCcw,
-  Sparkles,
   AlertTriangle,
   Server,
   Activity,
@@ -31,12 +27,7 @@ import {
   Users,
   FolderKanban,
   Zap,
-  Cpu,
-  ArrowUpRight,
-  Shield,
-  HelpCircle,
   Plus,
-  Trash2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSupabase, TestConnectionResult } from "@/lib/supabase/context";
@@ -342,7 +333,10 @@ export default function SettingsPage() {
       if (tabParam) {
         const decoded = decodeURIComponent(tabParam);
         if (decoded === "AI Models" || decoded === "Stock Media" || decoded === "Avatar") {
-          setActiveTab("OmniRoute AI");
+            // One-time post-hydration sync from the ?tab= URL param ([] deps,
+            // window-only): a lazy initializer would break SSR hydration parity.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setActiveTab("OmniRoute AI");
         } else if (decoded === "Voice & Audio") {
           setActiveTab("Voice Catalog");
         } else if (CATEGORIES.includes(decoded)) {
@@ -354,7 +348,6 @@ export default function SettingsPage() {
 
   // ── Fetch OmniRoute Configuration ──────────────────────────────────────────
   async function fetchOmniConfig() {
-    setLoading(true);
     try {
       const res = await fetch("/api/settings/keys");
       const data = await res.json();
@@ -369,7 +362,7 @@ export default function SettingsPage() {
         const extKeys: Record<string, { maskedApiKey: string; isConfigured: boolean }> = {};
         for (const [key, val] of Object.entries(data.keys)) {
           if (!key.startsWith('omniroute')) {
-             extKeys[key] = val as any;
+            extKeys[key] = val as { maskedApiKey: string; isConfigured: boolean };
           }
         }
         setExternalKeys(extKeys);
@@ -395,9 +388,14 @@ export default function SettingsPage() {
   }
 
   useEffect(() => {
-    fetchOmniConfig();
-    loadWorkspaces();
+    // Defer the initial data load one macrotask so the fetch's setStates don't
+    // run synchronously inside the effect body (set-state-in-effect).
+    const bootTimer = setTimeout(() => {
+      fetchOmniConfig();
+      loadWorkspaces();
+    }, 0);
     return () => {
+      clearTimeout(bootTimer);
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
@@ -405,10 +403,19 @@ export default function SettingsPage() {
     };
   }, []);
 
-  useEffect(() => {
+  // Keep the manual DB fields in sync with the active Supabase config. This is
+  // state adjustment during render (the effect-free pattern) so no cascading
+  // setState-in-effect pass is needed.
+  const [prevDbUrl, setPrevDbUrl] = useState(activeSupabaseUrl);
+  const [prevDbKey, setPrevDbKey] = useState(activeSupabaseAnonKey);
+  if (activeSupabaseUrl !== prevDbUrl) {
+    setPrevDbUrl(activeSupabaseUrl);
     setDbUrlInput(activeSupabaseUrl);
+  }
+  if (activeSupabaseAnonKey !== prevDbKey) {
+    setPrevDbKey(activeSupabaseAnonKey);
     setDbKeyInput(activeSupabaseAnonKey);
-  }, [activeSupabaseUrl, activeSupabaseAnonKey]);
+  }
 
   // ── OmniRoute Action Handlers ─────────────────────────────────────────────
   async function handleSaveOmni() {
@@ -443,11 +450,12 @@ export default function SettingsPage() {
         setMaskedApiKey(data.omniroute?.maskedApiKey || "••••••••");
         setApiKey("");
       }
+      setLoading(true);
       await fetchOmniConfig();
-    } catch (err: any) {
+    } catch (err) {
       setOmniFeedback({
         type: "error",
-        message: err.message || "Failed to save configuration",
+        message: err instanceof Error ? err.message : "Failed to save configuration",
       });
     } finally {
       setSavingOmni(false);
@@ -483,10 +491,10 @@ export default function SettingsPage() {
         [provider]: { maskedApiKey: data.maskedApiKey, isConfigured: true }
       }));
       setEditingExternal(prev => ({ ...prev, [provider]: "" }));
-    } catch (err: any) {
+    } catch (err) {
       setOmniFeedback({
         type: "error",
-        message: err.message || `Failed to save ${provider} key`,
+        message: err instanceof Error ? err.message : `Failed to save ${provider} key`,
       });
     } finally {
       setSavingExternal(prev => ({ ...prev, [provider]: false }));
@@ -528,14 +536,14 @@ export default function SettingsPage() {
           message: data.error || data.message || "Connection to OmniRoute Gateway failed.",
         });
       }
-    } catch (err: any) {
+    } catch (err) {
       setOmniTestResult({
         success: false,
-        error: err.message || "Network test failed.",
+        error: err instanceof Error ? err.message : "Network test failed.",
       });
       setOmniFeedback({
         type: "error",
-        message: err.message || "Could not reach OmniRoute check endpoint.",
+        message: err instanceof Error ? err.message : "Could not reach OmniRoute check endpoint.",
       });
     } finally {
       setTestingOmni(false);
@@ -601,9 +609,9 @@ export default function SettingsPage() {
 
       await audio.play();
       setPlayingVoiceId(voice.id);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Preview error:", err);
-      setVoicePreviewError(err.message || "Could not play voice preview");
+      setVoicePreviewError(err instanceof Error ? err.message : "Could not play voice preview");
     } finally {
       setLoadingVoiceId(null);
     }
@@ -699,10 +707,10 @@ export default function SettingsPage() {
           message: result.message || "Failed to reach Supabase project.",
         });
       }
-    } catch (err: any) {
+    } catch (err) {
       setDbFeedback({
         type: "error",
-        message: err.message || "Network test failed.",
+        message: err instanceof Error ? err.message : "Network test failed.",
       });
     } finally {
       setTestingDb(false);
@@ -726,10 +734,10 @@ export default function SettingsPage() {
           message: result.message || "Credentials could not be verified.",
         });
       }
-    } catch (err: any) {
+    } catch (err) {
       setDbFeedback({
         type: "error",
-        message: err.message || "Failed to save configuration.",
+        message: err instanceof Error ? err.message : "Failed to save configuration.",
       });
     } finally {
       setSavingDb(false);

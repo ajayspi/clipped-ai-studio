@@ -42,7 +42,7 @@ async function upsertSettingRow(provider: string, apiKey: string, baseUrl?: stri
       .limit(1)
       .maybeSingle();
 
-    const fullData: Record<string, any> = {
+    const fullData: Record<string, unknown> = {
       provider,
       api_key: apiKey,
       is_active: true,
@@ -125,7 +125,7 @@ export async function GET() {
     if (!rows) {
       const fallback = await dbClient
         .from('settings')
-        .select('provider, api_key, updated_at, is_active')
+        .select('provider, api_key, updated_at, is_active, base_url')
         .in('provider', Array.from(SUPPORTED_EXTERNAL_PROVIDERS).concat('omniroute'));
       rows = fallback.data;
     }
@@ -289,8 +289,8 @@ export async function POST(req: Request) {
         isConfigured: true,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Failed to update OmniRoute settings:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal Server Error' }, { status: 500 });
   }
 }

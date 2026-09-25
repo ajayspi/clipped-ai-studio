@@ -9,6 +9,27 @@ import {
 } from './types';
 import { buildDramaSeriesPrompt } from './prompts';
 
+interface DramaScenePayload {
+  text?: string;
+  description?: string;
+  visualPrompt?: string;
+  duration?: number;
+  emotion?: string;
+  keywords?: unknown[];
+}
+
+interface DramaEpisodePayload {
+  title?: string;
+  script?: string;
+  cliffhanger?: string;
+  scenes?: DramaScenePayload[];
+}
+
+interface DramaSeriesPayload {
+  dramaTitle?: string;
+  episodes?: DramaEpisodePayload[];
+}
+
 export class DramaOrchestrator {
   /**
    * Generates a multi-episode drama series with persistent character visual anchors.
@@ -61,8 +82,8 @@ export class DramaOrchestrator {
         if (liveResult) {
           return liveResult;
         }
-      } catch (err: any) {
-        console.warn(`[DramaOrchestrator] Live LLM generation failed (${err?.message || err}). Falling back to dry-run engine.`);
+      } catch (err) {
+        console.warn(`[DramaOrchestrator] Live LLM generation failed (${err instanceof Error ? err.message : String(err)}). Falling back to dry-run engine.`);
       }
     }
 
@@ -97,9 +118,9 @@ export class DramaOrchestrator {
     }, undefined, 'auto');
     if (!content) return null;
 
-    const parsed = parseJson<Record<string, any>>(content);
+    const parsed = parseJson<DramaSeriesPayload>(content);
     const dramaTitle = parsed.dramaTitle || `${genre.toUpperCase()} Series: Secrets Revealed`;
-    const rawEpisodes = Array.isArray(parsed.episodes) ? parsed.episodes : [];
+    const rawEpisodes: DramaEpisodePayload[] = Array.isArray(parsed.episodes) ? parsed.episodes : [];
 
     const episodes: DramaEpisode[] = [];
     for (let i = 0; i < episodesCount; i++) {
@@ -110,7 +131,7 @@ export class DramaOrchestrator {
       const cliffhanger = rawEp.cliffhanger || (epNum < episodesCount ? `What happens next will change everything!` : 'The final truth uncovered.');
 
       const scenes: Scene[] = (rawEp.scenes && Array.isArray(rawEp.scenes) && rawEp.scenes.length > 0)
-        ? rawEp.scenes.map((s: any, sIdx: number) => ({
+        ? rawEp.scenes.map((s, sIdx) => ({
             id: `ep-${epNum}-scene-${sIdx + 1}`,
             text: String(s.text || `${characters[0].name} speaks`),
             description: String(s.description || `${characters[0].visualAnchor}. Dramatic scene in ${genre}`),

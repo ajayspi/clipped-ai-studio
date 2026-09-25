@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   PenTool,
@@ -8,12 +8,8 @@ import {
   Layers,
   Palette,
   Layout,
-  Play,
   Loader2,
-  CheckCircle2,
   User,
-  Sliders,
-  Maximize2,
   RefreshCw,
   Eye,
   Info,
@@ -92,7 +88,7 @@ export default function WhiteboardCreatePage() {
   const [statusMessage, setStatusMessage] = useState("");
 
   // Fetch / Generate character sheet on archetype or style change
-  const fetchCharacterSheet = async () => {
+  const fetchCharacterSheet = useCallback(async () => {
     setLoadingSheet(true);
     try {
       const res = await fetch("/api/workflows/whiteboard/character-sheet", {
@@ -113,11 +109,14 @@ export default function WhiteboardCreatePage() {
     } finally {
       setLoadingSheet(false);
     }
-  };
+  }, [archetype, customDescription, style]);
 
   useEffect(() => {
-    fetchCharacterSheet();
-  }, [archetype, style]);
+    // Defer the initial sheet load one macrotask so its setStates don't run
+    // synchronously inside the effect body (set-state-in-effect).
+    const timer = setTimeout(fetchCharacterSheet, 0);
+    return () => clearTimeout(timer);
+  }, [fetchCharacterSheet]);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
@@ -146,8 +145,8 @@ export default function WhiteboardCreatePage() {
         setStatusMessage(data.error || "Generation failed");
         setGenerating(false);
       }
-    } catch (err: any) {
-      setStatusMessage(err.message || "An error occurred");
+    } catch (err) {
+      setStatusMessage(err instanceof Error ? err.message : "An error occurred");
       setGenerating(false);
     }
   };
@@ -511,7 +510,7 @@ export default function WhiteboardCreatePage() {
                   fontSize: "15px",
                 }}
               >
-                "Here is how this fundamental mechanism operates."
+                &ldquo;Here is how this fundamental mechanism operates.&rdquo;
               </div>
             </div>
           </div>

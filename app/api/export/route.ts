@@ -92,7 +92,12 @@ export async function POST(req: Request) {
 
         const { data: record } = await query;
         if (record) {
-          let logs: any = {};
+          let logs: Record<string, unknown> & {
+            subject?: string;
+            finalVideoUrl?: string;
+            duration?: number | string;
+            videos?: Array<{ video?: { url?: string }; url?: string }> | null;
+          } = {};
           try {
             logs = typeof record.logs === 'string' ? JSON.parse(record.logs) : (record.logs || {});
           } catch {}
@@ -151,10 +156,10 @@ export async function POST(req: Request) {
     };
 
     return NextResponse.json(exportPayload, { status: 200 });
-  } catch (error: any) {
+  } catch (error) {
     console.error('[Export API Error]:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to export video' },
+      { success: false, error: error instanceof Error ? error.message : 'Failed to export video' },
       { status: 500 }
     );
   }
@@ -176,13 +181,13 @@ export async function GET(req: Request) {
         ...value,
       })),
       selectedPreset: {
+        ...selectedPreset,
         preset,
         format,
-        ...selectedPreset,
       },
       jobId,
     });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'Export failed' }, { status: 500 });
   }
 }

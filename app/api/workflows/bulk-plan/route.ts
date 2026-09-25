@@ -5,7 +5,7 @@ import { AspectRatio } from "@/lib/engine/types";
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
-    const { niche, contentCount, cadence, visualStyle, voice, platforms, aspectRatio, mock } = body;
+    const { niche, contentCount, cadence, visualStyle, voice, platforms, aspectRatio } = body;
 
     if (!niche || typeof niche !== "string" || !niche.trim()) {
       return NextResponse.json({ error: "Niche is required", success: false }, { status: 400 });
@@ -31,8 +31,8 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ success: true, plan: result });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Bulk Plan workflow failed:", error);
-    return NextResponse.json({ error: error?.message || "Internal server error", success: false }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Internal server error", success: false }, { status: 500 });
   }
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { ttsEngine, TTSVoiceOption, TTSProvider } from '@/lib/engine/tts';
+import { ttsEngine, TTSVoiceOption } from '@/lib/engine/tts';
 
 export async function GET(req: Request) {
   try {
@@ -34,10 +34,10 @@ export async function GET(req: Request) {
       supportedProviders: ['azure', 'openai', 'elevenlabs', 'google', 'keyless'],
       supportedLanguages: ['en-US', 'en-IN', 'hi-IN', 'ta-IN', 'te-IN', 'kn-IN', 'bn-IN', 'mr-IN'],
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('[TTS Voices API] Error:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to fetch voices' },
+      { success: false, error: error instanceof Error ? error.message : 'Failed to fetch voices' },
       { status: 500 }
     );
   }

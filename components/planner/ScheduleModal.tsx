@@ -1,13 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, X, Loader2, Calendar, Clock } from "lucide-react";
+import { useState } from "react";
+import { Plus, X, Loader2, Calendar } from "lucide-react";
 import { supabase } from "@/lib/db";
 import { motion, AnimatePresence } from "framer-motion";
 
-export function ScheduleModal({ jobs }: { jobs?: any[] }) {
+type RenderJobLike = {
+  id: string;
+  logs?: string | Record<string, unknown> | null;
+};
+
+export function ScheduleModal({}: { jobs?: RenderJobLike[] }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [availableJobs, setAvailableJobs] = useState<any[]>([]);
+  const [availableJobs, setAvailableJobs] = useState<RenderJobLike[]>([]);
   const [loading, setLoading] = useState(false);
   
   // Form State
@@ -17,15 +22,6 @@ export function ScheduleModal({ jobs }: { jobs?: any[] }) {
   const [time, setTime] = useState("");
   const [platforms, setPlatforms] = useState<string[]>(['youtube']);
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchJobs();
-      // Set default date to today
-      const today = new Date();
-      setDate(today.toISOString().split('T')[0]);
-      setTime("12:00");
-    }
-  }, [isOpen]);
 
   async function fetchJobs() {
     const { data } = await supabase
@@ -69,7 +65,13 @@ export function ScheduleModal({ jobs }: { jobs?: any[] }) {
   return (
     <>
       <button 
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          setIsOpen(true);
+          // Reset form defaults whenever the modal opens
+          setDate(new Date().toISOString().split('T')[0]);
+          setTime("12:00");
+          void fetchJobs();
+        }}
         className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md font-medium text-sm hover:bg-primary/90 transition-colors shadow-sm"
       >
         <Plus className="w-4 h-4" /> Schedule Post
@@ -108,7 +110,7 @@ export function ScheduleModal({ jobs }: { jobs?: any[] }) {
                       try {
                         const logs = typeof job.logs === 'string' ? JSON.parse(job.logs) : job.logs;
                         title = logs.subject || title;
-                      } catch(e) {}
+                      } catch {}
                       return (
                         <option key={job.id} value={job.id}>{title}</option>
                       )

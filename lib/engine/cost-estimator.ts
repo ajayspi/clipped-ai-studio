@@ -140,10 +140,31 @@ export function calculateVideoCost(params: VideoCostParams = {}): VideoCostBreak
 /**
  * Extracts parameters and calculates cost from a Supabase render_jobs record.
  */
-export function calculateJobCost(job: any): VideoCostBreakdown {
+interface JobLogsPayload {
+  workflowType?: string;
+  duration?: number;
+  videos?: unknown[];
+  beats?: unknown[];
+  narration?: string;
+  script?: string;
+  totalTokens?: number;
+  llmProvider?: string;
+  ttsProvider?: string;
+  [key: string]: unknown;
+}
+
+interface RenderJobLike {
+  workflow?: string | null;
+  workflowType?: string | null;
+  duration?: number | string | null;
+  logs?: string | Record<string, unknown> | null;
+  created_at?: string | null;
+}
+
+export function calculateJobCost(job: RenderJobLike): VideoCostBreakdown {
   if (!job) return calculateVideoCost();
 
-  let logs: any = {};
+  let logs: JobLogsPayload = {};
   try {
     logs = typeof job.logs === 'string' ? JSON.parse(job.logs) : (job.logs || {});
   } catch {}
@@ -170,7 +191,7 @@ export function calculateJobCost(job: any): VideoCostBreakdown {
 /**
  * Aggregates analytics across an array of jobs and videos for the analytics dashboard.
  */
-export function getAggregatedAnalytics(jobs: any[] = [], videos: any[] = []): AnalyticsSummary {
+export function getAggregatedAnalytics(jobs: RenderJobLike[] = [], videos: RenderJobLike[] = []): AnalyticsSummary {
   const allItems = jobs.length > 0 ? jobs : (videos.length > 0 ? videos : Array(8).fill({}));
 
   let totalCostUsd = 0;

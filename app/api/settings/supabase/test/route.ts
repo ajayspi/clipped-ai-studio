@@ -104,7 +104,7 @@ export async function POST(request: Request) {
         if (restResponse.ok || restResponse.status === 200 || restResponse.status === 401) {
           reachable = true;
         }
-      } catch (err: any) {
+      } catch {
         reachable = false;
       }
     }
@@ -149,8 +149,8 @@ export async function POST(request: Request) {
           reachable = true;
           tableResults[tableName] = { exists: true, error: null };
         }
-      } catch (err: any) {
-        tableResults[tableName] = { exists: false, error: err.message || 'Probe failure' };
+      } catch (err) {
+        tableResults[tableName] = { exists: false, error: err instanceof Error ? err.message : 'Probe failure' };
         missingTables.push(tableName);
       }
     });
@@ -189,7 +189,7 @@ export async function POST(request: Request) {
       },
       message,
     });
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
       {
         success: false,
@@ -200,7 +200,7 @@ export async function POST(request: Request) {
           tables: CORE_TABLES.reduce((acc, t) => ({ ...acc, [t]: { exists: false } }), {}),
           missingTables: CORE_TABLES,
         },
-        message: error.message || 'Internal error occurred while testing Supabase connection.',
+        message: error instanceof Error ? error.message : 'Internal error occurred while testing Supabase connection.',
       },
       { status: 500 }
     );

@@ -4,9 +4,17 @@ import {
   WhiteboardArchetype,
   WhiteboardStyle,
 } from '@/lib/engine/types';
-import { supabase } from '@/lib/db';
 import { getOmniRouteConfig } from '@/lib/keys';
 import { parseJson } from '@/lib/engine/llm';
+
+interface CharacterPosePayload {
+  name?: string;
+  description?: string;
+}
+
+interface CharacterSheetPayload {
+  poses?: Record<string, CharacterPosePayload>;
+}
 
 export interface GenerateSheetOptions {
   archetype?: WhiteboardArchetype | string;
@@ -179,8 +187,9 @@ export class GeminiCharacterGenerator {
         if (liveSheet) {
           return liveSheet;
         }
-      } catch (err: any) {
-        console.warn(`[GeminiCharacterGenerator] Live Omniroute API call failed (${err?.message || err}). Falling back to deterministic vector generator.`);
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        console.warn(`[GeminiCharacterGenerator] Live Omniroute API call failed (${errMsg || err}). Falling back to deterministic vector generator.`);
       }
     }
 
@@ -245,7 +254,7 @@ Return a strictly valid JSON object with the following schema:
     const rawText = data?.choices?.[0]?.message?.content;
     if (!rawText) return null;
 
-    const parsed = parseJson<Record<string, any>>(rawText);
+    const parsed = parseJson<CharacterSheetPayload>(rawText);
     const poses: Record<string, CharacterPose> = {};
 
     POSE_DEFINITIONS.forEach((def) => {

@@ -99,13 +99,13 @@ export async function POST(req: Request) {
         }).eq('id', jobId);
 
         console.log(`[JOB ${jobId}] Completed Auto-Pilot pipeline with status: ${result.success ? 'completed' : 'failed'}`);
-      } catch (err: any) {
+      } catch (err) {
         console.error(`[JOB ${jobId}] Auto-Pilot pipeline failed:`, err);
         try {
           await supabase.from('render_jobs').update({
             status: 'failed',
             progress: 0,
-            error_message: err?.message || 'Unknown error occurred during auto-pilot pipeline execution',
+            error_message: err instanceof Error ? err.message : 'Unknown error occurred during auto-pilot pipeline execution',
             completed_at: new Date().toISOString(),
           }).eq('id', jobId);
         } catch (updateErr) {
@@ -120,10 +120,10 @@ export async function POST(req: Request) {
       jobId,
       message: "Auto-pilot pipeline configured and scheduled",
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Auto-Pilot workflow trigger error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to trigger auto-pilot workflow", success: false },
+      { error: error instanceof Error ? error.message : "Failed to trigger auto-pilot workflow", success: false },
       { status: 500 }
     );
   }

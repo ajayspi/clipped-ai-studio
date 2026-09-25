@@ -1,5 +1,6 @@
 import { Video } from "./types"
 import { getApiKey } from '@/lib/keys';
+import type { MediaAsset } from '@/lib/media/types';
 
 export const PLATFORMS = ['pexels', 'pixabay', 'openverse'] as const;
 export type PlatformId = (typeof PLATFORMS)[number];
@@ -118,7 +119,7 @@ export class VideoSourcer {
     });
   }
 
-  async searchImages(query: string, limit = 5): Promise<any[]> {
+  async searchImages(query: string, limit = 5): Promise<MediaAsset[]> {
     const pexelsKey = await getApiKey('pexels', 'PEXELS_API_KEY');
     const pixabayKey = await getApiKey('pixabay', 'PIXABAY_API_KEY');
     

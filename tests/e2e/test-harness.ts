@@ -31,18 +31,20 @@ export class MockSupabaseStore {
   }
 
   from(table: string) {
-    const store = this;
-    if (!store.records[table]) {
-      store.records[table] = [];
+    if (!this.records[table]) {
+      this.records[table] = [];
     }
 
     return {
       insert: async (data: any | any[]) => {
         const items = Array.isArray(data) ? data : [data];
-        const inserted = items.map((item) => store.insert(table, item));
+        const inserted = items.map((item) => this.insert(table, item));
         return { data: Array.isArray(data) ? inserted : inserted[0], error: null };
       },
-      select: (fields?: string, options?: any) => {
+      select: (fields?: string) => {
+        // The in-memory mock returns complete rows; the requested column list
+        // is intentionally ignored.
+        void fields;
         const filters: Record<string, any> = {};
         const inFilters: Record<string, any[]> = {};
 
@@ -56,7 +58,7 @@ export class MockSupabaseStore {
             return queryObj;
           },
           single: async () => {
-            const list = (store.records[table] || []).filter((r) => {
+            const list = (this.records[table] || []).filter((r) => {
               for (const [k, v] of Object.entries(filters)) {
                 if (r[k] !== v) return false;
               }
@@ -68,8 +70,8 @@ export class MockSupabaseStore {
             const found = list[0] || null;
             return { data: found, error: found ? null : { message: 'Not found' } };
           },
-          then(resolve: any, reject?: any) {
-            const list = (store.records[table] || []).filter((r) => {
+          then: (resolve: any, reject?: any) => {
+            const list = (this.records[table] || []).filter((r) => {
               for (const [k, v] of Object.entries(filters)) {
                 if (r[k] !== v) return false;
               }
@@ -96,8 +98,8 @@ export class MockSupabaseStore {
             filters[field] = value;
             return updateObj;
           },
-          then(resolve: any, reject?: any) {
-            const tableList = store.records[table] || [];
+          then: (resolve: any, reject?: any) => {
+            const tableList = this.records[table] || [];
             let updatedCount = 0;
             for (let i = 0; i < tableList.length; i++) {
               let match = true;
@@ -140,7 +142,7 @@ export class MockSupabaseStore {
 export const mockSupabase = new MockSupabaseStore();
 
 // Assertion Helpers
-export function expect(actual: any) {
+function buildExpectMatchers(actual: any) {
   return {
     toBe(expected: any) {
       if (actual !== expected) {
@@ -240,9 +242,9 @@ export function expect(actual: any) {
         } else {
           await actual;
         }
-      } catch (err: any) {
+      } catch (err) {
         threw = true;
-        errorMsg = err?.message || String(err);
+        errorMsg = err instanceof Error ? err.message : String(err);
       }
       if (!threw) {
         throw new Error(`Expected promise/function to reject, but it resolved successfully`);
@@ -251,11 +253,54 @@ export function expect(actual: any) {
         throw new Error(`Expected rejection message to contain "${expectedMessageSubstr}", but got "${errorMsg}"`);
       }
     },
+    toBeUndefined() {
+      if (actual !== undefined) {
+        throw new Error(`Expected value to be undefined, but received ${JSON.stringify(actual)}`);
+      }
+    },
   };
 }
 
+/**
+ * Inverted view of a matcher set: a matcher passes in negated form exactly
+ * when the original matcher would throw (i.e. fail).
+ */
+function negateMatchers<M extends Record<string, (...args: never[]) => unknown>>(matchers: M): M {
+  const negated: Record<string, (...args: never[]) => unknown> = {};
+  for (const [name, fn] of Object.entries(matchers) as Array<[string, (...args: never[]) => unknown]>) {
+    negated[name] = (...args: never[]) => {
+      try {
+        const result = fn(...args);
+        if (result instanceof Promise) {
+          // Async matcher (toReject): its outcome is already inverted by
+          // rejection/resolution, so flip the settled result.
+          return result.then(
+            () => {
+              throw new Error(`Expected negated matcher .${name} to fail, but it passed`);
+            },
+            () => undefined
+          );
+        }
+      } catch {
+        return undefined;
+      }
+      throw new Error(`Expected negated matcher .${name} to fail, but it passed`);
+    };
+  }
+  return negated as M;
+}
+
+export function expect(actual: any) {
+  const matchers = buildExpectMatchers(actual);
+  return Object.assign(matchers, {
+    get not() {
+      return negateMatchers(matchers);
+    },
+  });
+}
+
 // Request Simulator for API Route Tests
-export function createMockRequest(body: any, options: { method?: string; headers?: Record<string, string> } = {}): Request {
+export function createMockRequest(body: any, options: { method?: string; headers?: Record<string, string>; provider?: string; endpointUrl?: string; apiKey?: string } = {}): Request {
   const method = options.method || 'POST';
   const headers = new Headers({
     'Content-Type': 'application/json',

@@ -21,10 +21,6 @@ import {
   detectLanguageFromScript,
   generateSyntheticWavBuffer,
   calculateEstimatedDuration,
-  GOOGLE_DEFAULT_VOICES,
-  ELEVENLABS_VOICES,
-  ELEVENLABS_LANG_MAP,
-  COQUI_LANG_MAP,
 } from '../../lib/engine/tts';
 import {
   AudioMixer,

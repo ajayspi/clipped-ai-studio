@@ -7,6 +7,22 @@ import {
 } from './types';
 import { buildShortsExtractionPrompt } from './prompts';
 
+interface ClipPayload {
+  startTime?: number;
+  endTime?: number;
+  viralScore?: number;
+  clipId?: string;
+  title?: string;
+  hook?: string;
+  reason?: string;
+  transcriptSegment?: string;
+}
+
+interface ShortsPayload {
+  clips?: ClipPayload[];
+  originalDuration?: number;
+}
+
 export class ShortsExtractor {
   /**
    * Analyzes long-form video transcripts or video URLs to identify high-retention,
@@ -35,9 +51,9 @@ export class ShortsExtractor {
   
       if (hasVideoUrl && !hasTranscript) {
         try {
-          const { YoutubeTranscript } = require('youtube-transcript');
+          const { YoutubeTranscript } = await import('youtube-transcript');
           const transcripts = await YoutubeTranscript.fetchTranscript(request.videoUrl!);
-          rawTranscript = transcripts.map((t: any) => `[${new Date(t.offset * 1000).toISOString().substr(11, 8)}] ${t.text}`).join('\n');
+          rawTranscript = transcripts.map((t) => `[${new Date(t.offset * 1000).toISOString().substr(11, 8)}] ${t.text}`).join('\n');
           originalDuration = transcripts.length > 0 ? (transcripts[transcripts.length - 1].offset + transcripts[transcripts.length - 1].duration) : 600;
         } catch (e) {
           console.warn('[ShortsExtractor] Failed to fetch real YT transcript, falling back to synthesis.', e);
@@ -64,8 +80,8 @@ export class ShortsExtractor {
         if (liveResult) {
           return liveResult;
         }
-      } catch (err: any) {
-        console.warn(`[ShortsExtractor] Live LLM extraction failed (${err?.message || err}). Falling back to algorithmic engine.`);
+      } catch (err) {
+        console.warn(`[ShortsExtractor] Live LLM extraction failed (${err instanceof Error ? err.message : String(err)}). Falling back to algorithmic engine.`);
       }
     }
 
@@ -101,11 +117,11 @@ export class ShortsExtractor {
     }, undefined, 'auto');
     if (!content) return null;
 
-    const parsed = parseJson<Record<string, any>>(content);
-    const rawClips = Array.isArray(parsed.clips) ? parsed.clips : [];
+    const parsed = parseJson<ShortsPayload>(content);
+    const rawClips: ClipPayload[] = Array.isArray(parsed.clips) ? parsed.clips : [];
     if (rawClips.length === 0) return null;
 
-    const clips: ExtractedClip[] = rawClips.slice(0, clipCount).map((c: any, idx: number) => {
+    const clips: ExtractedClip[] = rawClips.slice(0, clipCount).map((c, idx) => {
       const startTime = Number(c.startTime) >= 0 ? Number(c.startTime) : idx * 45;
       const endTime = Number(c.endTime) > startTime ? Number(c.endTime) : startTime + 40;
       const viralScore = Math.max(70, Math.min(Number(c.viralScore) || 85, 99));

@@ -7,6 +7,21 @@ import {
 } from './types';
 import { SYSTEM_PROMPTS, buildBulkPlanPrompt } from './prompts';
 
+interface BulkPlanPayloadItem {
+  title?: string;
+  hook?: string;
+  script?: string;
+  visualPrompt?: string;
+  targetPlatform?: string;
+  tags?: string[];
+  status?: string;
+}
+
+interface BulkPlanPayload {
+  planTitle?: string;
+  items?: BulkPlanPayloadItem[];
+}
+
 /**
  * Bulk Content Planner Engine.
  * Generates structured 1-30 day multi-video content calendars across omnichannel platforms
@@ -55,8 +70,8 @@ export class BulkPlanner {
       if (response && response.success && response.items && response.items.length > 0) {
         return response;
       }
-    } catch (err: any) {
-      console.warn(`[BulkPlanner] OmniRoute generation failed (${err?.message || err}). Using fallback.`);
+    } catch (err) {
+      console.warn(`[BulkPlanner] OmniRoute generation failed (${err instanceof Error ? err.message : String(err)}). Using fallback.`);
     }
 
     // Cost-safe deterministic dry-run generation fallback
@@ -82,10 +97,10 @@ export class BulkPlanner {
       throw new Error('No content returned from OmniRoute');
     }
 
-    const parsed = parseJson<Record<string, any>>(content);
+    const parsed = parseJson<BulkPlanPayload>(content);
     const planTitle = parsed.planTitle || `${contentCount}-Day ${niche} Content Plan`;
 
-    const rawItems: any[] = Array.isArray(parsed.items) ? parsed.items : [];
+    const rawItems: BulkPlanPayloadItem[] = Array.isArray(parsed.items) ? parsed.items : [];
     const items: BulkPlanItem[] = [];
     const batchJobIds: string[] = [];
 

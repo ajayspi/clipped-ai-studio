@@ -17,6 +17,15 @@ export function clearOmniRouteConfigCache(): void {
   cacheExpiresAt = 0;
 }
 
+// A 'settings' row is untyped (supabase createClient returns any); describe only
+// the fields this function reads so the base_url column can be accessed safely.
+type SettingsRowWithBaseUrl = {
+  provider: string | null;
+  api_key: string | null;
+  is_active: boolean | null;
+  base_url?: string | null;
+};
+
 export async function getOmniRouteConfig(bypassCache = false): Promise<OmniRouteConfig> {
   const now = Date.now();
   if (!bypassCache && cachedConfig && now < cacheExpiresAt) {
@@ -44,8 +53,8 @@ export async function getOmniRouteConfig(bypassCache = false): Promise<OmniRoute
             dbApiKey = String(row.api_key).trim();
             foundInDb = true;
           }
-          if ((row as any).base_url && String((row as any).base_url).trim().length > 0) {
-            dbEndpointUrl = String((row as any).base_url).trim();
+          if ((row as SettingsRowWithBaseUrl).base_url && String((row as SettingsRowWithBaseUrl).base_url).trim().length > 0) {
+            dbEndpointUrl = String((row as SettingsRowWithBaseUrl).base_url).trim();
             foundInDb = true;
           }
         } else if (p === 'omniroute_endpoint_url' || p === 'omniroute_url') {
@@ -61,7 +70,7 @@ export async function getOmniRouteConfig(bypassCache = false): Promise<OmniRoute
         }
       }
     }
-  } catch (err) {
+  } catch {
     // Column base_url might not exist in schema, fallback to selecting basic columns
     try {
       const { data: rows, error } = await dbClient
@@ -86,7 +95,7 @@ export async function getOmniRouteConfig(bypassCache = false): Promise<OmniRoute
           }
         }
       }
-    } catch (errFallback) {
+    } catch {
       // Database query failed (e.g. offline or no tables yet)
     }
   }
@@ -173,7 +182,7 @@ export async function getApiKey(provider: string, envVarName?: string): Promise<
     if (keyData?.api_key) {
       return keyData.api_key;
     }
-  } catch (err) {}
+  } catch {}
 
   try {
     const { data: keyData } = await dbClient
@@ -185,7 +194,7 @@ export async function getApiKey(provider: string, envVarName?: string): Promise<
     if (keyData?.api_key) {
       return keyData.api_key;
     }
-  } catch (err) {}
+  } catch {}
 
   return undefined;
 }

@@ -268,7 +268,7 @@ function createMockSupabaseInstance() {
 
   return {
     auth: mockAuth,
-    from: vi.fn((_table?: string) => createMockQueryBuilder([])),
+    from: vi.fn(() => createMockQueryBuilder([])),
     storage: mockStorage,
     rpc: vi.fn().mockImplementation(() => Promise.resolve({ data: null, error: null })),
     channel: vi.fn(() => ({
@@ -373,7 +373,7 @@ if (!globalThis.fetch || typeof globalThis.fetch !== 'function') {
   globalThis.fetch = vi.fn();
 }
 
-globalThis.fetch = vi.fn().mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+globalThis.fetch = vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
   const url =
     typeof input === 'string'
       ? input

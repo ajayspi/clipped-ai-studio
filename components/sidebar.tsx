@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import {
   LayoutDashboard,
   Video,
@@ -16,10 +16,7 @@ import {
   Sparkles,
   Wand2,
   Zap,
-  Film,
-  BarChart3,
   ListVideo,
-  Layers,
   BookOpen,
   RadioTower
 } from "lucide-react"
@@ -46,17 +43,20 @@ const navItems: NavItem[] = [
 export function Sidebar() {
   const pathname = usePathname()
   const [isCollapsed, setIsCollapsed] = useState(false)
-  const [mounted, setMounted] = useState(false)
+  const [, setMounted] = useState(false)
 
   // Safe client-side hydration for localStorage
   useEffect(() => {
+    // Canonical post-hydration mounted flag; the localStorage read below also
+    // only runs client-side. Lazy initializers would break SSR hydration parity.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
     try {
       const saved = localStorage.getItem("clipped_sidebar_collapsed")
       if (saved !== null) {
         setIsCollapsed(saved === "true")
       }
-    } catch (e) {
+    } catch {
       // Ignore localStorage access errors
     }
   }, [])
@@ -66,7 +66,7 @@ export function Sidebar() {
       const next = !prev
       try {
         localStorage.setItem("clipped_sidebar_collapsed", String(next))
-      } catch (e) {}
+      } catch {}
       return next
     })
   }

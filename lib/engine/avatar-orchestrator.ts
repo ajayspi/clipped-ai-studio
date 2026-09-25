@@ -1,7 +1,6 @@
 import {
   AVATAR_PRESETS,
   AspectRatio,
-  AvatarConfig,
   AvatarGenerationRequest,
   AvatarGenerationResponse,
   AvatarLayout,
@@ -11,7 +10,6 @@ import {
 } from './types';
 import { supabase } from '@/lib/db';
 import { ttsEngine, calculateEstimatedDuration } from './tts';
-import { videoSourcer } from './video-sourcer';
 import { getApiKey } from '@/lib/keys';
 
 export interface AvatarJobState {
@@ -289,9 +287,9 @@ export class AvatarOrchestrator {
           generatedAt: new Date().toISOString(),
         },
       };
-    } catch (err: any) {
+    } catch (err) {
       jobState.status = 'failed';
-      jobState.error = err?.message || 'Avatar generation failed';
+      jobState.error = err instanceof Error ? err.message : 'Avatar generation failed';
       jobState.logs.push(`[ERROR] ${jobState.error}`);
       jobState.updatedAt = new Date().toISOString();
       this.jobs.set(jobId, jobState);
@@ -342,7 +340,7 @@ export class AvatarOrchestrator {
   /**
    * Retrieves current job status from in-memory cache or Supabase
    */
-  async getJob(jobId: string): Promise<AvatarJobState | any | null> {
+  async getJob(jobId: string): Promise<(Partial<AvatarJobState> & { metadata?: Record<string, unknown> }) | null> {
     if (this.jobs.has(jobId)) {
       return this.jobs.get(jobId)!;
     }
@@ -367,7 +365,7 @@ export class AvatarOrchestrator {
           error: data.error_message,
         };
       }
-    } catch (err) {}
+    } catch {}
 
     return null;
   }

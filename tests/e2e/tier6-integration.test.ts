@@ -7,7 +7,7 @@
  * 4. Audio Mixing & Speech Ducking Engine (FFmpeg sidechaincompress, BGM looping, gain balance, afade, dry-run fallback)
  */
 
-import { expect, registry, mockSupabase } from './test-harness';
+import { expect, registry } from './test-harness';
 import {
   TTSEngine,
   normalizeLanguageCode,
@@ -29,14 +29,10 @@ import {
   isDefaultRetryableError,
   withRetry,
   TokenBucketLimiter,
-  ValidationError,
-  YouTubeQuotaExceededError,
-  InstagramRateLimitError,
 } from '../../lib/publishing';
 import {
   QuotaManager,
   QuotaExceededError,
-  TIER_LIMITS,
 } from '../../lib/quotas';
 import {
   AudioMixer,

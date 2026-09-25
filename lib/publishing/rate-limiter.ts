@@ -6,6 +6,24 @@
 
 import { RateLimitConfig, RateLimitError } from './types';
 
+// Headers attached to an error / error.response may come from a fetch-style
+// Headers instance (.get()) or a plain record; model both shapes we probe.
+type HeadersLike = Record<string, string | undefined> & {
+  get?(name: string): string | null;
+};
+
+// The shape of error objects and their .response that the retry helpers read.
+type RateLimitErrorLike = {
+  retryAfterMs?: number;
+  retryAfter?: number;
+  headers?: HeadersLike;
+  response?: { headers?: HeadersLike; status?: number };
+  statusCode?: number;
+  status?: number;
+  message?: string;
+  code?: string;
+};
+
 /**
  * Calculates exponential backoff with full jitter.
  * Uniformly distributes random delay in [0, min(maxDelayMs, baseDelayMs * 2^attempt)].
@@ -27,21 +45,22 @@ export function calculateBackoffWithJitter(
 /**
  * Extracts Retry-After delay in milliseconds from an error object or response headers.
  */
-export function extractRetryAfterMs(error: any): number | null {
+export function extractRetryAfterMs(error: unknown): number | null {
   if (!error) return null;
+  const err = error as RateLimitErrorLike;
 
-  if (typeof error.retryAfterMs === 'number' && error.retryAfterMs > 0) {
-    return error.retryAfterMs;
+  if (typeof err.retryAfterMs === 'number' && err.retryAfterMs > 0) {
+    return err.retryAfterMs;
   }
 
-  if (typeof error.retryAfter === 'number' && error.retryAfter > 0) {
-    return error.retryAfter * 1000;
+  if (typeof err.retryAfter === 'number' && err.retryAfter > 0) {
+    return err.retryAfter * 1000;
   }
 
   // Check headers from response or error details
-  const headers = error.headers || error.response?.headers;
+  const headers = err.headers || err.response?.headers;
   if (headers) {
-    let headerVal: string | null = null;
+    let headerVal: string | null | undefined;
     if (typeof headers.get === 'function') {
       headerVal = headers.get('Retry-After') || headers.get('retry-after');
     } else if (typeof headers === 'object') {
@@ -69,27 +88,31 @@ export function extractRetryAfterMs(error: any): number | null {
 /**
  * Default predicate to check if an error is transient and retryable.
  */
-export function isDefaultRetryableError(error: any): boolean {
+export function isDefaultRetryableError(error: unknown): boolean {
   if (!error) return false;
+  const err = error as RateLimitErrorLike;
 
   const statusCode =
-    error.statusCode ||
-    error.status ||
-    error.response?.status ||
-    (typeof error.message === 'string' && error.message.includes('429') ? 429 : undefined);
+    err.statusCode ||
+    err.status ||
+    err.response?.status ||
+    (typeof err.message === 'string' && err.message.includes('429') ? 429 : undefined);
 
   // Rate limits & standard server errors
-  if (statusCode === 429 || (statusCode >= 500 && statusCode <= 504)) {
+  if (
+    statusCode === 429 ||
+    (typeof statusCode === 'number' && statusCode >= 500 && statusCode <= 504)
+  ) {
     return true;
   }
 
-  if (error instanceof RateLimitError) {
+  if (err instanceof RateLimitError) {
     return true;
   }
 
   // Network / connection drop errors
-  const msg = (error.message || '').toLowerCase();
-  const code = (error.code || '').toLowerCase();
+  const msg = (err.message || '').toLowerCase();
+  const code = (err.code || '').toLowerCase();
   const networkErrors = [
     'econnreset',
     'etimedout',
@@ -117,12 +140,12 @@ export async function withRetry<T>(
   const maxDelayMs = options.maxDelayMs ?? 16000;
   const backoffFactor = options.backoffFactor ?? 2;
 
-  let lastError: any;
+  let lastError: unknown;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       return await fn();
-    } catch (error: any) {
+    } catch (error) {
       lastError = error;
 
       const isLastAttempt = attempt >= maxAttempts - 1;

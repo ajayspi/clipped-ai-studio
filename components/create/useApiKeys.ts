@@ -62,8 +62,8 @@ export function useApiKeys() {
       const data = await fetchKeysFromApi();
       setKeys(data);
       setError(null);
-    } catch (err: any) {
-      setError(err?.message || "Failed to fetch API keys");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch API keys");
     } finally {
       setLoading(false);
     }
@@ -71,6 +71,9 @@ export function useApiKeys() {
 
   useEffect(() => {
     if (memoryCache) {
+      // Mount-time seed from the in-memory cache (external cache read,
+      // mount-once effect): lazy initializers would break SSR hydration parity.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setKeys(memoryCache);
     } else {
       try {

@@ -127,9 +127,9 @@ export function VoiceStep() {
 
       await audio.play();
       setPlayingVoiceId(voiceItem.id);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Audio preview error:', err);
-      setPreviewError(err.message || 'Error generating preview audio');
+      setPreviewError(err instanceof Error ? err.message : 'Error generating preview audio');
     } finally {
       setLoadingVoiceId(null);
     }

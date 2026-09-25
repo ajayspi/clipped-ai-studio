@@ -81,10 +81,10 @@ export async function POST(req: Request) {
       progressUrl: `/create/mission/${jobId}`,
       message: 'Whiteboard animation workflow initiated successfully',
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('[API Whiteboard POST] Error:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to initiate whiteboard generation' },
+      { success: false, error: error instanceof Error ? error.message : 'Failed to initiate whiteboard generation' },
       { status: 500 }
     );
   }
@@ -122,10 +122,10 @@ export async function GET(req: Request) {
       metadata: job.metadata || {},
       error: job.error,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('[API Whiteboard GET] Error:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to retrieve job status' },
+      { success: false, error: error instanceof Error ? error.message : 'Failed to retrieve job status' },
       { status: 500 }
     );
   }

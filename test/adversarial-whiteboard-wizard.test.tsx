@@ -1,7 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act, cleanup } from '@testing-library/react';
-import { useRouter } from 'next/navigation';
 
 import WhiteboardCreatePage from '@/app/(app)/create/whiteboard/page';
 import { CreationWizard } from '@/components/wizard/CreationWizard';
@@ -9,7 +8,6 @@ import { useWizardStore, SUBTITLE_PRESETS } from '@/components/wizard/wizard-sto
 import { ScenesStep } from '@/components/wizard/ScenesStep';
 import { RenderStep } from '@/components/wizard/RenderStep';
 import { LivePlayer } from '@/components/wizard/LivePlayer';
-import FootagePage from '@/app/(app)/create/footage/page';
 
 describe('Adversarial Stress Harness: Whiteboard & Wizard Systems', () => {
   const baseFetch = global.fetch;
@@ -182,16 +180,17 @@ describe('Adversarial Stress Harness: Whiteboard & Wizard Systems', () => {
 
       render(<WhiteboardCreatePage />);
 
-      // Rapidly switch between 4 archetypes in quick succession
+      // Rapidly switch between 4 archetypes. Each change defers its sheet
+      // fetch by one macrotask (set-state-in-effect fix) and cancels the
+      // previous pending timer, so yield between clicks for the fetch to fire.
       const archetypes = ['Ancient Saint', 'Wise Old Man', 'Startup Founder', 'Medical Doctor'];
-      for (const arch of archetypes) {
+      for (const [i, arch] of archetypes.entries()) {
         const btn = screen.getByRole('button', { name: new RegExp(arch, 'i') });
         fireEvent.click(btn);
+        await waitFor(() => {
+          expect(callCount).toBeGreaterThanOrEqual(i + 1);
+        });
       }
-
-      await waitFor(() => {
-        expect(callCount).toBeGreaterThanOrEqual(4);
-      });
 
       // Verify no uncaught exceptions and UI is still responsive
       expect(screen.getByRole('heading', { level: 1, name: /whiteboard animation studio/i })).toBeInTheDocument();
@@ -241,8 +240,6 @@ describe('Adversarial Stress Harness: Whiteboard & Wizard Systems', () => {
   // ==========================================================================
   describe('Wizard Store: Rapid Resets & Out-of-Bounds Transitions', () => {
     it('CHALLENGE 2A: 100 rapid concurrent store resets and mutations maintain store consistency', () => {
-      const store = useWizardStore.getState();
-
       for (let i = 0; i < 100; i++) {
         useWizardStore.setState({
           step: i % 5,

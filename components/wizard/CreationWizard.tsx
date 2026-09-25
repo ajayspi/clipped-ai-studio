@@ -20,6 +20,13 @@ const LEDE: Record<string, string> = {
   render: 'Review your configured settings before sending to the render queue.',
 }
 
+interface AnalyzedScene {
+  id?: string;
+  text: string;
+  keywords?: string[];
+  duration?: number;
+}
+
 const STEP_ICONS = [Layout, Sparkles, Mic, Type, FileVideo]
 
 export function CreationWizard({ workflowType }: { workflowType: string }) {
@@ -36,7 +43,7 @@ export function CreationWizard({ workflowType }: { workflowType: string }) {
       w.reset()
       w.set('workflowType', workflowType)
     }
-  }, [workflowType])
+  }, [workflowType, w])
 
   const ready =
     w.beats.length > 0 &&
@@ -72,7 +79,7 @@ export function CreationWizard({ workflowType }: { workflowType: string }) {
       if (!analyzeRes.ok) throw new Error("Failed to analyze scenes")
       const analyzeData = await analyzeRes.json()
       
-      const beats = (analyzeData.scenes ?? []).map((scene: any, index: number) => ({
+      const beats = (analyzeData.scenes ?? []).map((scene: AnalyzedScene, index: number) => ({
         id: scene.id ?? `beat-${index}`,
         text: scene.text,
         keywords: scene.keywords ?? [],
@@ -106,8 +113,8 @@ export function CreationWizard({ workflowType }: { workflowType: string }) {
       w.goToStep(4)
       w.set('furthestStep', 4)
 
-    } catch (error: any) {
-      w.setError(`Auto-Pilot failed: ${error.message}`)
+    } catch (error) {
+      w.setError(`Auto-Pilot failed: ${error instanceof Error ? error.message : String(error)}`)
       w.setBusy(null)
       w.set('autoMode', false)
     }
@@ -149,7 +156,6 @@ export function CreationWizard({ workflowType }: { workflowType: string }) {
           subtitlePreset: w.subtitlePreset,
           subtitleSize: w.subtitleSize,
           subtitleY: w.subtitleY,
-          musicSource: w.musicSource,
           tone: w.tone,
           beats: w.beats.map((beat) => {
             const candidates = beat.candidates ?? []
@@ -169,8 +175,8 @@ export function CreationWizard({ workflowType }: { workflowType: string }) {
       if (!res.ok) throw new Error("Failed to start generation job")
       const data = await res.json()
       router.push(`/dashboard?job=${data.jobId}`)
-    } catch (error: any) {
-      w.setError(error.message || 'Could not start the render')
+    } catch (error) {
+      w.setError(error instanceof Error ? error.message : 'Could not start the render')
     } finally {
       setSubmitting(false)
     }
@@ -192,7 +198,7 @@ export function CreationWizard({ workflowType }: { workflowType: string }) {
       if (!res.ok) throw new Error("Failed to analyze script")
       const result = await res.json()
       
-      const beats = (result.scenes ?? []).map((scene: any, index: number) => ({
+      const beats = (result.scenes ?? []).map((scene: AnalyzedScene, index: number) => ({
         id: scene.id ?? `beat-${index}`,
         text: scene.text,
         keywords: scene.keywords ?? [],
@@ -223,8 +229,8 @@ export function CreationWizard({ workflowType }: { workflowType: string }) {
 
       // Update store with sourced beats
       w.set('beats', [...beats])
-    } catch (error: any) {
-      w.setError(error.message || 'Unknown error')
+    } catch (error) {
+      w.setError(error instanceof Error ? error.message : 'Unknown error')
     } finally {
       w.setBusy(null)
     }

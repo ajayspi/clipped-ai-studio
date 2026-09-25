@@ -33,8 +33,8 @@ export function ScriptStep() {
       const data = await res.json()
       w.set('narration', data.narration)
       w.set('keywords', data.keywords || [])
-    } catch (err: any) {
-      w.setError(err.message)
+    } catch (err) {
+      w.setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
       setGenerating(false)
     }
@@ -54,7 +54,7 @@ export function ScriptStep() {
             <select 
               className="w-full rounded-lg border-input bg-background px-3 py-2.5 text-sm shadow-sm"
               value={w.aspectRatio}
-              onChange={(e) => w.setAspectRatio(e.target.value as any)}
+              onChange={(e) => w.setAspectRatio(e.target.value as '9:16' | '16:9' | '1:1')}
             >
               <option value="9:16">Portrait (9:16) - TikTok/Shorts</option>
               <option value="16:9">Landscape (16:9) - YouTube</option>

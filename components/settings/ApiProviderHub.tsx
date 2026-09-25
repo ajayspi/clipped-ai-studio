@@ -1,24 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity,
-  Zap,
-  CheckCircle2,
-  XCircle,
   RefreshCw,
   AlertTriangle,
   Server,
-  Wifi,
-  WifiOff,
   Clock,
   Shield,
   Sparkles,
   Cpu,
-  ArrowUpRight,
-  Sliders,
-  Check,
   Globe,
 } from "lucide-react";
 
@@ -72,7 +63,7 @@ export function ApiProviderHub() {
         error: checkData.error,
         checkedAt: new Date().toLocaleTimeString(),
       });
-    } catch (err: any) {
+    } catch (err) {
       setStatus({
         success: false,
         endpointUrl: "http://localhost:20128/v1",
@@ -81,7 +72,7 @@ export function ApiProviderHub() {
         modelCount: 0,
         isConfigured: false,
         source: "unknown",
-        error: err.message || "Failed to contact OmniRoute health probe",
+        error: err instanceof Error ? err.message : "Failed to contact OmniRoute health probe",
         checkedAt: new Date().toLocaleTimeString(),
       });
     } finally {
@@ -91,6 +82,10 @@ export function ApiProviderHub() {
   }, []);
 
   useEffect(() => {
+    // Initial mount probe: checkHealth's only synchronous setState is gated on
+    // isManual (false here); the rest land after awaits. The 30s poll reuses
+    // this callback from an interval, so no cascade.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     checkHealth(false);
   }, [checkHealth]);
 

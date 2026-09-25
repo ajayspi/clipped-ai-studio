@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { WorkflowHeader } from "@/components/create/ui/WorkflowHeader"
 import { VoiceSelector } from "@/components/create/ui/VoiceSelector"
 import { AspectRatioSelector } from "@/components/create/ui/AspectRatioSelector"
@@ -12,8 +11,6 @@ import { SettingsCard } from "@/components/create/ui/SettingsCard"
 
 import {
   Calendar,
-  Loader2,
-  Sparkles,
   Settings2,
   Sliders,
   Share2,
@@ -24,11 +21,23 @@ import {
   Activity,
   Flame,
   RadioTower,
-  Newspaper
 } from "lucide-react"
 
+interface BulkPlanItem {
+  day: number
+  scheduledDate: string
+  title: string
+  targetPlatform: string
+  hook: string
+  tags?: string[]
+}
+
+interface BulkPlan {
+  planTitle?: string
+  items?: BulkPlanItem[]
+}
+
 export default function BulkPage() {
-  const router = useRouter()
   const [niche, setNiche] = useState("")
   const [contentCount, setContentCount] = useState<number>(7)
   const [cadence, setCadence] = useState("daily")
@@ -39,7 +48,7 @@ export default function BulkPage() {
   const [mock, setMock] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const [generatedPlan, setGeneratedPlan] = useState<any>(null)
+  const [generatedPlan, setGeneratedPlan] = useState<BulkPlan | null>(null)
   const [useTrendJacking, setUseTrendJacking] = useState(true)
 
   function togglePlatform(platformId: string) {
@@ -84,8 +93,8 @@ export default function BulkPage() {
 
       const data = await res.json()
       setGeneratedPlan(data.plan)
-    } catch (err: any) {
-      setError(err.message || "An error occurred during workflow initiation")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred during workflow initiation")
     } finally {
       setLoading(false)
     }
@@ -137,7 +146,7 @@ export default function BulkPage() {
                 </div>
               </div>
               <p className="text-xs text-emerald-600/80 dark:text-emerald-400/80">
-                Automatically scans Twitter and News APIs to inject today's viral topics into your daily content plan to maximize algorithm reach.
+                Automatically scans Twitter and News APIs to inject today&apos;s viral topics into your daily content plan to maximize algorithm reach.
               </p>
             </div>
 
@@ -269,7 +278,7 @@ export default function BulkPage() {
           </div>
 
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-            {generatedPlan.items?.map((item: any) => (
+            {generatedPlan.items?.map((item) => (
               <div key={item.day} className="group relative rounded-2xl border-2 bg-card hover:border-emerald-500/50 transition-colors shadow-sm hover:shadow-md p-5 space-y-4 flex flex-col">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -298,7 +307,7 @@ export default function BulkPage() {
                   <div className="absolute top-0 left-0 w-1 h-full bg-orange-500"></div>
                   <span className="text-[10px] font-black uppercase text-orange-500 mb-1 block">3-Second Hook</span>
                   <p className="text-sm italic text-foreground leading-relaxed font-medium">
-                    "{item.hook}"
+                    &ldquo;{item.hook}&rdquo;
                   </p>
                 </div>
 

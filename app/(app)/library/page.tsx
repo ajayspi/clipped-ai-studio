@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Video,
   Folder,
@@ -8,14 +8,37 @@ import {
   Plus,
   X,
   Loader2,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
   RefreshCw,
   Zap,
 } from "lucide-react";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { motion, AnimatePresence } from "framer-motion";
+
+interface QueueJob {
+  id: string;
+  thumbnail?: string;
+  title?: string;
+  workflow_type?: string;
+  status: string;
+}
+
+interface LibraryVideo {
+  id: string;
+  video_id?: string;
+  thumbnail?: string;
+  title?: string;
+  workflow_type?: string;
+  workflowType?: string;
+  workspace_id?: string | null;
+  workspace_name?: string;
+  created_at?: string;
+}
+
+interface WorkspaceSummary {
+  id: string;
+  name: string;
+  color?: string;
+}
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "text-yellow-400",
@@ -33,7 +56,7 @@ const STATUS_LABELS: Record<string, string> = {
   failed: "Failed",
 };
 
-function QueueCard({ job }: { job: any }) {
+function QueueCard({ job }: { job: QueueJob }) {
   const isActive = ["pending", "generating_plan", "processing"].includes(job.status);
   return (
     <motion.div
@@ -42,6 +65,7 @@ function QueueCard({ job }: { job: any }) {
       className="flex items-center gap-3 p-3 rounded-xl bg-card/60 border border-border/50 backdrop-blur-sm"
     >
       <div className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-muted">
+        {/* eslint-disable-next-line @next/next/no-img-element -- Rendered-video thumbnail (data:/signed URL) */}
         <img src={job.thumbnail} alt={job.title} className="w-full h-full object-cover" />
         {isActive && (
           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
@@ -80,10 +104,10 @@ function QueueCard({ job }: { job: any }) {
 }
 
 export default function LibraryPage() {
-  const [videos, setVideos] = useState<any[]>([]);
-  const [queuedJobs, setQueuedJobs] = useState<any[]>([]);
-  const [failedJobs, setFailedJobs] = useState<any[]>([]);
-  const [workspaces, setWorkspaces] = useState<any[]>([]);
+  const [videos, setVideos] = useState<LibraryVideo[]>([]);
+  const [queuedJobs, setQueuedJobs] = useState<QueueJob[]>([]);
+  const [failedJobs, setFailedJobs] = useState<QueueJob[]>([]);
+  const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([]);
   const [activeWorkspace, setActiveWorkspace] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
@@ -91,15 +115,24 @@ export default function LibraryPage() {
   const [newFolderColor, setNewFolderColor] = useState("#8b5cf6");
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
-  const pollRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    loadLibraryData();
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  const refreshJobs = useCallback(async () => {
+    try {
+      const res = await fetch("/api/jobs");
+      const data = await res.json();
+
+      if (data.success) {
+        setVideos(data.completed || []);
+        setQueuedJobs(data.queued || []);
+        setFailedJobs(data.failed || []);
+        setLastRefreshed(new Date());
+      }
+    } catch (e) {
+      console.error("Failed to refresh jobs:", e);
+    }
   }, []);
 
-  async function loadLibraryData() {
-    setLoading(true);
+  const loadLibraryData = useCallback(async () => {
     try {
       // 1. Fetch workspaces
       const wsRes = await fetch("/api/workspaces");
@@ -113,31 +146,23 @@ export default function LibraryPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [refreshJobs]);
 
-  async function refreshJobs() {
-    try {
-      const res = await fetch("/api/jobs");
-      const data = await res.json();
+  // Initial load: `loading` defaults to true and the fetch is deferred one
+  // macrotask so no setState runs synchronously inside the effect body
+  // (set-state-in-effect).
+  useEffect(() => {
+    const timer = setTimeout(loadLibraryData, 0);
+    return () => clearTimeout(timer);
+  }, [loadLibraryData]);
 
-      if (data.success) {
-        setVideos(data.completed || []);
-        setQueuedJobs(data.queued || []);
-        setFailedJobs(data.failed || []);
-        setLastRefreshed(new Date());
-
-        // Auto-poll if there are active jobs
-        if ((data.queued || []).length > 0) {
-          if (pollRef.current) clearInterval(pollRef.current);
-          pollRef.current = setInterval(refreshJobs, 8000);
-        } else {
-          if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-        }
-      }
-    } catch (e) {
-      console.error("Failed to refresh jobs:", e);
-    }
-  }
+  // Auto-poll while jobs are queued. The interval lives in this effect so
+  // refreshJobs never references itself (react-hooks/immutability).
+  useEffect(() => {
+    if (queuedJobs.length === 0) return;
+    const interval = setInterval(refreshJobs, 8000);
+    return () => clearInterval(interval);
+  }, [queuedJobs.length, refreshJobs]);
 
   async function handleCreateFolder(e: React.FormEvent) {
 

@@ -2,13 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { WorkflowHeader } from "@/components/create/ui/WorkflowHeader"
-import { VoiceSelector } from "@/components/create/ui/VoiceSelector"
 import { AspectRatioSelector } from "@/components/create/ui/AspectRatioSelector"
-import { MockModeToggle } from "@/components/create/ui/MockModeToggle"
-import { GenerateButton } from "@/components/create/ui/GenerateButton"
-import { ErrorAlert } from "@/components/create/ui/ErrorAlert"
-import { SettingsCard } from "@/components/create/ui/SettingsCard"
 
 import {
   Bot,
@@ -24,7 +18,6 @@ import {
   Globe,
   Rss,
   Activity,
-  ArrowRight,
   ShieldCheck,
 } from "lucide-react"
 
@@ -87,8 +80,8 @@ export default function AutoPilotPage() {
 
       const data = await res.json()
       router.push(`/dashboard?job=${data.jobId}`)
-    } catch (err: any) {
-      setError(err.message || "An error occurred during auto-pilot pipeline launch")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred during auto-pilot pipeline launch")
       setLoading(false)
     }
   }

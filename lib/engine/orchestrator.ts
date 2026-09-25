@@ -1,4 +1,4 @@
-import { ScriptAnalysis, VideoMatch, GenerationResponse } from './types';
+import { VideoMatch, GenerationResponse } from './types';
 import { sceneMatcher } from './scene-matcher';
 import { videoSourcer } from './video-sourcer';
 

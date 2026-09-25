@@ -16,12 +16,6 @@ import {
   AZURE_VOICE_CATALOG,
   OPENAI_VOICES,
   FREE_KEYLESS_VOICES,
-  ELEVENLABS_VOICES,
-  GOOGLE_DEFAULT_VOICES,
-  detectLanguageFromScript,
-  normalizeLanguageCode,
-  generateSyntheticWavBuffer,
-  calculateEstimatedDuration,
 } from '../../lib/engine/tts';
 
 export async function registerMilestone2VoiceTests() {

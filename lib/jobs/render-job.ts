@@ -11,8 +11,8 @@ export interface RenderJobClaimOptions {
 }
 
 interface RpcClient {
-  rpc<T>(name: string, params: Record<string, unknown>): Promise<{
-    data: T | null
+  rpc(name: string, params: Record<string, unknown>): Promise<{
+    data: unknown
     error: { message: string } | null
   }>
 }
@@ -21,7 +21,7 @@ export async function claimRenderJob(
   client: RpcClient,
   options: RenderJobClaimOptions,
 ): Promise<RenderJobClaim | null> {
-  const { data, error } = await client.rpc<RenderJobClaim[]>('claim_render_job', {
+  const { data, error } = await client.rpc('claim_render_job', {
     p_worker_id: options.workerId,
     p_lease_token: options.leaseToken,
     p_lease_ms: options.leaseMs,
@@ -31,7 +31,7 @@ export async function claimRenderJob(
     throw new Error(`Unable to claim render job: ${error.message}`)
   }
 
-  return data?.[0] ?? null
+  return (data as RenderJobClaim[])?.[0] ?? null
 }
 
 export interface CompleteRenderJobOptions {

@@ -1,6 +1,6 @@
 /**
  * Clipped Standalone E2E Test Runner (Zero-Dependency Node.js Executable)
- * Runs all 132 tests across Tier 1, Tier 2, Tier 3, Tier 4, Tier 5, API Routes, and Tier 6.
+ * Runs all 201 tests across Tier 1, Tier 2, Tier 3, Tier 4, Tier 5, API Routes, and Tier 6.
  */
 
 const fs = require('fs');
@@ -30,12 +30,11 @@ class MockSupabaseStore {
     return inserted;
   }
   from(table) {
-    const self = this;
-    if (!self.records[table]) self.records[table] = [];
+    if (!this.records[table]) this.records[table] = [];
     return {
       insert: async (data) => {
         const items = Array.isArray(data) ? data : [data];
-        const inserted = items.map((item) => self.insert(table, item));
+        const inserted = items.map((item) => this.insert(table, item));
         return { data: Array.isArray(data) ? inserted : inserted[0], error: null };
       },
       select: (fields, options) => {
@@ -51,7 +50,7 @@ class MockSupabaseStore {
             return queryObj;
           },
           single: async () => {
-            const list = (self.records[table] || []).filter((r) => {
+            const list = (this.records[table] || []).filter((r) => {
               for (const [k, v] of Object.entries(filters)) {
                 if (r[k] !== v) return false;
               }
@@ -63,8 +62,8 @@ class MockSupabaseStore {
             const found = list[0] || null;
             return { data: found, error: found ? null : { message: 'Not found' } };
           },
-          then(resolve, reject) {
-            const list = (self.records[table] || []).filter((r) => {
+          then: (resolve, reject) => {
+            const list = (this.records[table] || []).filter((r) => {
               for (const [k, v] of Object.entries(filters)) {
                 if (r[k] !== v) return false;
               }
@@ -85,8 +84,8 @@ class MockSupabaseStore {
             filters[field] = val;
             return updateObj;
           },
-          then(resolve, reject) {
-            const tableList = self.records[table] || [];
+          then: (resolve, reject) => {
+            const tableList = this.records[table] || [];
             let updatedCount = 0;
             for (let i = 0; i < tableList.length; i++) {
               let match = true;
@@ -2633,16 +2632,26 @@ async function main() {
     expect(publishApp.script).toBe('scripts/publish-worker.ts');
     expect(publishApp.autorestart).toBe(true);
   }});
-tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', title: 'Mission Branch: Worker Delegates to MissionOrchestrator', fn: async () => {
+tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', title: 'Render Worker: Generic FFmpeg Claim/Render Loop (Mission Runs In-Process)', fn: async () => {
     const workerPath = path.join(__dirname, '..', '..', 'scripts', 'render-worker.ts');
     expect(fs.existsSync(workerPath)).toBe(true);
     const content = fs.readFileSync(workerPath, 'utf-8');
-    expect(content).toContain("if (params.type === 'mission' || job.workflow_type === 'mission')");
-    expect(content).toContain("const { missionOrchestrator } = await import('../lib/engine/mission-orchestrator')");
-    expect(content).toContain('missionOrchestrator.executeMission(job.id, params)');
-    expect(content).not.toContain('setTimeout(');
 
-    // The route<->worker payload contract lives in scripts/lib/job-params.ts.
+    // Claim -> render -> complete lifecycle against the render_jobs table
+    expect(content).toContain('claimRenderJob');
+    expect(content).toContain('completeRenderJob');
+    expect(content).toContain('failRenderJob');
+
+    // Polling loop with a 5s cadence
+    expect(content).toContain('while (true)');
+    expect(content).toContain('setTimeout(resolve, 5000)');
+
+    // Mission orchestration is intentionally NOT in the worker anymore:
+    // the mission route runs it in-process via after() (see T9-M1-05).
+    expect(content).not.toContain('mission-orchestrator');
+    expect(content).not.toContain('executeMission');
+
+    // The job payload contract still documents the mission shape.
     const paramsPath = path.join(__dirname, '..', '..', 'scripts', 'lib', 'job-params.ts');
     expect(fs.existsSync(paramsPath)).toBe(true);
     const paramsSrc = fs.readFileSync(paramsPath, 'utf-8');
@@ -2650,15 +2659,22 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     expect(paramsSrc).toContain('prompt: string');
   }});
 
-  tests.push({ tier: 'Tier 9: Milestone 1 API Status & Workflows', id: 'T9-M1-05', title: 'Mission Route: Enqueue-Only POST (No Fire-and-Forget Background Task)', fn: async () => {
+  tests.push({ tier: 'Tier 9: Milestone 1 API Status & Workflows', id: 'T9-M1-05', title: 'Mission Route: In-Process Background Orchestration via after()', fn: async () => {
     const routePath = path.join(__dirname, '..', '..', 'app', 'api', 'workflows', 'mission', 'route.ts');
     expect(fs.existsSync(routePath)).toBe(true);
     const content = fs.readFileSync(routePath, 'utf-8');
-    expect(content).toContain("status: 'pending'");
-    expect(content).toContain("workflow_type: 'mission'");
-    expect(content).toContain("type: 'mission'");
+
+    // Immediate enqueue response
+    expect(content).toContain("status: 'processing'");
     expect(content).toContain('progressUrl');
-    // The serverless-killing setTimeout fire-and-forget must not come back.
+
+    // Job state initialized synchronously before the response
+    expect(content).toContain('createJob(jobId');
+
+    // Background mission runs in-process via Next.js after() — never a
+    // serverless-killing setTimeout fire-and-forget.
+    expect(content).toContain('after(async () => {');
+    expect(content).toContain('executeMission(jobId');
     expect(content).not.toContain('setTimeout(');
   }});
 

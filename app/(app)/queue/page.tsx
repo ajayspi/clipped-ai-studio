@@ -10,9 +10,7 @@ import {
   XCircle,
   Loader2,
   RefreshCw,
-  Play,
   Download,
-  Trash2,
   Film,
 } from "lucide-react";
 
@@ -29,7 +27,7 @@ interface RenderJob {
   clip_count: number;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ComponentType<any>; bg: string }> = {
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ComponentType<{ className?: string }>; bg: string }> = {
   pending: { label: "Queued", color: "text-amber-500", icon: Clock, bg: "bg-amber-500/10 border-amber-500/20" },
   generating_plan: { label: "Planning", color: "text-blue-500", icon: Loader2, bg: "bg-blue-500/10 border-blue-500/20" },
   processing: { label: "Rendering", color: "text-violet-500", icon: Loader2, bg: "bg-violet-500/10 border-violet-500/20" },
@@ -56,7 +54,9 @@ export default function QueuePage() {
   }, []);
 
   useEffect(() => {
-    fetchJobs();
+    // Defer the initial fetch one macrotask so its setStates don't run
+    // synchronously inside the effect body; polling stays on the interval.
+    setTimeout(fetchJobs, 0);
     const interval = setInterval(fetchJobs, 8000);
     return () => clearInterval(interval);
   }, [fetchJobs]);

@@ -2,14 +2,10 @@
 
 import React, { useState } from "react";
 import {
-  Play,
   Film,
   Camera,
   Layers,
-  Sparkles,
-  Volume2,
   Clock,
-  CheckCircle2,
 } from "lucide-react";
 import { MissionJobState, Scene } from "@/lib/engine/types";
 
@@ -73,6 +69,7 @@ export function MissionLivePreview({ job }: MissionLivePreviewProps) {
             <div className="relative w-full h-full flex flex-col justify-between p-4 bg-gradient-to-t from-black/90 via-black/30 to-black/60">
               {/* Media Background */}
               {activeScene.imageUrl || activeScene.selectedVideo?.thumbnail ? (
+                // eslint-disable-next-line @next/next/no-img-element -- Scene image/thumbnail served from media APIs
                 <img
                   src={activeScene.imageUrl || activeScene.selectedVideo?.thumbnail}
                   alt={activeScene.description}
@@ -109,7 +106,7 @@ export function MissionLivePreview({ job }: MissionLivePreviewProps) {
               {/* Bottom Subtitle / Narration Beat Preview */}
               <div className="space-y-1 bg-black/70 backdrop-blur-md p-3 rounded-lg border border-white/10 text-center">
                 <p className="text-xs font-semibold text-white line-clamp-3">
-                  "{activeScene.text}"
+                  &ldquo;{activeScene.text}&rdquo;
                 </p>
                 <div className="flex items-center justify-center gap-2 pt-1 text-[10px] text-zinc-400">
                   <span>{activeScene.duration}s</span>

@@ -281,9 +281,13 @@ export async function complete(
         request,
         GATEWAY_TIMEOUT_MS
       );
-    } catch (err: any) {
+    } catch (err) {
       const reason =
-        err?.name === 'AbortError' ? `timed out after ${GATEWAY_TIMEOUT_MS}ms` : err?.message || String(err);
+        err instanceof Error
+          ? err.name === 'AbortError'
+            ? `timed out after ${GATEWAY_TIMEOUT_MS}ms`
+            : err.message || String(err)
+          : String(err);
       console.warn(`[LLM] OmniRoute gateway unavailable (${reason}) — falling back.`);
       errors.push(`OmniRoute gateway: ${reason}`);
     }
@@ -310,13 +314,13 @@ export async function complete(
           );
           console.warn(`[LLM] Served by fallback provider: ${target.name} (${model}).`);
           return content;
-        } catch (err: any) {
-          errors.push(`${target.name}/${model}: ${err?.message || err}`);
+        } catch (err) {
+          errors.push(`${target.name}/${model}: ${err instanceof Error ? err.message : String(err)}`);
         }
       }
     }
-  } catch (err: any) {
-    errors.push(`direct providers: lookup failed (${err?.message || err})`);
+  } catch (err) {
+    errors.push(`direct providers: lookup failed (${err instanceof Error ? err.message : String(err)})`);
   }
 
   // Tier 3 — keyless OpenAI-compatible endpoint.
@@ -333,8 +337,8 @@ export async function complete(
         );
         console.warn(`[LLM] Served by keyless fallback: ${keyless.name} (${model}).`);
         return content;
-      } catch (err: any) {
-        errors.push(`${keyless.name}/${model}: ${err?.message || err}`);
+      } catch (err) {
+        errors.push(`${keyless.name}/${model}: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
   }

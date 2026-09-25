@@ -101,13 +101,13 @@ export async function POST(req: Request) {
           signal: AbortSignal.timeout(5000),
         });
       }
-    } catch (fetchErr: any) {
+    } catch (fetchErr) {
       const latencyMs = Date.now() - startTime;
       return NextResponse.json({
         success: false,
         latencyMs,
-        error: `Could not connect to OmniRoute at ${endpointUrl}: ${fetchErr.message || 'Network error or timeout'}`,
-        message: `Connection failed: ${fetchErr.message || 'Network error'}`,
+        error: `Could not connect to OmniRoute at ${endpointUrl}: ${fetchErr instanceof Error ? fetchErr.message : 'Network error or timeout'}`,
+        message: `Connection failed: ${fetchErr instanceof Error ? fetchErr.message : 'Network error'}`,
       });
     }
 
@@ -132,11 +132,11 @@ export async function POST(req: Request) {
     try {
       const resJson = await response.json();
       if (Array.isArray(resJson?.data)) {
-        models = resJson.data.map((m: any) => (typeof m === 'string' ? m : m.id || m.name)).filter(Boolean);
+        models = resJson.data.map((m: string | { id?: string; name?: string }) => (typeof m === 'string' ? m : m.id || m.name)).filter(Boolean);
       } else if (Array.isArray(resJson)) {
-        models = resJson.map((m: any) => (typeof m === 'string' ? m : m.id || m.name)).filter(Boolean);
+        models = resJson.map((m: string | { id?: string; name?: string }) => (typeof m === 'string' ? m : m.id || m.name)).filter((m): m is string => Boolean(m));
       } else if (Array.isArray(resJson?.models)) {
-        models = resJson.models.map((m: any) => (typeof m === 'string' ? m : m.id || m.name)).filter(Boolean);
+        models = resJson.models.map((m: string | { id?: string; name?: string }) => (typeof m === 'string' ? m : m.id || m.name)).filter(Boolean);
       }
     } catch {
       // Non-fatal if body was not JSON
@@ -149,13 +149,13 @@ export async function POST(req: Request) {
       message: `Successfully connected to OmniRoute (${latencyMs}ms). ${models.length} model(s) available.`,
       isWorking: true,
     });
-  } catch (err: any) {
+  } catch (err) {
     const latencyMs = Date.now() - startTime;
     return NextResponse.json({
       success: false,
       latencyMs,
-      error: err.message || 'Unexpected error during connection test',
-      message: err.message || 'Unexpected error',
+      error: err instanceof Error ? err.message : 'Unexpected error during connection test',
+      message: err instanceof Error ? err.message : 'Unexpected error',
     }, { status: 500 });
   }
 }

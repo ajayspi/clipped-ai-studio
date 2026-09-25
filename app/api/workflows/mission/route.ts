@@ -51,10 +51,10 @@ export async function POST(req: Request) {
       progressUrl: `/create/mission/${jobId}`,
       message: 'Automatic mission initiated successfully',
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('[API /api/workflows/mission POST Error]:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to initiate mission' },
+      { success: false, error: error instanceof Error ? error.message : 'Failed to initiate mission' },
       { status: 500 }
     );
   }
@@ -105,10 +105,10 @@ export async function GET(req: Request) {
         videoUrl: job.videoUrl,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('[API /api/workflows/mission GET Error]:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to fetch mission status' },
+      { success: false, error: error instanceof Error ? error.message : 'Failed to fetch mission status' },
       { status: 500 }
     );
   }

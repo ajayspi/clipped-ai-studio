@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server'
 import { complete, parseJson } from '@/lib/ai/llm'
 
+interface AnalyzeScene {
+  text: string
+  duration: number
+  keywords: string[]
+}
+
 export async function POST(req: Request) {
   try {
     const { narration, provider, model, workflowType = 'footage' } = await req.json()
@@ -27,10 +33,10 @@ export async function POST(req: Request) {
       json: true
     }, provider, model)
 
-    const parsed = parseJson<any>(raw)
+    const parsed = parseJson<{ scenes: AnalyzeScene[] }>(raw)
     return NextResponse.json(parsed)
-  } catch (error: any) {
+  } catch (error) {
     console.error('Analyze API Error:', error)
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 })
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal Server Error' }, { status: 500 })
   }
 }

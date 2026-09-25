@@ -13,7 +13,7 @@ export function RenderQueueIndicator() {
         const res = await fetch("/api/jobs?limit=20");
         const data = await res.json();
         const jobs = data.jobs || [];
-        const active = jobs.filter((j: any) =>
+        const active = jobs.filter((j: { status: string }) =>
           ["pending", "generating_plan", "processing"].includes(j.status)
         );
         setActiveCount(active.length);

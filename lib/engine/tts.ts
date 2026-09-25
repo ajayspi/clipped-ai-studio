@@ -105,7 +105,7 @@ export interface TTSResponse {
     speakingRate: number;
     providerAttempts: ProviderAttemptLog[];
     generatedAt: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   error?: string;
 }
@@ -701,8 +701,8 @@ export async function resolveVoiceProviderApiKey(
         }
       }
     }
-  } catch (err: any) {
-    console.warn(`[TTS] Error querying settings table for ${canonical}:`, err?.message || err);
+  } catch (err) {
+    console.warn(`[TTS] Error querying settings table for ${canonical}:`, err instanceof Error ? err.message : err);
   }
 
   // 3. Fallback to process.env
@@ -738,7 +738,6 @@ export class TTSEngine {
       ? normalizeLanguageCode(request.language)
       : detectLanguageFromScript(rawText);
 
-    const speed = request.speed || request.speakingRate || 1.0;
     const providerAttempts: ProviderAttemptLog[] = [];
 
     // 1. Explicit mock or dry-run execution requested
@@ -870,9 +869,9 @@ export class TTSEngine {
           res.metadata.providerAttempts = providerAttempts;
           return res;
         }
-      } catch (err: any) {
+      } catch (err) {
         const latencyMs = Date.now() - startTime;
-        const errorMessage = err?.message || String(err);
+        const errorMessage = err instanceof Error ? err.message : String(err);
         console.warn(`[TTS] Provider ${provider} attempt failed: ${errorMessage}. Continuing fallback cascade.`);
         providerAttempts.push({
           provider,
@@ -1191,7 +1190,7 @@ export class TTSEngine {
       throw new Error(`Google Cloud TTS HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const data = (await response.json()) as { audioContent?: string; [key: string]: any };
+    const data = (await response.json()) as { audioContent?: string; [key: string]: unknown };
     if (!data.audioContent) {
       throw new Error('Google Cloud TTS returned no audioContent');
     }
@@ -1288,7 +1287,7 @@ export class TTSEngine {
           generatedAt: new Date().toISOString(),
         },
       };
-    } catch (err: any) {
+    } catch (err) {
       clearTimeout(timeoutId);
       throw err;
     }
@@ -1310,12 +1309,12 @@ export class TTSEngine {
     const voiceName = resolveKeylessVoice(request.voiceId || request.voice, language);
 
       // 1. Try Microsoft Edge TTS with 5-second timeout guard to prevent hangs on connection drops/403s
-    let edgeError: any = null;
+    let edgeError: Error | null = null;
     try {
-      const { EdgeTTS } = require('node-edge-tts');
-      const os = require('os');
-      const path = require('path');
-      const fs = require('fs/promises');
+      const { EdgeTTS } = await import('node-edge-tts');
+      const os = await import('os');
+      const path = await import('path');
+      const fs = await import('fs/promises');
 
       const tempPath = path.join(os.tmpdir(), `edge-tts-${jobId}-${Date.now()}.mp3`);
       
@@ -1392,9 +1391,9 @@ export class TTSEngine {
           generatedAt: new Date().toISOString(),
         },
       };
-    } catch (err: any) {
-      edgeError = err;
-      console.warn(`[TTS] Edge TTS Keyless failed (${err?.message || err}). Triggering automatic fallback to Google Translate TTS REST endpoint...`);
+    } catch (err) {
+      edgeError = err instanceof Error ? err : new Error(String(err));
+      console.warn(`[TTS] Edge TTS Keyless failed (${err instanceof Error ? err.message : String(err)}). Triggering automatic fallback to Google Translate TTS REST endpoint...`);
     }
 
     // 2. Automatic, reliable keyless fallback: Google Translate TTS REST endpoint
@@ -1402,8 +1401,8 @@ export class TTSEngine {
       const gttsRes = await synthesizeWithGoogleTranslateRest(jobId, text, language, request);
       console.log(`[TTS] Keyless fallback succeeded via Google Translate TTS REST (${gttsRes.audioBuffer?.length || 0} bytes)`);
       return gttsRes;
-    } catch (gttsErr: any) {
-      console.warn(`[TTS] Google Translate TTS fallback failed (${gttsErr?.message || gttsErr}). Falling back to guaranteed synthetic WAV buffer...`);
+    } catch (gttsErr) {
+      console.warn(`[TTS] Google Translate TTS fallback failed (${gttsErr instanceof Error ? gttsErr.message : String(gttsErr)}). Falling back to guaranteed synthetic WAV buffer...`);
     }
 
     // 3. Fallback to valid synthetic WAV buffer (audio generation must NEVER fail or return silent empty audio)

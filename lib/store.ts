@@ -3,8 +3,8 @@ import { create } from 'zustand';
 interface AppState {
   isSidebarOpen: boolean;
   toggleSidebar: () => void;
-  user: any | null;
-  setUser: (user: any) => void;
+  user: unknown | null;
+  setUser: (user: unknown) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({

@@ -180,7 +180,16 @@ export interface AutoPilotResponse {
 // Test Runner Framework Types
 export interface TestCase {
   id: string;
-  tier: 'tier1' | 'tier2' | 'tier3' | 'tier4' | 'tier5' | 'tier6' | 'api';
+  tier:
+    | 'tier1'
+    | 'tier2'
+    | 'tier3'
+    | 'tier4'
+    | 'tier5'
+    | 'tier6'
+    | 'tier7'
+    | 'api'
+    | 'unit';
   workflow:
     | 'ai-videos'
     | 'stories'
@@ -193,7 +202,11 @@ export interface TestCase {
     | 'publishing'
     | 'quotas'
     | 'audio-mixer'
-    | 'integration';
+    | 'integration'
+    | 'omniroute-storage'
+    | 'supabase-routing'
+    | 'voice'
+    | 'settings';
   title: string;
   description: string;
   fn: () => Promise<void> | void;

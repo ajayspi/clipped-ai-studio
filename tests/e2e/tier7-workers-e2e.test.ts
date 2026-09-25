@@ -184,7 +184,7 @@ export async function registerWorkersE2ETests() {
         .select('*')
         .eq('status', 'pending');
 
-      const targetJob = pendingJobs.find(j => j.id === jobId);
+      const targetJob = pendingJobs.find((j: { id: string }) => j.id === jobId);
       expect(targetJob).toBeDefined();
       expect(targetJob.status).toBe('pending');
 
@@ -248,7 +248,7 @@ export async function registerWorkersE2ETests() {
     fn: async () => {
       const configPath = path.resolve(process.cwd(), 'ecosystem.config.js');
       expect(fs.existsSync(configPath)).toBe(true);
-      const config = require(configPath);
+      const config = (await import(configPath)).default;
       expect(Array.isArray(config.apps)).toBe(true);
       expect(config.apps.length).toBe(2);
 

@@ -16,6 +16,22 @@ export interface WorkspaceItem {
   updatedAt: string;
 }
 
+interface VideoRow {
+  workspace_id?: string | null
+}
+
+interface WorkspaceRow {
+  id: string
+  name: string
+  slug?: string | null
+  description?: string | null
+  color?: string | null
+  icon?: string | null
+  is_default?: boolean | null
+  created_at?: string | null
+  updated_at?: string | null
+}
+
 // In-memory fallback cache for workspaces
 const fallbackWorkspaces: WorkspaceItem[] = [
   {
@@ -56,7 +72,7 @@ const fallbackWorkspaces: WorkspaceItem[] = [
   },
 ];
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     let workspaces: WorkspaceItem[] = [];
 
@@ -70,8 +86,8 @@ export async function GET(req: Request) {
       // Calculate video counts for each workspace
       const { data: videos } = await supabase.from('videos').select('id, workspace_id');
 
-      workspaces = dbWorkspaces.map((w: any) => {
-        const count = (videos || []).filter((v: any) => v.workspace_id === w.id).length;
+      workspaces = dbWorkspaces.map((w: WorkspaceRow) => {
+        const count = (videos || []).filter((v: VideoRow) => v.workspace_id === w.id).length;
         return {
           id: w.id,
           name: w.name,
@@ -81,8 +97,8 @@ export async function GET(req: Request) {
           icon: w.icon || 'Folder',
           isDefault: Boolean(w.is_default),
           videoCount: count,
-          createdAt: w.created_at,
-          updatedAt: w.updated_at,
+          createdAt: w.created_at as string,
+          updatedAt: w.updated_at as string,
         };
       });
     } else {
@@ -100,8 +116,8 @@ export async function GET(req: Request) {
       workspaces,
       totalVideos: totalVideos || 15,
     });
-  } catch (error: any) {
-    console.warn('[Workspaces GET Fallback]:', error.message);
+  } catch (error) {
+    console.warn('[Workspaces GET Fallback]:', error instanceof Error ? error.message : error);
     return NextResponse.json({
       success: true,
       workspaces: fallbackWorkspaces,
@@ -170,8 +186,8 @@ export async function POST(req: Request) {
       success: true,
       workspace: newWorkspace,
     }, { status: 201 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to create workspace' }, { status: 500 });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to create workspace' }, { status: 500 });
   }
 }
 
@@ -207,8 +223,8 @@ export async function PATCH(req: Request) {
     }
 
     return NextResponse.json({ success: true, message: 'Workspace updated successfully' });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to update workspace' }, { status: 500 });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to update workspace' }, { status: 500 });
   }
 }
 
@@ -233,7 +249,7 @@ export async function DELETE(req: Request) {
     }
 
     return NextResponse.json({ success: true, message: 'Workspace deleted successfully' });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to delete workspace' }, { status: 500 });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to delete workspace' }, { status: 500 });
   }
 }

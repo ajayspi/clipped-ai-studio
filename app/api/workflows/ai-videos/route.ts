@@ -89,13 +89,13 @@ export async function POST(req: Request) {
         }).eq('id', jobId);
 
         console.log(`[JOB ${jobId}] Completed AI Videos workflow with status: ${result.success ? 'completed' : 'failed'}`);
-      } catch (err: any) {
+      } catch (err) {
         console.error(`[JOB ${jobId}] AI Videos workflow failed:`, err);
         try {
           await supabase.from('render_jobs').update({
             status: 'failed',
             progress: 0,
-            error_message: err?.message || 'Unknown error occurred during video generation',
+            error_message: err instanceof Error ? err.message : 'Unknown error occurred during video generation',
             completed_at: new Date().toISOString(),
           }).eq('id', jobId);
         } catch (updateErr) {
@@ -110,10 +110,10 @@ export async function POST(req: Request) {
       jobId,
       message: "AI Video generation started",
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Workflow trigger error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to trigger workflow" },
+      { error: error instanceof Error ? error.message : "Failed to trigger workflow" },
       { status: 500 }
     );
   }

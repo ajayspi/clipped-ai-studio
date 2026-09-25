@@ -19,7 +19,7 @@ export function RenderStep() {
           <select 
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             value={w.aspectRatio}
-            onChange={(e) => w.setAspectRatio(e.target.value as any)}
+            onChange={(e) => w.setAspectRatio(e.target.value as '9:16' | '16:9' | '1:1')}
           >
             <option value="9:16">Portrait (9:16)</option>
             <option value="16:9">Landscape (16:9)</option>

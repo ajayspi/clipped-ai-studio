@@ -25,10 +25,10 @@ export async function POST(req: Request) {
       providerUsed: result.providerUsed,
       voiceId: result.voiceId,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('[TTS Preview API] Error:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to generate voice preview' },
+      { success: false, error: error instanceof Error ? error.message : 'Failed to generate voice preview' },
       { status: 500 }
     );
   }

@@ -2,11 +2,12 @@ import { NextResponse } from "next/server"
 import { supabaseAdmin as supabase } from "@/lib/db"
 import { sceneMatcher } from "@/lib/engine/scene-matcher"
 import { imageGenerator } from "@/lib/engine/image-generator"
+import { AspectRatio } from "@/lib/engine/types"
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { script, style, aspectRatio, voice } = body
+    const { script, style, aspectRatio } = body
 
     if (!script) {
       return NextResponse.json({ error: "Script is required" }, { status: 400 })
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
         // Step 2: Generate images for each scene
         const scenesWithImages = await imageGenerator.generateForScenes(analysis.scenes, {
           style: style,
-          aspectRatio: aspectRatio as any
+          aspectRatio: aspectRatio as AspectRatio
         });
         
         // Step 3: (Future) Generate TTS & Render FFmpeg
@@ -44,13 +45,13 @@ export async function POST(req: Request) {
             }
           }
         })
-      } catch (err: any) {
+      } catch (err) {
         console.error(`[JOB ${jobId}] Failed:`, err)
         await supabase.from('render_jobs').insert({
           id: jobId,
           status: 'failed',
           progress: 0,
-          error_message: err.message
+          error_message: err instanceof Error ? err.message : 'Unknown error during image generation'
         })
       }
     }, 0)
@@ -62,10 +63,10 @@ export async function POST(req: Request) {
       message: "AI Image generation started" 
     })
     
-  } catch (error: any) {
+  } catch (error) {
     console.error("Workflow trigger error:", error)
     return NextResponse.json(
-      { error: error.message || "Failed to trigger workflow" },
+      { error: error instanceof Error ? error.message : "Failed to trigger workflow" },
       { status: 500 }
     )
   }

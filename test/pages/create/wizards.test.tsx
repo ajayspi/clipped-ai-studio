@@ -177,7 +177,7 @@ describe('Creation Wizard Routes (app/(app)/create/{ai-videos,footage,images,sto
         const subjectInput = screen.getByPlaceholderText(/e\.g\. 5 hidden features of ios 18/i);
         fireEvent.change(subjectInput, { target: { value: 'Ancient Pyramids' } });
 
-        const aiGenBtn = screen.getByRole('button', { name: /generate with ai/i });
+        const aiGenBtn = screen.getByRole('button', { name: /generate script/i });
         fireEvent.click(aiGenBtn);
 
         await waitFor(() => {
@@ -220,6 +220,7 @@ describe('Creation Wizard Routes (app/(app)/create/{ai-videos,footage,images,sto
               id: 'beat-1',
               text: 'The ocean depths are mysterious.',
               duration: 4,
+              keywords: [],
               selectedId: 'c1',
               candidates: [
                 {
@@ -229,6 +230,7 @@ describe('Creation Wizard Routes (app/(app)/create/{ai-videos,footage,images,sto
                   platform: 'pexels',
                   duration: 4,
                   score: 1.0,
+                  reason: '',
                 },
               ],
             },

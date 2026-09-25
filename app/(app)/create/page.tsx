@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Settings, Sparkles, RefreshCw, Key, ListVideo } from "lucide-react";
+import { Sparkles, RefreshCw, Key, ListVideo } from "lucide-react";
 import { useApiKeys } from "@/components/create/useApiKeys";
 import { WORKFLOWS } from "@/components/create/workflow-definitions";
 import { MissionPromptBar } from "@/components/create/MissionPromptBar";

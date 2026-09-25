@@ -1,7 +1,7 @@
-import { useWizardStore, Beat } from "@/components/wizard/wizard-store";
+import { useWizardStore, Beat, AspectRatio } from "@/components/wizard/wizard-store";
 import { MissionJobState } from "@/lib/engine/types";
 
-export function transferMissionToWizard(mission: MissionJobState, router: any) {
+export function transferMissionToWizard(mission: MissionJobState, router: { push: (href: string) => void }) {
   const beats: Beat[] = (mission.scenes || []).map((scene, idx) => {
     const clipUrl = scene.videoUrl || scene.imageUrl || scene.selectedVideo?.url || '';
     return {
@@ -32,7 +32,7 @@ export function transferMissionToWizard(mission: MissionJobState, router: any) {
     workflowType: 'footage',
     subject: mission.prompt || '',
     narration: mission.script || '',
-    aspectRatio: (mission.aspectRatio as any) || '9:16',
+    aspectRatio: (mission.aspectRatio as AspectRatio) || '9:16',
     voice: mission.voice || 'alloy',
     beats: beats,
     step: beats.length > 0 ? 1 : 0,

@@ -83,7 +83,7 @@ function SortableBeat({ beat, index }: { beat: Beat; index: number }) {
       
       <div className="flex-1 space-y-3">
         <div className="text-sm font-medium leading-relaxed">
-          "{beat.text}"
+          &ldquo;{beat.text}&rdquo;
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Clock className="w-3 h-3" />
@@ -106,9 +106,10 @@ function SortableBeat({ beat, index }: { beat: Beat; index: number }) {
                <span className="text-[10px]">Searching...</span>
              </div>
            ) : beat.candidates && beat.candidates.length > 0 ? (
-             beat.candidates[0].url.endsWith('.mp4') ? (
+             beat.candidates[0].url?.endsWith('.mp4') ? (
                <video src={beat.candidates[0].url} className="w-full h-full object-cover" muted loop autoPlay playsInline />
              ) : (
+               // eslint-disable-next-line @next/next/no-img-element -- Pollinations media candidate URL (arbitrary host)
                <img src={beat.candidates[0].url} alt="Candidate" className="w-full h-full object-cover" />
              )
            ) : (

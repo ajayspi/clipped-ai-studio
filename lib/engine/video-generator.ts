@@ -76,14 +76,15 @@ export class VideoGenerator {
 
       // Default fallback
       return this.generateDryRun(jobId, prompt, request, `Unknown Model ${model} (Dry Run)`);
-    } catch (error: any) {
-      console.error(`[VideoGenerator] Live generation failed for job ${jobId}:`, error?.message || error);
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      console.error(`[VideoGenerator] Live generation failed for job ${jobId}:`, errMsg);
       // Graceful fallback to dry-run mock on API exception so user/test flows don't crash
       return this.generateDryRun(
         jobId,
         prompt,
         request,
-        `${model} (Fallback after API error: ${error?.message || 'Network error'})`
+        `${model} (Fallback after API error: ${errMsg || 'Network error'})`
       );
     }
   }
@@ -270,8 +271,8 @@ export class VideoGenerator {
       }
       
       throw new Error(falJob.error || 'Unknown fal error');
-    } catch (e: any) {
-      console.error('[VideoGenerator] fal queue client error:', e.message);
+    } catch (e) {
+      console.error('[VideoGenerator] fal queue client error:', e instanceof Error ? e.message : String(e));
       return this.generateDryRun(jobId, prompt, request, `Fal.ai (Fallback after failed generation)`);
     }
   }
@@ -301,8 +302,9 @@ export class VideoGenerator {
       let videoUrl = DRY_RUN_SAMPLE_VIDEOS.landscape;
       
       // The Gradio client returns a FileData object or array of them
-      if (result?.data?.[0]?.url) {
-        videoUrl = result.data[0].url;
+      const gradioData = (result as { data?: Array<{ url?: string }> }).data;
+      if (gradioData?.[0]?.url) {
+        videoUrl = gradioData[0].url;
       }
 
       return {
@@ -317,9 +319,10 @@ export class VideoGenerator {
           isDryRun: false,
         },
       };
-    } catch (e: any) {
-      console.error('[VideoGenerator] Gradio fallback failed:', e.message);
-      return this.generateDryRun(jobId, prompt, request, `Gradio Fallback (Failed: ${e.message})`);
+    } catch (e) {
+      const gradioErr = e instanceof Error ? e.message : String(e);
+      console.error('[VideoGenerator] Gradio fallback failed:', gradioErr);
+      return this.generateDryRun(jobId, prompt, request, `Gradio Fallback (Failed: ${gradioErr})`);
     }
   }
 

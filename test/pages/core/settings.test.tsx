@@ -26,50 +26,61 @@ describe('Settings Route Headless Test (app/(app)/settings/page.tsx)', () => {
     });
 
     expect(
-      screen.getByText(/Manage your AI synthesis engines, voice models, custom LLMs/i)
+      screen.getByText(/Configure your unified OmniRoute AI Gateway, brand kits, workspaces, and database/i)
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /add custom api/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /run system diagnostics/i })).toBeInTheDocument();
+    expect(screen.getByText(/Gateway Using Defaults/i)).toBeInTheDocument();
 
-    // All 7 category tabs
-    expect(screen.getByRole('button', { name: /ai models/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /voice & audio/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /stock media/i })).toBeInTheDocument();
+    // All 7 category tabs (current CATEGORIES in app/(app)/settings/page.tsx)
+    expect(screen.getByRole('button', { name: /omniroute ai/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /voice catalog/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /brand kits/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /workspaces & team/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /usage & quotas/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /database & supabase/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /api health hub/i })).toBeInTheDocument();
   });
 
-  it('renders AI Models tab content by default', async () => {
+  it('renders OmniRoute AI tab content by default', async () => {
     renderSettings();
 
     await waitFor(() => {
-      expect(screen.getByText(/AI Models Integrations/i)).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { level: 2, name: /OmniRoute Configuration/i })
+      ).toBeInTheDocument();
     });
 
-    expect(screen.getByText(/Manage API keys and custom model endpoints for ai models/i)).toBeInTheDocument();
-    expect(screen.getByText(/Google Gemini/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Configure your single OmniRoute or OpenRouter AI gateway/i)
+    ).toBeInTheDocument();
   });
 
-  it('switches to Voice & Audio tab and renders voice catalog and controls', async () => {
+  it('switches to Voice Catalog tab and renders voice catalog and controls', async () => {
     renderSettings();
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /voice & audio/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /voice catalog/i })).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /voice & audio/i }));
+    fireEvent.click(screen.getByRole('button', { name: /voice catalog/i }));
 
     await waitFor(() => {
-      expect(screen.getByText('Voice Synthesis Credentials')).toBeInTheDocument();
-      expect(screen.getByText('Voice Model Catalog')).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { level: 3, name: /Voice Model Catalog/i })
+      ).toBeInTheDocument();
     });
 
+    expect(screen.getByText(/Audition, test, and preview neural voice/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/search voices or language/i)).toBeInTheDocument();
+
+    // Voice filter pills
     expect(screen.getByRole('button', { name: /^all$/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^azure$/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^elevenlabs$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^neural$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^expressive$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^keyless$/i })).toBeInTheDocument();
+
+    // Voice grid renders catalog entries
+    expect(screen.getAllByText('Alloy').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Echo').length).toBeGreaterThan(0);
   });
 
   it('switches to Database & Supabase tab and displays project routing info', async () => {
@@ -116,30 +127,6 @@ describe('Settings Route Headless Test (app/(app)/settings/page.tsx)', () => {
 
     await waitFor(() => {
       expect(screen.queryByText('Supabase PostgreSQL Schema (DDL)')).not.toBeInTheDocument();
-    });
-  });
-
-  it('opens and closes Add Custom API Integration modal', async () => {
-    renderSettings();
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /add custom api/i })).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: /add custom api/i }));
-
-    await waitFor(() => {
-      expect(screen.getByText('Add Custom API Integration')).toBeInTheDocument();
-    });
-
-    expect(screen.getByPlaceholderText(/e\.g\. DeepSeek V3 \/ Ollama/i)).toBeInTheDocument();
-
-    // Cancel modal
-    const cancelBtn = screen.getByRole('button', { name: /cancel/i });
-    fireEvent.click(cancelBtn);
-
-    await waitFor(() => {
-      expect(screen.queryByText('Add Custom API Integration')).not.toBeInTheDocument();
     });
   });
 
