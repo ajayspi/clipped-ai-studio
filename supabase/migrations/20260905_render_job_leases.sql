@@ -37,18 +37,20 @@ AS $$
 DECLARE
   claimed_job public.render_jobs%ROWTYPE;
 BEGIN
+  -- NB: RETURNS TABLE out-param `orchestration_state` shadows the column of the
+  -- same name — bare references are ambiguous (ERROR 42702). Qualify all of them.
   SELECT *
   INTO claimed_job
   FROM public.render_jobs
   WHERE (
-    orchestration_state IN ('queued', 'retryable')
+    render_jobs.orchestration_state IN ('queued', 'retryable')
     OR (
-      orchestration_state IN ('claimed', 'rendering', 'publishing')
-      AND lease_expires_at IS NOT NULL
-      AND lease_expires_at < timezone('utc'::text, now())
+      render_jobs.orchestration_state IN ('claimed', 'rendering', 'publishing')
+      AND render_jobs.lease_expires_at IS NOT NULL
+      AND render_jobs.lease_expires_at < timezone('utc'::text, now())
     )
   )
-  AND attempt_count < max_attempts
+  AND render_jobs.attempt_count < render_jobs.max_attempts
   ORDER BY created_at ASC
   FOR UPDATE SKIP LOCKED
   LIMIT 1;

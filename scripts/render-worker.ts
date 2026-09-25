@@ -4,10 +4,29 @@ import * as path from 'path'
 import * as fs from 'fs'
 import * as crypto from 'crypto'
 import ffmpeg from 'fluent-ffmpeg'
-import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
 import { claimRenderJob, completeRenderJob, failRenderJob } from '../lib/jobs/render-job'
 
-ffmpeg.setFfmpegPath(ffmpegInstaller.path)
+// Resolve the ffmpeg binary lazily: `@ffmpeg-installer/ffmpeg` throws at require
+// time when its bundled binary is absent (platform builds are missing on some
+// installs), which used to kill the worker at import. Prefer the explicit
+// FFMPEG_PATH env, then the installer's bundled binary, then the system PATH.
+function resolveFfmpegPath(): string {
+  const explicit = process.env.FFMPEG_PATH?.trim();
+  if (explicit) return explicit;
+  try {
+    // Runtime-only legacy require: the module throws when its bundled binary
+    // is absent, so we must not import it statically.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const installer = require('@ffmpeg-installer/ffmpeg');
+    if (installer && typeof installer.path === 'string' && installer.path) {
+      return installer.path;
+    }
+  } catch {
+    // Bundled binary not available — fall through to the system PATH.
+  }
+  return 'ffmpeg';
+}
+ffmpeg.setFfmpegPath(resolveFfmpegPath())
 
 // Load environment variables from .env.local
 const ROOT_DIR = fs.existsSync(path.resolve(process.cwd(), 'package.json'))

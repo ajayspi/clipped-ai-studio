@@ -21,6 +21,17 @@
   - **Notion project hub**: "Clipped AI Studio — Project Documentation" with 9 subpages (Overview → Roadmap & Change Log) + quick-nav, under the workspace projects parent.
   - **AGENTS.md learning-loop updates**: Files DB not shared with Notion MCP integration; 2000-char code-block cap; `ntn pages create` first-heading title trap; `child_page` blocks rejected in append payloads.
 
+## 📅 2026-09-26 (Late session — Supabase migration agafust → xbneet + render dogfood)
+- **Detailed Log:** [`docs/devlogs/2026-09-26.md`](file:///c:/Users/vigilare/.gemini/antigravity/scratch/clipped/docs/devlogs/2026-09-26.md)
+- **Directives & Prompts:**
+  - Migrate the app from Supabase `agafustlankeieewtvck` (other account, 403 on the user's PAT) to `xbneetfubybzleuwhbnx.supabase.co`; rebuild xbneet's ProstudioX-era legacy schema; copy live data; retarget `.env.local`; redeploy on `:3100`; finish the render dogfood (worker + `/api/v1/generate` → real mp4).
+- **Key Changes & Features:**
+  - **Schema rebuild (Management API, PAT-gated):** drop 4 legacy tables → `schema.sql` + 3 migrations → grants (incl. `GRANT EXECUTE ON ALL FUNCTIONS`). Success = **201 + `[]`** for DDL — a first applier misread 201 as failure.
+  - **Real SQL bug:** `claim_render_job`'s `RETURNS TABLE (… orchestration_state …)` out-param shadowed the same-named column → ERROR 42702. Qualifying with `render_jobs.` fixed it (comment in `20260905_render_job_leases.sql`).
+  - **Data:** settings 39 + users 2 copied, readback verified; pre-drop legacy snapshot archived; dead demo `render_jobs` not copied. `.env.local` retargeted to xbneet (JWT form).
+  - **Code fixes (uncommitted):** `app/api/v1/generate/route.ts` UUID job/video ids (old `job_…` strings silently failed uuid inserts) + planning→enrichment→queued; `scripts/render-worker.ts` lazy ffmpeg resolution (system ffmpeg 8.1.1, installer has no bundled exe).
+  - **Dogfood green:** `POST /api/v1/generate` → 202 → gateway LLM enrichment → queued → worker claim → Edge TTS + Pollinations fallbacks → ffmpeg concat → `complete_render_job` → **h264 1080×1920 AAC 9.6s mp4**, served `200 video/mp4`. Standalone gotcha: public dir is cached at boot — post-start mp4 needed a server restart.
+
 ## 📅 2026-09-08 (Today)
 - **Detailed Log:** [`docs/devlogs/2026-09-08.md`](file:///c:/Users/vigilare/.gemini/antigravity/scratch/clipped-omni-router/docs/devlogs/2026-09-08.md)
 - **Directives & Prompts:**

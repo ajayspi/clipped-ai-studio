@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/db';
+import { after } from 'next/server';
+// This route only writes; route it through the admin client so RLS-grant gaps
+// on a fresh project can never silently drop the job insert.
+import { supabaseAdmin as supabase } from '@/lib/db';
+import { complete, parseJson } from '@/lib/ai/llm';
 import { dispatchWebhook } from '@/lib/engine/webhook-dispatcher';
 import { calculateVideoCost } from '@/lib/engine/cost-estimator';
 
@@ -51,8 +55,11 @@ export async function POST(req: Request) {
     const validWorkflows = ['footage', 'images', 'ai-videos', 'stories', 'bulk-plan', 'extract-shorts', 'micro-drama', 'auto', 'avatar', 'whiteboard'];
     const selectedWorkflow = validWorkflows.includes(workflow.toLowerCase()) ? workflow.toLowerCase() : 'footage';
 
-    const jobId = `job_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-    const videoId = `vid_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    // schema.sql declares UUID primary keys; the old `job_...`/`vid_...` string
+    // ids failed the insert with "invalid input syntax for type uuid" (silently
+    // caught below), so no job ever reached the DB. UUIDs match the table DDL.
+    const jobId = crypto.randomUUID();
+    const videoId = crypto.randomUUID();
     const createdAt = new Date().toISOString();
 
     // Estimated duration & cost
@@ -98,6 +105,9 @@ export async function POST(req: Request) {
         video_id: videoId,
         status: 'processing',
         progress: 15,
+        // 'planning' keeps the render worker from claiming the job before the
+        // after() enrichment below has written the script + beats into logs.
+        orchestration_state: 'planning',
         logs: JSON.stringify(jobLogs),
         created_at: createdAt,
       });
@@ -105,18 +115,70 @@ export async function POST(req: Request) {
       console.warn('[V1 Generate] Supabase insertion notice:', dbErr);
     }
 
+    // Enrich the job with a real script + timed beats in the background (after
+    // the 202 is sent), then flip it to 'queued' so the worker can claim it.
+    // Jobs are never left in 'planning': the finally always queues the job,
+    // using the raw prompt as a single beat when enrichment is off or fails.
+    const enrichmentEnabled =
+      process.env.NODE_ENV === 'production' || process.env.ENABLE_V1_ENRICHMENT === '1';
+
+    after(async () => {
+      let scriptText = prompt;
+      let beats: Array<{ text?: string; duration?: number }> = [];
+      try {
+        if (enrichmentEnabled) {
+          const raw = await complete({
+            system:
+              'You are a short-form video scriptwriter. Write a punchy script for a 30s video and split it into timed on-screen beats. Return ONLY valid JSON, no markdown fences: {"script": "complete narration text", "beats": [{"text": "one line of on-screen copy", "duration": 3}, ...]}. Each beat is self-contained copy, 2-6 seconds long; aim for 6-8 beats totaling ~30s.',
+            user: `Subject: ${prompt}\nWorkflow: ${selectedWorkflow}\nAspect ratio: ${aspectRatio}\nVoice: ${voice}`,
+            json: true,
+            maxTokens: 1200,
+          });
+          const parsed = parseJson<{
+            script?: string;
+            beats?: Array<{ text?: string; duration?: number }>;
+          }>(raw, {});
+          if (parsed.script) scriptText = parsed.script;
+          if (Array.isArray(parsed.beats) && parsed.beats.length) beats = parsed.beats;
+        }
+      } catch (enrichErr) {
+        console.error('[V1 Generate] Enrichment failed — queueing single-beat fallback:', enrichErr);
+      } finally {
+        const mergedLogs = {
+          ...jobLogs,
+          script: scriptText,
+          beats,
+          finalVideoUrl: `https://app.clipped.ai/renders/${jobId}.mp4`,
+        };
+        try {
+          // render_jobs has no updated_at column (schema.sql); never write one.
+          await supabase
+            .from('render_jobs')
+            .update({
+              logs: JSON.stringify(mergedLogs),
+              orchestration_state: 'queued',
+              status: 'processing',
+              progress: 20,
+            })
+            .eq('id', jobId);
+        } catch (queueErr) {
+          console.error('[V1 Generate] Failed to queue enriched job:', queueErr);
+        }
+      }
+    });
+
     // 4. Asynchronously complete job and dispatch webhook callback
     if (webhookUrl) {
       // Fire async non-blocking webhook dispatch
       setTimeout(async () => {
         try {
-          // Mark completed in database
+          // Mark completed in database (render_jobs has NO updated_at column —
+          // writing one fails the update silently).
           await supabase
             .from('render_jobs')
             .update({
               status: 'completed',
               progress: 100,
-              updated_at: new Date().toISOString(),
             })
             .eq('id', jobId);
 

@@ -19,6 +19,7 @@
 | **2026-09-07** | Voice Pipeline & Audio Muxing | Fix Edge TTS free voiceover, Remotion preview audio, data URI handling | Edge TTS 3-tier cascade, base64 buffer decode in worker, Remotion `<Audio />` | ✅ Complete | [2026-09-07.md](file:///c:/Users/vigilare/.gemini/antigravity/scratch/clipped-omni-router/docs/devlogs/2026-09-07.md) |
 | **2026-09-08** | Viewport UI, Queue & Memory | Zero-scroll 1080p viewport, dedicated `/queue`, subtitle fixes, dev memory | Viewport constraints, compact tabs, `/queue` page, subtitle escaping, memory logs | ✅ Complete | [2026-09-08.md](file:///c:/Users/vigilare/.gemini/antigravity/scratch/clipped-omni-router/docs/devlogs/2026-09-08.md) |
 | **2026-09-24 – 2026-09-26** | WP4 Toolchain, Docs & Sync | Lint/tsc to zero, master maintenance doc, Notion hub, GitHub main sync | Scoped lint 0/tsc 0, harness `this`-binding fix, `docs/MAINTENANCE.md`, Notion Files + project hub, `main` → `31191087` | ✅ Complete | [2026-09-24_to_2026-09-26.md](file:///c:/Users/vigilare/.gemini/antigravity/scratch/clipped-omni-router/docs/devlogs/2026-09-24_to_2026-09-26.md) |
+| **2026-09-26 (late)** | Supabase Migration & Render Dogfood | Migrate app agafust → xbneet, rebuild schema, copy data, redeploy `:3100`, prove worker + `/api/v1/generate` | xbneet schema rebuilt (7 tables, exact shape), grants + RPC 42702 fix, settings 39/users 2 copied, `.env.local` retargeted, standalone redeployed, real mp4 rendered + served | ✅ Complete | [2026-09-26.md](file:///c:/Users/vigilare/.gemini/antigravity/scratch/clipped/docs/devlogs/2026-09-26.md) |
 
 ---
 

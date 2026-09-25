@@ -6,9 +6,9 @@
 > **Framework:** Next.js 16.3.3 (React 19, App Router, TypeScript, **Turbopack**) — this is *not* the Next.js of older training data; breaking changes are real (read `node_modules/next/dist/docs/` before writing code).
 > **Package manager:** pnpm 11.24.0 (`packageManager: pnpm@11.24.0`; `pnpm-lock.yaml` is canonical).
 > **AI Gateway:** OmniRoute single-gateway (`omniroute-server/` vendored; localhost `:20128/v1`) with keyless fallbacks.
-> **DB & Auth:** Supabase PostgreSQL (remote `agafustlankeieewtvck.supabase.co`), multi-tenant workspaces.
+> **DB & Auth:** Supabase PostgreSQL (remote `xbneetfubybzleuwhbnx.supabase.co` — migrated from `agafustlankeieewtvck` 2026-09-26, old project retired), multi-tenant workspaces.
 > **Video engine:** Remotion 4 + FFmpeg (`@ffmpeg-installer/ffmpeg`) + Edge TTS.
-> **Status snapshot (2026-09-25):** WP4 toolchain remediation GREEN — scoped lint 0 / scoped tsc 0 / vitest 189 / e2e 201 / build exit 0. Branch `docs/agent-guide`, tip `62d2c7d4`, pushed and in sync.
+> **Status snapshot (2026-09-26):** Supabase migration agafust → xbneet COMPLETE (schema rebuilt to `schema.sql` shape, settings 39 + users 2 copied, RPCs verified incl. a 42702 fix in the lease migration) and the render pipeline dogfooded end-to-end on `:3100` (generate 202 → enrichment → worker → valid mp4 served). Scoped lint 0 / scoped tsc 0 / vitest 189 / e2e 201 still the baseline (re-verified ahead of the commit). Branch `docs/agent-guide`.
 
 ---
 
@@ -138,9 +138,9 @@ Add the DEBUG-eslint rule: **confirm verdicts by exit codes, never by re-reading
 
 ## 6. Database (Supabase PostgreSQL)
 
-Remote project: `agafustlankeieewtvck.supabase.co` (same fallback lives in `test/setup.ts`). Key tables:
+> **Runtime project (2026-09-26+):** `xbneetfubybzleuwhbnx.supabase.co` (migrated from `agafustlankeieewtvck` — same fallback string still lives in `test/setup.ts`, mock env only; the agafust service JWT also remains as the `lib/db.ts` fallback — **leaked, rotation standing**; env wins at runtime). Key tables:
 
-1. **`render_jobs`** — `id` (uuid PK), `status` (`pending | generating | rendering | completed | failed`), `progress` (0–100), `payload` (full JSON workflow config), `video_url`, `lease_holder` + `lease_expires_at` (distributed lease locking), `error_message`, `render_log`.
+1. **`render_jobs`** — `id` (uuid PK), `video_id`, `status` (`pending | processing | rendering | completed | failed`), `progress` (0–100), `error_message`/`last_error`, `logs` (JSON workflow config), `output_url`, timestamps, and the lease/orchestration columns from `20260905_render_job_leases.sql`: `orchestration_state` (`planning | queued | claimed | rendering | publishing | retryable | completed | failed`), `worker_id`, `lease_token`, `lease_expires_at`, `attempt_count`, `max_attempts`. The render worker claims atomically via the `claim_render_job` RPC (lease-expiry guarded) and completes via `complete_render_job`.
 2. **`videos`** — completed library records (metadata, thumbnail, duration, tags, status).
 3. **`settings`** — key-value config (`omniroute_api_key`, `omniroute_endpoint`, provider keys). **RLS bypass via `supabaseAdmin` service role** (server-side query drops were a real bug, fixed 2026-09-03).
 4. **`workspaces`**, **`scheduled_posts`** — multi-tenant grouping + social scheduling queue.
@@ -249,7 +249,7 @@ Full scoped lint + typecheck cleanup across app/lib/components/remotion/scripts/
 
 ## 12. Environment & Configuration
 
-- Supabase remote default: `agafustlankeieewtvck.supabase.co`; local docker optional (`docker-compose.yml`).
+- Supabase remote default: `xbneetfubybzleuwhbnx.supabase.co` (since 2026-09-26; `agafustlankeieewtvck` retired — its fallbacks remain only in `test/setup.ts` and `lib/db.ts`, see §6); local docker optional (`docker-compose.yml`).
 - OmniRoute gateway: `http://localhost:20128/v1` (provided by `omniroute-server`). No key configured → app keyless-falls back to Edge TTS / Pollinations / Openverse.
 - Never commit `.env.local`; fresh clones must copy `.env.example` from this checkout or ask the operator.
 - Aura's environment owns :3000 — this workspace's daily dev runs on **:3100**.
@@ -290,3 +290,29 @@ Full scoped lint + typecheck cleanup across app/lib/components/remotion/scripts/
 - `AGENTS.md` — the agent guide (commands, layout, quirks, environment).
 - `.opencode/spec-test-repair.md` — WP4 acceptance spec (FINAL, with verified results).
 - `omniroute-server/AGENTS.md` — vendored gateway project's own authoritative guide.
+
+---
+
+## 15. Operational Log — 2026-09-26 Supabase Migration & Render Dogfood
+
+**Goal:** repoint the app from `agafustlankeieewtvck.supabase.co` (other account; 403 on the user's PAT) to `xbneetfubybzleuwhbnx.supabase.co`, rebuild xbneet's ProstudioX-era legacy schema, copy live data, retarget `.env.local`, redeploy on `:3100`, and prove the render pipeline end-to-end.
+
+**Credential map (xbneet):** modern publishable key (anon/browser) + secret key (service role — **Kong 403s secret keys for browser UAs**; supabase-js UA is fine) + legacy anon/service JWTs (used in `.env.local` — zero UA restrictions) + the account **PAT** (only thing that runs the Management API `POST /v1/projects/{ref}/database/query`; a PAT lives under **Account Settings → Access Tokens**, NOT project API keys).
+
+**Management API facts:**
+- `POST /database/query` returns **201 + empty `[]` for successful DDL** — `200` or `201` is success; treat a bare `[]` as "executed, no rows".
+- PostgREST 404s RPCs the calling role can't EXECUTE — after DDL run `GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;` (+ `ALTER DEFAULT PRIVILEGES …`). Also: a `{}`-bodied RPC probe 404s functions with required args (probe with real params).
+
+**Real SQL bug fixed in `20260905_render_job_leases.sql`:** `claim_render_job`'s `RETURNS TABLE (id, orchestration_state, lease_token)` creates an **out-param that shadows the same-named column** → ERROR 42702 on every claim. All column refs now qualified with `render_jobs.`.
+
+**Data:** archived the pre-drop legacy snapshot, then copied **settings (39)** + **users (2)** from agafust; dead demo `render_jobs` (10) not copied. Readback verified.
+
+**Code changes (committed with this entry):** `app/api/v1/generate/route.ts` (UUID ids — `job_…`/`vid_…` strings silently failed the uuid inserts; planning→enrichment→queued with fallback), `scripts/render-worker.ts` (lazy ffmpeg resolution → system ffmpeg 8.1.1, installer has no bundled exe), `AGENTS.md` (vitest `--no-file-parallelism`).
+
+**Dogfood result:** `POST /api/v1/generate` → `202` jobId → gateway-LLM enrichment (Omni combo, ~30s) → `queued` → worker leased + rendered (Edge TTS + Pollinations free fallbacks) → `complete_render_job` → h264 1080×1920 AAC 9.6s mp4, served `200 video/mp4` at `/renders/<jobId>.mp4`. Worker `attempt_count=2` (attempt 1's complete raced the lease and `fail`→`retryable` re-queued it; final state `completed`).
+
+**Deployment gotchas:**
+- Standalone: `node --env-file=C:\…\.env.local server.js` with `PORT=3100`. **The standalone server caches `public/` at boot** — render outputs copied in post-start 404 until restart.
+- `@ffmpeg-installer/ffmpeg` has **no bundled exe on this Windows install** — the worker falls back to system `ffmpeg` (8.1.1, on PATH); set `FFMPEG_PATH` to be explicit.
+
+**Standing security items (NOT done here):** rotate the leaked agafust service JWT (hardcoded fallback in `lib/db.ts` + in this chat's transcript) and the xbneet keys/PAT that appeared in chat; decide the fate of kept branches. `lib/db.ts` fallbacks left untouched — env always wins.
