@@ -1,5 +1,8 @@
+packages:
+  - packages/*
+
 allowBuilds:
   '@ffmpeg-installer/linux-x64': set this to true or false
-  esbuild: set this to true or false
+  esbuild: true
   sharp: false
   unrs-resolver: false

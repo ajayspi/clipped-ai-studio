@@ -2492,10 +2492,19 @@ async function main() {
     const content = fs.readFileSync(workerPath, 'utf-8');
     expect(content).toContain('console.log(`\\n📦 Found pending job: ${job.id}`)');
     expect(content).toContain('console.log(`🎙️ Generating TTS for ${beatsList.length} beats...`)');
-    expect(content).toContain("const { TTSEngine } = await import('../lib/engine/tts')");
-    expect(content).toContain("let compId = 'MainRender-9x16'");
-    expect(content).toContain("if (params.aspectRatio === '16:9') compId = 'MainRender-16x9'");
-    expect(content).toContain("if (params.aspectRatio === '1:1') compId = 'MainRender-1x1'");
+    expect(content).toContain('import {');
+    expect(content).toContain('SubtitleConfig');
+    expect(content).toContain('RenderBeat');
+    expect(content).toContain('RenderScene');
+    expect(content).toContain('RenderParams');
+    expect(content).toContain('RenderOrchestrationState');
+    expect(content).toContain('validateRenderParams');
+    expect(content).toContain('validateSubtitleConfig');
+    expect(content).toContain('validateRenderBeat');
+    expect(content).toContain("from '@clipped/schema'");
+    expect(content).toContain("const aspectRatio = (params.aspectRatio ?? '9:16') as keyof typeof aspectRatios");
+    expect(content).toContain("const AR = aspectRatios[aspectRatio]");
+    expect(content).toContain("const { width, height, label: compId } = AR");
     expect(content).toContain('const publicUrl = `/renders/${job.id}.mp4`');
   }});
 

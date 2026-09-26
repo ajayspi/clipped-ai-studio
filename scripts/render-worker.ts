@@ -5,6 +5,25 @@ import * as fs from 'fs'
 import * as crypto from 'crypto'
 import ffmpeg from 'fluent-ffmpeg'
 import { claimRenderJob, completeRenderJob, failRenderJob } from '../lib/jobs/render-job'
+import { getAudioDuration, buildZoompanFilter, isFFprobeAvailable } from '../lib/engine/ffprobe'
+import { 
+  SubtitleConfig, 
+  RenderBeat, 
+  RenderScene, 
+  RenderParams, 
+  RenderOrchestrationState,
+  validateRenderParams,
+  validateSubtitleConfig,
+  validateRenderBeat,
+} from '@clipped/schema'
+
+// Check ffprobe availability at startup
+const FF_PROBE_AVAILABLE = isFFprobeAvailable();
+if (FF_PROBE_AVAILABLE) {
+  console.log('✅ ffprobe available for exact frame calculation');
+} else {
+  console.warn('⚠️ ffprobe not available — falling back to estimated durations');
+}
 
 // Resolve the ffmpeg binary lazily: `@ffmpeg-installer/ffmpeg` throws at require
 // time when its bundled binary is absent (platform builds are missing on some
@@ -71,91 +90,6 @@ async function downloadFile(url: string, dest: string) {
   fs.writeFileSync(dest, Buffer.from(buffer));
 }
 
-export interface SubtitleConfig {
-  burnSubtitles?: boolean;
-  subtitlePreset?: string;
-  subtitleColor?: string;
-  subtitleHighlightColor?: string;
-  subtitleGlow?: boolean;
-  subtitleGlowColor?: string;
-  subtitleOutline?: boolean | string;
-  subtitleOutlineWidth?: number;
-  subtitleBox?: boolean;
-  subtitleBoxColor?: string;
-  subtitleSize?: number;
-  subtitleY?: number;
-  subtitleUppercase?: boolean;
-}
-
-// Orchestration payload shapes. These arrive as opaque JSON in job.logs
-// (written by the orchestrator), so every field is optional.
-interface RenderBeat {
-  id?: string;
-  text?: string;
-  prompt?: string;
-  script?: string;
-  narration?: string;
-  duration?: number;
-  voice?: string;
-  clipUrl?: string;
-  imageUrl?: string;
-  videoUrl?: string;
-  url?: string;
-  urls?: string[];
-  candidates?: Array<{ url?: string }>;
-  selectedVideo?: { url?: string; platform?: string; previewUrl?: string };
-}
-
-interface RenderScene {
-  id?: string;
-  text?: string;
-  narration?: string;
-  prompt?: string;
-  script?: string;
-  duration?: number;
-  clipUrl?: string;
-  videoUrl?: string;
-  url?: string;
-  selectedVideo?: { url?: string; previewUrl?: string };
-}
-
-interface RenderParams {
-  message?: string;
-  script?: string;
-  duration?: number;
-  aspectRatio?: string;
-  voice?: string;
-  voiceProvider?: string;
-  voiceSpeed?: number;
-  voiceVolume?: number;
-  musicVolume?: string;
-  musicSource?: string;
-  beats?: RenderBeat[];
-  input?: { script?: string; duration?: number; beats?: RenderBeat[] };
-  analysis?: { scenes?: RenderScene[] };
-  result?: { scenes?: RenderScene[] };
-  scenes?: RenderScene[];
-  subtitleSettings?: SubtitleConfig;
-  burnSubtitles?: boolean;
-  subtitlePreset?: string;
-  subtitleColor?: string;
-  subtitleHighlightColor?: string;
-  subtitleGlow?: boolean;
-  subtitleGlowColor?: string;
-  subtitleOutline?: boolean | string;
-  subtitleOutlineWidth?: number;
-  subtitleBox?: boolean;
-  subtitleBoxColor?: string;
-  subtitleSize?: number;
-  subtitleY?: number;
-}
-
-interface RenderOrchestrationState {
-  subtitleSettings?: SubtitleConfig;
-  voice?: string;
-  voiceProvider?: string;
-}
-
 export function escapeFfmpegDrawtext(text: string): string {
   if (!text) return '';
   return text
@@ -189,7 +123,7 @@ export function buildSubtitleDrawtextFilter(text: string, settings?: SubtitleCon
   if (!text || !text.trim()) return null;
   if (settings && settings.burnSubtitles === false) return null;
 
-  const s = settings || {};
+  const s: SubtitleConfig = settings || {} as SubtitleConfig;
   let content = text.trim();
   if (s.subtitleUppercase === true || (s.subtitleUppercase !== false && s.subtitlePreset && ['Hormozi Pop', 'Cyber Neon', 'Cinematic Boxed', 'Bold Impact'].includes(s.subtitlePreset))) {
     content = content.toUpperCase();
@@ -250,6 +184,114 @@ export function buildSubtitleDrawtextFilter(text: string, settings?: SubtitleCon
   return filter;
 }
 
+/**
+ * Build karaoke-style subtitle filter with word-level highlighting
+ * Each word gets its own drawtext with enable='between(t,start,end)' for highlighting
+ */
+export function buildKaraokeSubtitleFilter(
+  wordTimestamps: Array<{ word: string; start: number; end: number; confidence?: number }>,
+  settings: SubtitleConfig,
+  beatStartTime: number = 0
+): string | null {
+  if (!wordTimestamps || wordTimestamps.length === 0) return null;
+  if (settings && settings.burnSubtitles === false) return null;
+
+  const s: SubtitleConfig = settings || {} as SubtitleConfig;
+  const normalizeColor = (c?: string, defaultColor = 'white') => {
+    if (!c) return defaultColor;
+    const clean = c.trim();
+    if (clean.startsWith('#')) {
+      return `0x${clean.slice(1)}`;
+    }
+    return clean;
+  };
+
+  let fontSize = 54;
+  if (typeof s.subtitleSize === 'number' && s.subtitleSize > 0) {
+    fontSize = s.subtitleSize < 20 ? Math.round(s.subtitleSize * 10) : Math.round(s.subtitleSize);
+  }
+
+  const fontColor = normalizeColor(s.subtitleColor || (s.subtitlePreset === 'Hormozi Pop' ? '#FACC15' : '#FFFFFF'), 'white');
+  const highlightColor = normalizeColor(s.subtitleHighlightColor || '#FFFF00', 'yellow');
+  const yPercent = typeof s.subtitleY === 'number' && s.subtitleY >= 0 ? s.subtitleY / 100 : 0.75;
+  const xExpr = '(w-text_w)/2';
+  const yExpr = `(h-text_h)*${yPercent.toFixed(2)}`;
+
+  let borderw = 0;
+  let bordercolor = 'black';
+  if (s.subtitleOutline === true || s.subtitleOutline === 'thick' || s.subtitleOutline === 'thin' || (typeof s.subtitleOutlineWidth === 'number' && s.subtitleOutlineWidth > 0)) {
+    borderw = typeof s.subtitleOutlineWidth === 'number' && s.subtitleOutlineWidth > 0 
+      ? Math.round(s.subtitleOutlineWidth) 
+      : (s.subtitleOutline === 'thick' ? 4 : 2);
+    bordercolor = normalizeColor(s.subtitleGlow ? s.subtitleGlowColor : 'black', 'black');
+  } else if (s.subtitlePreset === 'Hormozi Pop') {
+    borderw = 3;
+    bordercolor = 'black';
+  } else if (s.subtitlePreset === 'Bold Impact') {
+    borderw = 4;
+    bordercolor = 'black';
+  }
+
+  const isBox = s.subtitleBox === true || s.subtitlePreset === 'Cinematic Boxed' || s.subtitlePreset === 'Retro Karaoke';
+  let boxParam = '';
+  if (isBox) {
+    const boxColor = normalizeBoxColor(s.subtitleBoxColor);
+    boxParam = `:box=1:boxcolor=${boxColor}:boxborderw=10`;
+  }
+
+  // Build the base style for normal words
+  let baseStyle = `fontsize=${fontSize}:fontcolor=${fontColor}:x=${xExpr}:y=${yExpr}`;
+  if (borderw > 0) {
+    baseStyle += `:borderw=${borderw}:bordercolor=${bordercolor}`;
+  }
+  if (boxParam) {
+    baseStyle += boxParam;
+  }
+
+  // Build the highlight style for active word
+  let highlightStyle = `fontsize=${fontSize}:fontcolor=${highlightColor}:x=${xExpr}:y=${yExpr}`;
+  if (borderw > 0) {
+    highlightStyle += `:borderw=${borderw}:bordercolor=${bordercolor}`;
+  }
+  if (boxParam) {
+    highlightStyle += boxParam;
+  }
+
+  // Generate drawtext filters for each word
+  // We create a base layer with all text in normal color, then overlay highlighted words
+  const escapedWords = wordTimestamps.map(w => {
+    const text = w.word.trim();
+    return text
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, "'\\''")
+      .replace(/:/g, '\\:')
+      .replace(/%/g, '\\%')
+      .replace(/[\r\n]+/g, ' ')
+      .trim();
+  });
+
+  const allText = escapedWords.join(' ');
+  if (!allText) return null;
+
+  // Base layer: all text in normal color
+  let filter = `drawtext=text='${escapeFfmpegDrawtext(allText)}':${baseStyle}`;
+
+  // Overlay each word with highlight during its time window
+  for (let i = 0; i < wordTimestamps.length; i++) {
+    const wt = wordTimestamps[i];
+    const word = escapedWords[i];
+    if (!word) continue;
+    
+    const globalStart = beatStartTime + wt.start;
+    const globalEnd = beatStartTime + wt.end;
+    const enableExpr = `between(t,${globalStart.toFixed(3)},${globalEnd.toFixed(3)})`;
+    
+    filter += `,drawtext=text='${word}':${highlightStyle}:enable='${enableExpr}'`;
+  }
+
+  return filter;
+}
+
 async function startWorker() {
   console.log('🎬 Lightweight FFmpeg Render Worker started. Polling for jobs...')
   
@@ -288,11 +330,16 @@ async function pollAndProcess() {
   if (!fs.existsSync(jobTempDir)) fs.mkdirSync(jobTempDir, { recursive: true });
 
   try {
-    let params: RenderParams = {}
+    let params: RenderParams = {
+      voiceSpeed: 1.0,
+      voiceVolume: 100,
+      bgmVolume: 0,
+      enableDucking: true,
+    }
     if (typeof job.logs === 'string') {
-      try { params = JSON.parse(job.logs) } catch { params = { message: job.logs } }
+      try { params = { ...params, ...JSON.parse(job.logs) } } catch { params = { ...params, message: job.logs } }
     } else if (job.logs && typeof job.logs === 'object') {
-      params = job.logs as RenderParams
+      params = { ...params, ...job.logs } as RenderParams
     }
 
     let orchState: RenderOrchestrationState = {}
@@ -303,7 +350,9 @@ async function pollAndProcess() {
     }
 
     const subtitleSettings: SubtitleConfig = orchState.subtitleSettings || params.subtitleSettings || {
-      burnSubtitles: params.burnSubtitles,
+      burnSubtitles: params.burnSubtitles ?? true,
+      karaoke: false,
+      wordTimestamps: [],
       subtitlePreset: params.subtitlePreset,
       subtitleColor: params.subtitleColor,
       subtitleHighlightColor: params.subtitleHighlightColor,
@@ -315,6 +364,7 @@ async function pollAndProcess() {
       subtitleBoxColor: params.subtitleBoxColor,
       subtitleSize: params.subtitleSize,
       subtitleY: params.subtitleY,
+      subtitleUppercase: (params.subtitleSettings as SubtitleConfig | undefined)?.subtitleUppercase,
     }
     
     let keys: Array<{ provider: string | null; api_key: string | null }> | null = null
@@ -322,7 +372,7 @@ async function pollAndProcess() {
       const { data } = await supabase.from('settings').select('provider, api_key').is('user_id', null)
       keys = data
     } catch {}
-    
+  
     const findKey = (name: string) => keys?.find(k => k.provider === name || k.provider === `api_${name}`)?.api_key;
     const elevenKey = findKey('elevenlabs') || process.env.ELEVENLABS_API_KEY
     const googleKey = findKey('google_tts') || findKey('google') || process.env.GOOGLE_TTS_API_KEY
@@ -351,9 +401,15 @@ async function pollAndProcess() {
       }]
     }
 
-    let compId = 'MainRender-9x16'
-    if (params.aspectRatio === '16:9') compId = 'MainRender-16x9'
-    if (params.aspectRatio === '1:1') compId = 'MainRender-1x1'
+    // Aspect ratio configuration
+    const aspectRatios = {
+      '9:16': { width: 1080, height: 1920, label: 'MainRender-9x16', orientation: 'vertical' },
+      '16:9': { width: 1920, height: 1080, label: 'MainRender-16x9', orientation: 'horizontal' },
+      '1:1': { width: 1080, height: 1080, label: 'MainRender-1x1', orientation: 'square' },
+    }
+    const aspectRatio = (params.aspectRatio ?? '9:16') as keyof typeof aspectRatios
+    const AR = aspectRatios[aspectRatio]
+    const { width, height, label: compId } = AR
 
     console.log(`   -> Remotion composition binding: ${compId}`)
     console.log(`🎙️ Generating TTS for ${beatsList.length} beats...`)
@@ -391,183 +447,214 @@ async function pollAndProcess() {
         });
         audioUrl = ttsRes.audioUrl || '';
         duration = ttsRes.duration || b.duration || 3;
+        
+        // Extract word timestamps from TTS result if available (for karaoke)
+        if (ttsRes.metadata?.wordTimestamps && Array.isArray(ttsRes.metadata.wordTimestamps)) {
+          b.wordTimestamps = ttsRes.metadata.wordTimestamps;
+        }
       } catch (err) {
         console.error("TTS generation failed:", err instanceof Error ? err.message : String(err))
       }
 
-        // Extract URL from Orchestrator VideoMatch format, or fallback
-        let mediaUrl = b?.selectedVideo?.url || b?.imageUrl || b?.videoUrl || b.clipUrl || b.urls?.[0] || b.candidates?.[0]?.url || '';
-        
-        if (!mediaUrl) {
-          const fullPrompt = `${text}, educational tech style, paradox style, consistent character anchor, minimalist stick man character`;
+      // Extract URL from Orchestrator VideoMatch format, or fallback
+      let mediaUrl = b?.selectedVideo?.url || b?.imageUrl || b?.videoUrl || b.clipUrl || b.urls?.[0] || b.candidates?.[0]?.url || '';
+      
+      if (!mediaUrl) {
+        const fullPrompt = `${text}, educational tech style, paradox style, consistent character anchor, minimalist stick man character`;
+        try {
+          console.log(`     -> Calling local OmniRoute for image...`);
+          const res = await fetch('http://localhost:20128/v1/images/generations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          });
+          const data = await res.json();
+          if (data?.data?.[0]?.url) {
+            mediaUrl = data.data[0].url;
+          } else {
+            throw new Error("Invalid OmniRoute response");
+          }
+        } catch (err) {
+          console.error("     -> OmniRoute local failed, falling back to Pollinations:", err instanceof Error ? err.message : String(err));
+          mediaUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=1024&height=1024&nologo=true`;
+        }
+      }
+
+      const isVideo = mediaUrl.includes('.mp4') || mediaUrl.includes('video') || b?.selectedVideo?.platform === 'pexels';
+      const ext = isVideo ? 'mp4' : 'jpg';
+      const mediaPath = path.join(jobTempDir, `media_${i}.${ext}`);
+      
+      console.log(`     -> Downloading media (${ext})...`);
+      await downloadFile(mediaUrl, mediaPath);
+  
+      let audioPath = '';
+      let exactDuration = 0;
+      if (audioUrl) {
+        const aExt = audioUrl.startsWith('data:audio/wav') ? 'wav' : 'mp3';
+        audioPath = path.join(jobTempDir, `audio_${i}.${aExt}`);
+        await downloadFile(audioUrl, audioPath);
+
+        // Use ffprobe to get exact audio duration for precise frame calculation
+        if (FF_PROBE_AVAILABLE && fs.existsSync(audioPath) && fs.statSync(audioPath).size > 0) {
           try {
-            console.log(`     -> Calling local OmniRoute for image...`);
-            const res = await fetch('http://localhost:20128/v1/images/generations', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-            });
-            const data = await res.json();
-            if (data?.data?.[0]?.url) {
-              mediaUrl = data.data[0].url;
-            } else {
-              throw new Error("Invalid OmniRoute response");
-            }
-          } catch (err) {
-            console.error("     -> OmniRoute local failed, falling back to Pollinations:", err instanceof Error ? err.message : String(err));
-            mediaUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=1024&height=1024&nologo=true`;
+            exactDuration = await getAudioDuration(audioPath);
+            console.log(`     -> Exact audio duration: ${exactDuration.toFixed(3)}s`);
+          } catch (e) {
+            console.warn(`     -> ffprobe failed, using estimated duration: ${e instanceof Error ? e.message : String(e)}`);
           }
         }
+      }
+      
+      // Use exact duration from ffprobe if available, otherwise fall back to TTS reported duration or beat duration
+      const finalDuration = exactDuration > 0 ? exactDuration : (duration || b.duration || 3);
+      
+      // Store exact duration on beat for later use
+      b.exactDuration = finalDuration;
 
-        const isVideo = mediaUrl.includes('.mp4') || mediaUrl.includes('video') || b?.selectedVideo?.platform === 'pexels';
-        const ext = isVideo ? 'mp4' : 'jpg';
-        const mediaPath = path.join(jobTempDir, `media_${i}.${ext}`);
-        
-        console.log(`     -> Downloading media (${ext})...`);
-        await downloadFile(mediaUrl, mediaPath);
-  
-        let audioPath = '';
-        if (audioUrl) {
-          const aExt = audioUrl.startsWith('data:audio/wav') ? 'wav' : 'mp3';
-          audioPath = path.join(jobTempDir, `audio_${i}.${aExt}`);
-          await downloadFile(audioUrl, audioPath);
-        }
-  
-        let baseFilter = 'scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920';
-        if (!isVideo) {
-          const fps = 25;
-          const frames = Math.ceil(duration * fps);
-          baseFilter += `,zoompan=z='1.0+(0.15*(in/${frames}))':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${frames}:s=1080x1920:fps=${fps}`;
-        }
-        const subFilter = buildSubtitleDrawtextFilter(text, subtitleSettings);
-        const videoFilter = subFilter ? `${baseFilter},${subFilter}` : baseFilter;
-  
-        const clipPath = path.join(jobTempDir, `clip_${i}.mp4`);
-        await new Promise<void>((resolve, reject) => {
-          let cmd = ffmpeg().input(mediaPath);
-          
-          if (!isVideo) {
-            cmd = cmd.loop(duration);
-          } else {
-            cmd = cmd.inputOptions([`-t ${duration}`]); // Truncate video to scene duration
-          }
-          
-          if (audioPath && fs.existsSync(audioPath) && fs.statSync(audioPath).size > 0) {
-            cmd = cmd.input(audioPath);
-            
-            const outputOpts = [
-              '-c:v libx264',
-              '-map 0:v:0',
-              '-map 1:a:0',
-              '-c:a aac',
-              '-b:a 192k',
-              '-pix_fmt yuv420p',
-              '-shortest'
-            ];
-            if (!isVideo) outputOpts.push('-tune stillimage');
-            
-            cmd.outputOptions(outputOpts).videoFilters(videoFilter);
-          } else {
-            // Keep audio stream active and consistent across all clips
-            cmd = cmd.input('anullsrc=r=44100:cl=stereo').inputOptions(['-f lavfi', `-t ${duration}`]);
-            
-            const outputOpts = [
-              '-c:v libx264',
-              '-map 0:v:0',
-              '-map 1:a:0',
-              '-c:a aac',
-              '-b:a 192k',
-              '-pix_fmt yuv420p',
-              '-shortest'
-            ];
-            if (!isVideo) outputOpts.push('-tune stillimage');
-            
-            cmd.outputOptions(outputOpts).videoFilters(videoFilter);
-          }
+      let baseFilter = `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height}`;
+      // Use finalDuration (exact from ffprobe) for all timing
+      const fps = 25;
+      
+      // Build subtitle filter - use karaoke if word timestamps available and karaoke enabled
+      let subFilter: string | null = null;
+      if (b.wordTimestamps && b.wordTimestamps.length > 0 && subtitleSettings.karaoke) {
+        subFilter = buildKaraokeSubtitleFilter(b.wordTimestamps, subtitleSettings, totalDurationSeconds);
+      } else {
+        subFilter = buildSubtitleDrawtextFilter(text, subtitleSettings);
+      }
+      
+      // Build video filter with exact frame count from ffprobe duration
+      if (!isVideo) {
+        baseFilter += `,${buildZoompanFilter(finalDuration, fps, AR.width, AR.height, i % 2 === 0 ? 'in' : 'out')}`;
+      }
+      const videoFilter = subFilter ? `${baseFilter},${subFilter}` : baseFilter;
 
-          cmd.save(clipPath)
-            .on('end', () => resolve())
-            .on('error', (err: Error) => reject(err));
-        });
-
-      beatClips.push(clipPath);
-      totalDurationSeconds += duration;
-    }
-
-    console.log(`🚀 Concatenating ${beatClips.length} clips into final video...`)
-    
-    const outputPath = path.join(RENDER_DIR, `${job.id}.mp4`)
-    const publicUrl = `/renders/${job.id}.mp4`
-
-      const concatListPath = path.join(jobTempDir, 'concat.txt');
-      const concatContent = beatClips.map(clip => `file '${clip}'`).join('\n');
-      fs.writeFileSync(concatListPath, concatContent);
-  
-      const concatTempPath = path.join(jobTempDir, 'concat_temp.mp4');
+      const clipPath = path.join(jobTempDir, `clip_${i}.mp4`);
       await new Promise<void>((resolve, reject) => {
-        ffmpeg()
-          .input(concatListPath)
-          .inputOptions(['-f concat', '-safe 0'])
-          .outputOptions('-c copy')
-          .save(concatTempPath)
+        let cmd = ffmpeg().input(mediaPath);
+        
+        if (!isVideo) {
+          cmd = cmd.loop(finalDuration);
+        } else {
+          cmd = cmd.inputOptions([`-t ${finalDuration}`]); // Truncate video to exact scene duration
+        }
+        
+        if (audioPath && fs.existsSync(audioPath) && fs.statSync(audioPath).size > 0) {
+          cmd = cmd.input(audioPath);
+          
+          const outputOpts = [
+            '-c:v libx264',
+            '-map 0:v:0',
+            '-map 1:a:0',
+            '-c:a aac',
+            '-b:a 192k',
+            '-pix_fmt yuv420p',
+            '-shortest'
+          ];
+          if (!isVideo) outputOpts.push('-tune stillimage');
+          
+          cmd.outputOptions(outputOpts).videoFilters(videoFilter);
+        } else {
+          // Keep audio stream active and consistent across all clips
+          cmd = cmd.input('anullsrc=r=44100:cl=stereo').inputOptions(['-f lavfi', `-t ${finalDuration}`]);
+          
+          const outputOpts = [
+            '-c:v libx264',
+            '-map 0:v:0',
+            '-map 1:a:0',
+            '-c:a aac',
+            '-b:a 192k',
+            '-pix_fmt yuv420p',
+            '-shortest'
+          ];
+          if (!isVideo) outputOpts.push('-tune stillimage');
+          
+          cmd.outputOptions(outputOpts).videoFilters(videoFilter);
+        }
+
+        cmd.save(clipPath)
           .on('end', () => resolve())
           .on('error', (err: Error) => reject(err));
       });
 
-      // Apply Background Music with Audio Ducking
-      const pixabayKey = findKey('pixabay') || process.env.PIXABAY_API_KEY;
-      const musicVolume = params.musicVolume ? parseInt(params.musicVolume) : 0;
-      let bgmDownloaded = false;
-      const bgmPath = path.join(jobTempDir, 'bgm.mp3');
+      beatClips.push(clipPath);
+      totalDurationSeconds += finalDuration;
+    }
 
-      if (musicVolume > 0 && pixabayKey) {
-        console.log(`     -> Fetching background music...`);
-        try {
-          const musicQuery = params.musicSource && params.musicSource !== 'Random Background Music' 
-            ? params.musicSource 
-            : 'cinematic ambient';
-          const bgmRes = await fetch(`https://pixabay.com/api/audio/?key=${pixabayKey}&q=${encodeURIComponent(musicQuery)}`);
-          const bgmData = await bgmRes.json();
-          if (bgmData.hits && bgmData.hits.length > 0) {
-            const track = bgmData.hits[Math.floor(Math.random() * Math.min(3, bgmData.hits.length))];
-            await downloadFile(track.preview, bgmPath);
-            bgmDownloaded = true;
-          }
-        } catch (e) {
-          console.error("Failed to download BGM:", e);
-        }
-      }
+    console.log(`🎬 Concatenating ${beatClips.length} clips into final video...`)
+    
+    const outputPath = path.join(RENDER_DIR, `${job.id}.mp4`)
+    const publicUrl = `/renders/${job.id}.mp4`
 
-      if (bgmDownloaded) {
-        console.log(`     -> Mixing Audio with sidechain ducking...`);
-        const duckingVol = musicVolume / 100; // e.g. 20 -> 0.2
-        await new Promise<void>((resolve, reject) => {
-          const cmd = ffmpeg();
-          cmd.input(concatTempPath);
-          cmd.input(bgmPath).inputOptions(['-stream_loop', '-1']);
-          cmd.complexFilter([
-              `[1:a]volume=${duckingVol}[bgm]`,
-              `[0:a]asplit[main1][main2]`,
-              `[bgm][main1]sidechaincompress=threshold=0.08:ratio=4:attack=5:release=50[bgm_ducked]`,
-              `[main2][bgm_ducked]amix=inputs=2:duration=first:dropout_transition=2[aout]`
-            ])
-            .outputOptions([
-              '-map 0:v',
-              '-map [aout]',
-              '-c:v copy',
-              '-c:a aac',
-              '-b:a 192k',
-              '-shortest'
-            ])
-            .save(outputPath)
-            .on('end', () => resolve())
-            .on('error', (err: Error) => reject(err));
-        });
-      } else {
-        // Just move the concat temp file to output
-        fs.copyFileSync(concatTempPath, outputPath);
-      }
+    const concatListPath = path.join(jobTempDir, 'concat.txt');
+    const concatContent = beatClips.map(clip => `file '${clip}'`).join('\n');
+    fs.writeFileSync(concatListPath, concatContent);
   
-      console.log(`🎬 Render complete: ${outputPath}`)
+    const concatTempPath = path.join(jobTempDir, 'concat_temp.mp4');
+    await new Promise<void>((resolve, reject) => {
+      ffmpeg()
+        .input(concatListPath)
+        .inputOptions(['-f concat', '-safe 0'])
+        .outputOptions('-c copy')
+        .save(concatTempPath)
+        .on('end', () => resolve())
+        .on('error', (err: Error) => reject(err));
+    });
+
+    // Apply Background Music with Audio Ducking
+    const pixabayKey = findKey('pixabay') || process.env.PIXABAY_API_KEY;
+    const musicVolume = params.musicVolume ? parseInt(params.musicVolume) : 0;
+    let bgmDownloaded = false;
+    const bgmPath = path.join(jobTempDir, 'bgm.mp3');
+
+    if (musicVolume > 0 && pixabayKey) {
+      console.log(`     -> Fetching background music...`);
+      try {
+        const musicQuery = params.musicSource && params.musicSource !== 'Random Background Music' 
+          ? params.musicSource 
+          : 'cinematic ambient';
+        const bgmRes = await fetch(`https://pixabay.com/api/audio/?key=${pixabayKey}&q=${encodeURIComponent(musicQuery)}`);
+        const bgmData = await bgmRes.json();
+        if (bgmData.hits && bgmData.hits.length > 0) {
+          const track = bgmData.hits[Math.floor(Math.random() * Math.min(3, bgmData.hits.length))];
+          await downloadFile(track.preview, bgmPath);
+          bgmDownloaded = true;
+        }
+      } catch (e) {
+        console.error("Failed to download BGM:", e);
+      }
+    }
+
+    if (bgmDownloaded) {
+      console.log(`     -> Mixing Audio with sidechain ducking...`);
+      const duckingVol = musicVolume / 100; // e.g. 20 -> 0.2
+      await new Promise<void>((resolve, reject) => {
+        const cmd = ffmpeg();
+        cmd.input(concatTempPath);
+        cmd.input(bgmPath).inputOptions(['-stream_loop', '-1']);
+        cmd.complexFilter([
+            `[1:a]volume=${duckingVol}[bgm]`,
+            `[0:a]asplit[main1][main2]`,
+            `[bgm][main1]sidechaincompress=threshold=0.08:ratio=4:attack=5:release=50[bgm_ducked]`,
+            `[main2][bgm_ducked]amix=inputs=2:duration=first:dropout_transition=2[aout]`
+          ])
+          .outputOptions([
+            '-map 0:v',
+            '-map [aout]',
+            '-c:v copy',
+            '-c:a aac',
+            '-b:a 192k',
+            '-shortest'
+          ])
+          .save(outputPath)
+          .on('end', () => resolve())
+          .on('error', (err: Error) => reject(err));
+      });
+    } else {
+      // Just move the concat temp file to output
+      fs.copyFileSync(concatTempPath, outputPath);
+    }
+  
+    console.log(`🎬 Render complete: ${outputPath}`)
 
     await completeRenderJob(renderJobRpc, {
       jobId: job.id,
