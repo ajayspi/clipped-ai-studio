@@ -53,7 +53,7 @@ export async function completeRenderJob(
   client: RpcClient,
   options: CompleteRenderJobOptions,
 ): Promise<void> {
-  const { error } = await client.rpc('complete_render_job', {
+  const { data, error } = await client.rpc('complete_render_job', {
     p_job_id: options.jobId,
     p_worker_id: options.workerId,
     p_lease_token: options.leaseToken,
@@ -63,6 +63,19 @@ export async function completeRenderJob(
 
   if (error) {
     throw new Error(`Unable to complete render job: ${error.message}`)
+  }
+
+  // The RPC returns FALSE (not an error) when the UPDATE matched no rows — which
+  // happens when the lease has expired, or the worker/lease token no longer owns
+  // the job. Swallowing that leaves the job stuck in 'claimed' with a finished
+  // file on disk, and claim_render_job then re-claims and re-renders it once the
+  // lease is reclaimable, burning every attempt for a job that already succeeded.
+  if (data === false) {
+    throw new Error(
+      `Render job ${options.jobId} was completed but the completion was rejected ` +
+        `(lease expired or lost ownership). The output was written but the job is ` +
+        `still marked in-progress and will be re-claimed and re-rendered.`,
+    )
   }
 }
 

@@ -1,15 +1,110 @@
 import { NextResponse } from 'next/server';
 import { getOmniRouteConfig } from '@/lib/keys';
+import { PROVIDER_REGISTRY } from '@/lib/api-router';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('settings/keys-check');
 
 export const dynamic = 'force-dynamic';
 
-const LEGACY_PROVIDERS = new Set([
-  'openai', 'gemini', 'anthropic', 'openrouter', 'fal', 'grok', 'groq',
-  'deepseek', 'mistral', 'cerebras', 'github_models', 'ollama',
-  'pexels', 'pixabay', 'kling', 'luma', 'huggingface',
-  'azure', 'azure_speech', 'azure_region', 'elevenlabs', 'google_tts',
-  'deepgram', 'suno', 'heygen', 'did'
-]);
+/**
+ * Verify a direct provider key against that provider's own endpoint.
+ *
+ * This route used to refuse every non-OmniRoute provider with "Individual AI
+ * providers are deprecated", which was accurate when the cascade only spoke to
+ * the gateway. It is not accurate now: `lib/engine/llm.ts` reads direct keys out
+ * of the same `settings` table and the product can save them, so Settings needs
+ * to be able to tell the user whether the key they just pasted actually works.
+ */
+async function checkDirectProvider(
+  providerId: string,
+  apiKey: string,
+  startTime: number,
+): Promise<NextResponse> {
+  const entry = PROVIDER_REGISTRY.find((p) => p.id === providerId);
+  if (!entry) {
+    return NextResponse.json({
+      success: false,
+      latencyMs: Date.now() - startTime,
+      error: `No registry entry for provider "${providerId}" — cannot verify.`,
+      message: `Unknown provider "${providerId}"`,
+    }, { status: 400 });
+  }
+
+  if (!apiKey && !entry.isFree) {
+    return NextResponse.json({
+      success: false,
+      latencyMs: Date.now() - startTime,
+      error: `An API key is required to verify ${entry.name}.`,
+      message: 'apiKey is required',
+    }, { status: 400 });
+  }
+
+  // Gemini authenticates via ?key=; everything else that uses a bearer token gets
+  // one. `healthAuthHeader` returning an empty string means "not bearer", so fall
+  // back to a plain bearer which is wrong for gemini — special-case it.
+  const useQueryKey = providerId === 'gemini' || entry.healthAuthHeader?.(apiKey) === '';
+  const url = useQueryKey && apiKey
+    ? `${entry.healthEndpoint}${entry.healthEndpoint.includes('?') ? '&' : '?'}key=${encodeURIComponent(apiKey)}`
+    : entry.healthEndpoint;
+
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  const auth = entry.healthAuthHeader?.(apiKey);
+  if (auth) headers['Authorization'] = auth;
+  else if (apiKey && !useQueryKey) headers['Authorization'] = `Bearer ${apiKey}`;
+
+  let response: Response;
+  try {
+    response = await fetch(url, { headers, signal: AbortSignal.timeout(8000) });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Network error or timeout';
+    logger.warn('Direct provider check could not connect', { provider: providerId, error: message });
+    return NextResponse.json({
+      success: false,
+      latencyMs: Date.now() - startTime,
+      error: `Could not connect to ${entry.name}: ${message}`,
+      message: `Connection failed: ${message}`,
+    });
+  }
+
+  const latencyMs = Date.now() - startTime;
+
+  if (!response.ok) {
+    let detail = response.statusText;
+    try {
+      const body = await response.json();
+      detail = body?.error?.message || body?.message || JSON.stringify(body);
+    } catch {
+      // Non-JSON error body; statusText is the best we have.
+    }
+    logger.warn('Direct provider check rejected', { provider: providerId, status: response.status });
+    return NextResponse.json({
+      success: false,
+      latencyMs,
+      error: `${entry.name} returned HTTP ${response.status}: ${detail}`,
+      message: `Connection failed (HTTP ${response.status})`,
+    });
+  }
+
+  // Count available models where the endpoint exposes a list; not all do.
+  let modelCount: number | null = null;
+  try {
+    const body = await response.json();
+    if (Array.isArray(body?.data)) modelCount = body.data.length;
+    else if (Array.isArray(body?.models)) modelCount = body.models.length;
+    else if (Array.isArray(body)) modelCount = body.length;
+  } catch {
+    // Endpoint responded 2xx but with no JSON body — key is still valid.
+  }
+
+  return NextResponse.json({
+    success: true,
+    latencyMs,
+    isWorking: true,
+    modelCount,
+    message: `Connected to ${entry.name} (${latencyMs}ms).${modelCount !== null ? ` ${modelCount} model(s) available.` : ''}`,
+  });
+}
 
 export async function POST(req: Request) {
   const startTime = Date.now();
@@ -17,17 +112,13 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const { provider } = body;
 
-    // If a legacy provider was explicitly requested, reject
     if (provider && typeof provider === 'string') {
       const cleanP = provider.toLowerCase().trim().replace(/^api_/, '');
       const isOmni = cleanP === 'omniroute' || cleanP === 'omniroute_endpoint_url' || cleanP === 'omniroute_api_key';
-      if (!isOmni || LEGACY_PROVIDERS.has(cleanP)) {
-        return NextResponse.json({
-          success: false,
-          latencyMs: Date.now() - startTime,
-          error: 'Individual AI providers are deprecated. Only OmniRoute configuration is supported.',
-          message: 'Individual AI providers are deprecated. Only OmniRoute configuration is supported.',
-        }, { status: 400 });
+
+      if (!isOmni) {
+        const rawKey = body.apiKey !== undefined ? body.apiKey : body.key;
+        return checkDirectProvider(cleanP, typeof rawKey === 'string' ? rawKey.trim() : '', startTime);
       }
     }
 

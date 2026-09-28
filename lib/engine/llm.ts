@@ -1,6 +1,9 @@
 import { getOmniRouteConfig } from '@/lib/keys';
 import { supabaseAdmin, supabase } from '@/lib/db';
 import { PROVIDER_REGISTRY } from '@/lib/api-router';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('llm');
 
 export interface LLMCompletionRequest {
   system: string;
@@ -291,10 +294,12 @@ export async function complete(
             ? `timed out after ${GATEWAY_TIMEOUT_MS}ms`
             : err.message || String(err)
           : String(err);
+      logger.warn('OmniRoute gateway unavailable — falling back', { reason });
       console.warn(`[LLM] OmniRoute gateway unavailable (${reason}) — falling back.`);
       errors.push(`OmniRoute gateway: ${reason}`);
     }
   } else {
+    logger.warn('OmniRoute gateway not configured — falling back');
     errors.push('OmniRoute gateway: not configured');
   }
 
@@ -315,14 +320,24 @@ export async function complete(
             request,
             Math.min(PROVIDER_TIMEOUT_MS, remaining)
           );
+          logger.info('Served by fallback provider', { provider: target.name, model });
           console.warn(`[LLM] Served by fallback provider: ${target.name} (${model}).`);
           return content;
         } catch (err) {
+          // Record every attempt. The cascade deliberately swallows individual
+          // provider failures, so without this a fully-failing provider set leaves
+          // no trace anywhere except the final aggregate error.
+          logger.warn('Direct provider attempt failed', {
+            provider: target.name,
+            model,
+            error: err,
+          });
           errors.push(`${target.name}/${model}: ${err instanceof Error ? err.message : String(err)}`);
         }
       }
     }
   } catch (err) {
+    logger.error('Direct provider lookup failed', { error: err });
     errors.push(`direct providers: lookup failed (${err instanceof Error ? err.message : String(err)})`);
   }
 
@@ -338,9 +353,11 @@ export async function complete(
           request,
           Math.min(PROVIDER_TIMEOUT_MS, remaining)
         );
+        logger.info('Served by keyless fallback', { provider: keyless.name, model });
         console.warn(`[LLM] Served by keyless fallback: ${keyless.name} (${model}).`);
         return content;
       } catch (err) {
+        logger.warn('Keyless provider attempt failed', { provider: keyless.name, model, error: err });
         errors.push(`${keyless.name}/${model}: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
@@ -352,6 +369,7 @@ export async function complete(
 /** Log the exhausted cascade and throw a single aggregated error. */
 function failed(errors: string[]): never {
   const summary = errors.join(' | ');
+  logger.error('Every provider in the cascade failed', { attempts: errors });
   console.error(`[LLM] Every provider in the cascade failed: ${summary}`);
   throw new Error(`All LLM providers failed: ${summary}`);
 }

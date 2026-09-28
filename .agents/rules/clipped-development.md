@@ -16,3 +16,11 @@ description: Core architectural and environmental guidelines for the Clipped AI 
 ## 3. UI/UX Generation Patterns
 - **Constraint**: When building new generation workflows in the `/create` section, strictly maintain the Shadcn UI and Tailwind design system established in the codebase.
 - **Auto-Pilot Requirement**: Generation flows must support a hybrid "Auto-Pilot mode." Auto mode should orchestrate the steps automatically without blocking, BUT the UI must remain accessible so the user can inspect or intervene at any time (e.g., pausing to swap out AI-selected clips or modifying the script) during the process.
+
+## 4. Local PM2 Worker Execution (Windows)
+- **Constraint**: The `ecosystem.config.js` uses `bun` to run workers natively. If `bun` is not installed globally on the Windows host, `pnpm workers` will fail with an interpreter error.
+- **Requirement**: Either install `bun` globally via npm (`npm i -g bun`) if compatible, or modify `ecosystem.config.js` locally to use Node with tsx instead:
+  ```javascript
+  interpreter: 'node',
+  interpreter_args: '--import tsx',
+  ```

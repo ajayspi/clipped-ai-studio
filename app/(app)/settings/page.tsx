@@ -60,6 +60,40 @@ interface WorkspaceItem {
   videoCount?: number;
 }
 
+/**
+ * Direct provider keys shown on the OmniRoute tab, grouped by what they serve.
+ *
+ * The LLM group is the important one: `lib/engine/llm.ts` falls back to these
+ * when the gateway is down, and it already had openai/anthropic/gemini/openrouter
+ * keys sitting in the `settings` table. They were simply never rendered, because
+ * this list was a hardcoded eight media-only ids.
+ */
+const DIRECT_PROVIDER_GROUPS: Array<{ label: string; hint: string; providers: string[] }> = [
+  {
+    label: "LLM & Text",
+    hint: "Script, scene and story generation fallbacks",
+    providers: [
+      "openai", "anthropic", "gemini", "openrouter", "grok", "groq",
+      "deepseek", "mistral", "cerebras", "github_models", "huggingface",
+    ],
+  },
+  {
+    label: "Image & Video",
+    hint: "Scene imagery and generated video clips",
+    providers: ["fal", "ideogram", "bytez", "kling", "luma"],
+  },
+  {
+    label: "Stock Media",
+    hint: "Footage and stills",
+    providers: ["pexels", "pixabay", "coverr"],
+  },
+  {
+    label: "Voice & Music",
+    hint: "Narration, speech-to-text and background music",
+    providers: ["elevenlabs", "deepgram", "suno", "heygen", "did"],
+  },
+];
+
 const CATEGORIES = [
   "OmniRoute AI",
   "Voice Catalog",
@@ -1092,12 +1126,25 @@ export default function SettingsPage() {
                             Direct External API Keys (Optional)
                           </h3>
                           <p className="text-xs text-muted-foreground mt-1">
-                            By default, all models route through OmniRoute. You can configure direct keys below (e.g. Ideogram, Fal) to bypass the router for specific models, or if you prefer using direct provider endpoints.
+                            Everything here routes through OmniRoute by default. These direct keys let the LLM and media cascades fall back to a specific provider when the gateway is unavailable — <code>lib/engine/llm.ts</code> reads them straight from the <code>settings</code> table, in priority order.
                           </p>
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {["fal", "ideogram", "bytez", "kling", "luma", "pexels", "pixabay", "coverr"].map(provider => {
+                        <div className="space-y-6">
+                        {DIRECT_PROVIDER_GROUPS.map(group => {
+                          const configured = group.providers.filter(p => externalKeys[p]?.isConfigured).length;
+                          return (
+                          <div key={group.label} className="space-y-3">
+                            <div className="flex items-baseline justify-between">
+                              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                {group.label}
+                              </h4>
+                              <span className="text-[10px] text-muted-foreground">
+                                {configured}/{group.providers.length} configured &middot; {group.hint}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {group.providers.map(provider => {
                             const info = externalKeys[provider];
                             const isSaving = savingExternal[provider];
                             const editVal = editingExternal[provider] ?? "";
@@ -1135,6 +1182,10 @@ export default function SettingsPage() {
                               </div>
                             );
                           })}
+                            </div>
+                          </div>
+                          );
+                        })}
                         </div>
                       </div>
                       

@@ -2,8 +2,10 @@
  * Milestone 1: Backend Storage & API Keys Route Refactoring Test Suite
  * Validates:
  * 1. getOmniRouteConfig() resolver with short TTL caching, database lookup, and env/default fallbacks.
- * 2. GET /api/settings/keys returning exclusively OmniRoute credentials and strictly 0 legacy keys.
- * 3. POST /api/settings/keys accepting and validating OmniRoute URL/key and rejecting legacy providers.
+ * 2. GET /api/settings/keys returning OmniRoute credentials plus any direct provider
+ *    keys that exist in the `settings` table (the LLM/media cascade reads them).
+ * 3. POST /api/settings/keys accepting OmniRoute URL/key and direct provider keys,
+ *    and rejecting providers outside the supported set.
  * 4. POST /api/settings/keys/check probing OmniRoute endpoint and returning latency and models.
  * 5. Codebase cleanliness: 0 occurrences of OPENAI_API_KEY in settings keys route.
  */
@@ -46,14 +48,16 @@ export async function registerMilestone1BackendStorageTests() {
   });
 
   // =========================================================================
-  // 2. GET /api/settings/keys Exclusively Returns OmniRoute
+  // 2. GET /api/settings/keys Returns OmniRoute + Any Configured Direct Providers
   // =========================================================================
   registry.register({
     id: 'M1-OMNIROUTE-02',
     tier: 'unit',
     workflow: 'omniroute-storage',
-    title: 'GET /api/settings/keys: Returns OmniRoute and ZERO legacy provider keys',
-    description: 'Verifies response contains omniroute credentials and strictly 0 legacy keys (openai, azure, etc.)',
+    title: 'GET /api/settings/keys: Returns OmniRoute and only supported direct provider keys',
+    description:
+      'Verifies the response always contains omniroute credentials, and that any other key present is a ' +
+      'supported direct provider (masked, never raw). Unsupported/unknown ids must not be echoed back.',
     fn: async () => {
       const res = await getKeysRoute();
       expect(res.status).toBe(200);
@@ -66,42 +70,65 @@ export async function registerMilestone1BackendStorageTests() {
       expect(json.keys).toBeDefined();
       expect(json.keys.omniroute).toBeDefined();
 
-      // Verify ZERO legacy provider keys exist in keys map
-      const legacyKeys = [
-        'openai', 'gemini', 'anthropic', 'openrouter', 'fal', 'grok', 'groq',
-        'deepseek', 'mistral', 'cerebras', 'github_models', 'ollama',
-        'pexels', 'pixabay', 'kling', 'luma', 'huggingface',
-        'azure_speech', 'azure_region', 'azure', 'elevenlabs', 'google_tts',
-        'deepgram', 'suno', 'heygen', 'did',
-        'api_openai', 'api_azure_speech', 'api_elevenlabs'
-      ];
+      // The OmniRoute block must never leak a raw key.
+      expect(json.omniroute.maskedApiKey === undefined || json.omniroute.maskedApiKey.includes('•')).toBe(true);
 
-      for (const legacyKey of legacyKeys) {
-        expect(json.keys[legacyKey]).toBeUndefined();
+      // Every non-omniroute entry must be a supported direct provider, and must be
+      // masked. Keys that exist in the `settings` table for providers the product
+      // does not support must not be surfaced.
+      const supported = new Set([
+        'openai', 'anthropic', 'gemini', 'openrouter', 'grok', 'groq', 'deepseek',
+        'mistral', 'cerebras', 'github_models', 'huggingface', 'together', 'cohere',
+        'ollama', 'lmstudio', 'pexels', 'pixabay', 'coverr', 'fal', 'aihorde',
+        'kling', 'luma', 'ideogram', 'bytez', 'heygen', 'did', 'deepgram',
+        'elevenlabs', 'google_tts', 'azure_speech', 'suno',
+      ]);
+
+      for (const [id, value] of Object.entries(json.keys as Record<string, { maskedApiKey?: string; isConfigured?: boolean }>)) {
+        if (id === 'omniroute' || id === 'omniroute_endpoint_url' || id === 'omniroute_api_key') continue;
+        expect(supported.has(id)).toBe(true);
+        // Masked values only — a raw key must never be serialized to the client.
+        if (value?.isConfigured) {
+          expect(value.maskedApiKey === undefined || value.maskedApiKey.includes('•')).toBe(true);
+        }
       }
     },
   });
 
   // =========================================================================
-  // 3. POST /api/settings/keys Rejection of Legacy Providers
+  // 3. POST /api/settings/keys Accepts Direct Providers, Rejects Unknown Ones
   // =========================================================================
   registry.register({
     id: 'M1-OMNIROUTE-03',
     tier: 'unit',
     workflow: 'omniroute-storage',
-    title: 'POST /api/settings/keys: Rejects legacy provider submissions with 400 Bad Request',
-    description: 'Verifies submitting deprecated providers (e.g. openai, azure) returns 400 error message',
+    title: 'POST /api/settings/keys: Accepts a supported direct provider and rejects an unknown one',
+    description:
+      'Verifies a supported LLM provider key is accepted (the cascade depends on these being savable) ' +
+      'and that a provider outside the supported set still returns 400.',
     fn: async () => {
-      const mockReq = createMockRequest('POST', {
+      // Supported direct provider: must NOT be rejected.
+      const okReq = createMockRequest('POST', {
         provider: 'openai',
-        apiKey: 'sk-legacy-test-1234',
+        apiKey: 'sk-direct-provider-test-1234',
       });
+      const okRes = await postKeysRoute(okReq as unknown as Request);
+      expect(okRes.status).toBe(200);
+      const okJson = await okRes.json();
+      expect(okJson.success).toBe(true);
+      expect(okJson.provider).toBe('openai');
+      // The echoed key must be masked, never raw.
+      expect(okJson.maskedApiKey === undefined || okJson.maskedApiKey.includes('•')).toBe(true);
 
-      const res = await postKeysRoute(mockReq as unknown as Request);
-      expect(res.status).toBe(400);
-
-      const json = await res.json();
-      expect(json.error).toBe('Individual AI providers are deprecated. Only OmniRoute configuration is supported.');
+      // Unknown provider: still rejected.
+      const badReq = createMockRequest('POST', {
+        provider: 'definitely_not_a_real_provider_xyz',
+        apiKey: 'sk-nope-1234',
+      });
+      const badRes = await postKeysRoute(badReq as unknown as Request);
+      expect(badRes.status).toBe(400);
+      const badJson = await badRes.json();
+      expect(typeof badJson.error).toBe('string');
     },
   });
 

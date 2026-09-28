@@ -144,6 +144,14 @@ export async function POST(req: Request) {
       } catch (enrichErr) {
         console.error('[V1 Generate] Enrichment failed — queueing single-beat fallback:', enrichErr);
       } finally {
+        // A job with zero beats makes the render worker build an EMPTY concat.txt,
+        // which ffmpeg rejects ("Invalid data found when processing input") — the job
+        // then burns all 3 attempts and is marked failed. Enrichment is off unless
+        // NODE_ENV=production or ENABLE_V1_ENRICHMENT=1, so in `pnpm dev` this branch
+        // is the normal path, not the exception. Always emit at least one beat.
+        if (!beats.length) {
+          beats = [{ text: scriptText.slice(0, 240), duration: 5 }];
+        }
         const mergedLogs = {
           ...jobLogs,
           script: scriptText,

@@ -70,59 +70,7 @@ export function PreviewRenderer({
     }
   }, [autoPlay, videoReady]);
 
-  const handlePlay = useCallback(() => {
-    if (videoRef.current) {
-      videoRef.current.play().catch(() => {
-        // Play was prevented
-        setIsPlaying(false);
-      });
-    }
-  }, []);
-
-  const handlePause = useCallback(() => {
-    if (videoRef.current) {
-      videoRef.current.pause();
-      setIsPlaying(false);
-    }
-  }, []);
-
-  const handleSeek = useCallback((time: number) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
-      setCurrentTime(time);
-    }
-  }, []);
-
-  const handleSeekByPosition = useCallback((pos: number) => {
-    if (videoRef.current && duration > 0) {
-      videoRef.current.currentTime = pos * duration;
-      setCurrentTime(pos * duration);
-    }
-  }, [duration]);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  // Get dimensions based on aspect ratio
-  const getDimensions = () => {
-    const maxWidth = 640;
-    switch (aspectRatio) {
-      case '9:16':
-        return { width: maxWidth, height: Math.round(maxWidth * 16 / 9) };
-      case '16:9':
-        return { width: maxWidth, height: Math.round(maxWidth * 9 / 16) };
-      case '1:1':
-        return { width: maxWidth, height: maxWidth };
-      default:
-        return { width: maxWidth, height: Math.round(maxWidth * 16 / 9) };
-    }
-  };
-
   // Dimensions are used for video config
-  getDimensions();
 
   if (beats.length === 0) {
     return (

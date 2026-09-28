@@ -30,11 +30,17 @@ export async function POST(req: Request) {
     const jobId = `av_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
     // 2. Synchronous initial persistence to Supabase render_jobs
+    // 'planning' keeps the FFmpeg render worker away: this workflow returns the
+    // generated avatar video in its API response and never writes `beats`, so a
+    // claimed job would build an empty ffmpeg concat list and fail all 3 attempts.
+    // The worker selects on orchestration_state, not status — the column defaults to
+    // 'queued' (claimable), so it must be set explicitly.
     try {
       await supabase.from('render_jobs').insert({
         id: jobId,
         user_id: null,
         status: 'pending',
+        orchestration_state: 'planning',
         progress: 0,
         config: {
           workflow: 'avatar',

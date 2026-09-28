@@ -32,11 +32,16 @@ export async function POST(req: Request) {
     const jobId = crypto.randomUUID();
 
     // 2. Synchronous Supabase render_jobs insert
-    // Using 'processing' instead of 'pending' so the separate Remotion render-worker ignores it.
+    // 'planning' keeps the FFmpeg render worker away: this workflow returns a
+    // provider result (written to logs.result), it never writes `beats`, so a
+    // claimed job would build an empty ffmpeg concat list and fail all 3 attempts.
+    // The worker selects on orchestration_state, not status — the column defaults to
+    // 'queued' (claimable), so it must be set explicitly.
     try {
       await supabase.from('render_jobs').insert({
         id: jobId,
         status: 'processing',
+        orchestration_state: 'planning',
         progress: 0,
         logs: JSON.stringify({
           workflow: 'ai-videos',

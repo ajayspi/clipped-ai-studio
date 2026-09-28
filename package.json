@@ -13,6 +13,7 @@
     "test:e2e": "node tests/e2e/standalone-runner.js",
     "seed": "tsx scripts/seed.ts",
     "seed:dev-auth": "tsx scripts/seed-dev-auth.ts",
+    "logs": "tsx scripts/logs.ts",
     "worker": "tsx scripts/render-worker.ts",
     "worker:render": "tsx scripts/render-worker.ts",
     "worker:publish": "tsx scripts/publish-worker.ts",

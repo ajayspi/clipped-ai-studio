@@ -18,6 +18,9 @@
 
 import { getOmniRouteConfig } from '@/lib/keys';
 import { supabase, supabaseAdmin } from '@/lib/db';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('tts');
 
 // ============================================================================
 // Types & Interface Contracts
@@ -872,6 +875,7 @@ export class TTSEngine {
       } catch (err) {
         const latencyMs = Date.now() - startTime;
         const errorMessage = err instanceof Error ? err.message : String(err);
+        logger.warn('TTS provider attempt failed', { provider, error: err });
         console.warn(`[TTS] Provider ${provider} attempt failed: ${errorMessage}. Continuing fallback cascade.`);
         providerAttempts.push({
           provider,

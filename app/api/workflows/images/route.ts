@@ -37,6 +37,10 @@ export async function POST(req: Request) {
           id: jobId,
           status: 'completed',
           progress: 100,
+          // Terminal on insert, but orchestration_state still defaults to 'queued',
+          // which the FFmpeg render worker would claim — and this job has no `beats`,
+          // so it would build an empty ffmpeg concat list and fail all 3 attempts.
+          orchestration_state: 'completed',
           logs: {
             workflow: 'ai-images',
             analysis: {

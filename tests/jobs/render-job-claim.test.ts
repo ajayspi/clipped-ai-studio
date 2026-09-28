@@ -83,6 +83,30 @@ test('completion is guarded by the lease token', async () => {
   }])
 })
 
+test('completion throws when the lease is gone, instead of silently no-oping', async () => {
+  // complete_render_job returns FALSE (not an error) when its UPDATE matched no
+  // rows — an expired lease, or a job another worker now owns. The RPC is happy
+  // either way, so a naive caller treats a lost job as a completed one and the
+  // job is re-claimed and re-rendered.
+  const client = {
+    async rpc() {
+      return { data: false, error: null }
+    },
+  }
+
+  await assert.rejects(
+    () =>
+      completeRenderJob(client, {
+        jobId: 'job-1',
+        workerId: 'render-worker-1',
+        leaseToken: 'lease-1',
+        outputUrl: 'https://storage.example/render.mp4',
+        logs: { duration: 4 },
+      }),
+    /lease expired or lost ownership/i,
+  )
+})
+
 test('failure is guarded by the lease token', async () => {
   const calls: Array<{ name: string; params: Record<string, unknown> }> = []
   const client = {

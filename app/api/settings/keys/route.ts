@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin, supabase } from '@/lib/db';
 import { getOmniRouteConfig, clearOmniRouteConfigCache } from '@/lib/keys';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('settings/keys');
 
 export const dynamic = 'force-dynamic';
 
@@ -26,13 +29,40 @@ function isValidHttpUrl(urlString: string): boolean {
   }
 }
 
+/**
+ * Providers the product will accept a key for, and surface in Settings.
+ *
+ * The LLM ids matter as much as the media ones: `lib/engine/llm.ts` reads Tier-2
+ * direct keys straight out of this table, and the app's `settings` rows already
+ * hold openai/anthropic/gemini/openrouter/... A key that is not listed here is
+ * invisible in the UI and cannot be rotated through the product, even though the
+ * cascade is actively using it.
+ */
 const SUPPORTED_EXTERNAL_PROVIDERS = new Set([
-  'pexels', 'pixabay', 'coverr', 'fal', 'huggingface', 'aihorde',
+  // LLM / text
+  'openai', 'anthropic', 'gemini', 'openrouter', 'grok', 'groq', 'deepseek',
+  'mistral', 'cerebras', 'github_models', 'huggingface', 'together', 'cohere',
+  'ollama', 'lmstudio',
+  // Stock media
+  'pexels', 'pixabay', 'coverr', 'fal',
+  // Image / video generation
+  'aihorde', 'kling', 'luma', 'ideogram', 'bytez',
+  // Voice
   'heygen', 'did', 'deepgram', 'elevenlabs', 'google_tts', 'azure_speech',
-  'kling', 'luma', 'ideogram', 'bytez',
+  // Music
+  'suno',
 ]);
 
-async function upsertSettingRow(provider: string, apiKey: string, baseUrl?: string, name?: string) {
+/**
+ * Insert or update one provider's key.
+ *
+ * `settings` has exactly these columns: id, user_id, provider, api_key, is_active,
+ * priority, created_at, updated_at. There is no `base_url` and no `name`, so this
+ * deliberately takes neither — writing them makes PostgREST reject the whole
+ * statement. The OmniRoute endpoint URL is stored in the `api_key` column of the
+ * `omniroute_endpoint_url` row instead (see lib/keys.ts getOmniRouteConfig).
+ */
+async function upsertSettingRow(provider: string, apiKey: string) {
   const dbClient = supabaseAdmin || supabase;
   try {
     const { data: existing } = await dbClient
@@ -42,62 +72,38 @@ async function upsertSettingRow(provider: string, apiKey: string, baseUrl?: stri
       .limit(1)
       .maybeSingle();
 
-    const fullData: Record<string, unknown> = {
-      provider,
+    const data: Record<string, unknown> = {
       api_key: apiKey,
       is_active: true,
       updated_at: new Date().toISOString(),
     };
-    if (baseUrl) fullData.base_url = baseUrl;
-    if (name) fullData.name = name;
 
     if (existing?.id) {
-      const { data, error } = await dbClient
+      const { data: saved, error } = await dbClient
         .from('settings')
-        .update(fullData)
+        .update(data)
         .eq('id', existing.id)
         .select()
         .single();
-
       if (error) {
-        // Fallback without extra columns if not present in schema
-        const { data: fallbackData } = await dbClient
-          .from('settings')
-          .update({
-            api_key: apiKey,
-            is_active: true,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', existing.id)
-          .select()
-          .single();
-        return fallbackData;
+        logger.error('Failed to update provider key', { provider, error: error.message });
+        return null;
       }
-      return data;
-    } else {
-      const { data, error } = await dbClient
-        .from('settings')
-        .insert(fullData)
-        .select()
-        .single();
-
-      if (error) {
-        // Fallback without extra columns
-        const { data: fallbackData } = await dbClient
-          .from('settings')
-          .insert({
-            provider,
-            api_key: apiKey,
-            is_active: true,
-          })
-          .select()
-          .single();
-        return fallbackData;
-      }
-      return data;
+      return saved;
     }
+
+    const { data: saved, error } = await dbClient
+      .from('settings')
+      .insert({ provider, ...data })
+      .select()
+      .single();
+    if (error) {
+      logger.error('Failed to insert provider key', { provider, error: error.message });
+      return null;
+    }
+    return saved;
   } catch (err) {
-    console.warn(`[API Keys POST] Upsert exception for ${provider}:`, err);
+    logger.error('Upsert threw', { provider, error: err });
     return null;
   }
 }
@@ -115,19 +121,20 @@ export async function GET() {
   let isActive = true;
   const externalKeys: Record<string, Record<string, unknown>> = {};
 
+  // `settings` in this project has no `base_url` column. Selecting it makes
+  // PostgREST reject the ENTIRE query with a 400, and the empty catch below used
+  // to swallow that — so every provider key silently failed to reach the UI and
+  // Settings looked empty. Select only columns that exist, and log instead of
+  // swallowing. `priority` is included because the LLM cascade orders on it.
   try {
     const dbClient = supabaseAdmin || supabase;
-    let { data: rows } = await dbClient
+    const { data: rows, error } = await dbClient
       .from('settings')
-      .select('provider, api_key, updated_at, is_active, base_url')
+      .select('provider, api_key, updated_at, is_active, priority')
       .in('provider', Array.from(SUPPORTED_EXTERNAL_PROVIDERS).concat('omniroute'));
 
-    if (!rows) {
-      const fallback = await dbClient
-        .from('settings')
-        .select('provider, api_key, updated_at, is_active, base_url')
-        .in('provider', Array.from(SUPPORTED_EXTERNAL_PROVIDERS).concat('omniroute'));
-      rows = fallback.data;
+    if (error) {
+      logger.error('Failed to read provider keys from settings', { error: error.message });
     }
 
     for (const row of rows || []) {
@@ -137,14 +144,16 @@ export async function GET() {
           isConfigured: Boolean(row.api_key),
           isActive: row.is_active !== false,
           updatedAt: row.updated_at || null,
-          baseUrl: row.base_url || undefined,
+          priority: (row as { priority?: number | null }).priority ?? null,
         };
         continue;
       }
       if (row.updated_at) updatedAt = row.updated_at;
       if (row.is_active !== undefined && row.is_active !== null) isActive = row.is_active;
     }
-  } catch {}
+  } catch (err) {
+    logger.error('settings/keys GET threw while reading provider keys', { error: err });
+  }
 
   return NextResponse.json({
     success: true,
@@ -231,12 +240,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'apiKey is required for this provider' }, { status: 400 });
       }
 
-      const savedSetting = await upsertSettingRow(
-        cleanProvider,
-        rawExternalKey.trim(),
-        typeof body.baseUrl === 'string' ? body.baseUrl.trim() : undefined,
-        cleanProvider,
-      );
+      const savedSetting = await upsertSettingRow(cleanProvider, rawExternalKey.trim());
 
       return NextResponse.json({
         success: true,
@@ -271,11 +275,11 @@ export async function POST(req: Request) {
     const apiKey = typeof rawApiKey === 'string' ? rawApiKey.trim() : '';
 
     // Safely persist credentials
-    await upsertSettingRow('omniroute_endpoint_url', endpointUrl, endpointUrl, 'OmniRoute Endpoint URL');
+    await upsertSettingRow('omniroute_endpoint_url', endpointUrl);
     if (rawApiKey !== undefined) {
-      await upsertSettingRow('omniroute_api_key', apiKey, undefined, 'OmniRoute API Key');
+      await upsertSettingRow('omniroute_api_key', apiKey);
     }
-    const savedSetting = await upsertSettingRow('omniroute', apiKey, endpointUrl, 'OmniRoute Gateway');
+    const savedSetting = await upsertSettingRow('omniroute', apiKey);
 
     // Invalidate in-memory cache
     clearOmniRouteConfigCache();
@@ -290,7 +294,7 @@ export async function POST(req: Request) {
       },
     });
   } catch (error) {
-    console.error('Failed to update OmniRoute settings:', error);
+    logger.error('Failed to update provider settings', { error });
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal Server Error' }, { status: 500 });
   }
 }
