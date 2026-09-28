@@ -1,53 +1,122 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
+  <img src="public/hero-bg.jpg" alt="Clipped AI Studio" width="100%" />
+  
+  <br />
+  <h1>🎬 Clipped AI - The Open-Source Video Creation Super-Repo</h1>
+  <p><strong>Fully autonomous, AI-driven video studio and render pipeline built on Next.js 16, FFmpeg, and Supabase.</strong></p>
+  
+  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+  [![Next.js](https://img.shields.io/badge/Next.js-16-black.svg?style=flat&logo=next.js)](https://nextjs.org/)
+  [![Supabase](https://img.shields.io/badge/Supabase-Database-green.svg?style=flat&logo=supabase)](https://supabase.com/)
+  [![FFmpeg](https://img.shields.io/badge/FFmpeg-Render_Engine-orange.svg?style=flat&logo=ffmpeg)](https://ffmpeg.org/)
+</div>
 
-## Getting Started
+<hr />
 
-First, run the development server:
+## 🌟 What is Clipped AI?
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Clipped AI is a **massive "super-repository"** containing a complete, end-to-end video generation pipeline. It replaces expensive SaaS tools by providing a self-hosted engine that can take a simple text prompt, a blog URL, or a raw script, and autonomously output a fully-edited, highly-retaining short-form video (TikTok, Shorts, Reels) within minutes.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+By leveraging **OmniRoute** (our proprietary LLM routing gateway), **FFmpeg**, and **Remotion**, the system acts as a digital editor, voice actor, and director all in one.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## ⚡ Core Features
 
-## Learn More
+### 🧠 OmniRoute AI Orchestration
+Our local `omniroute-server` gateway handles intelligent routing between OpenAI, Anthropic, Gemini, and local models. It features automatic rate-limit detection and cascading fallbacks, ensuring your generation pipelines never fail.
 
-To learn more about Next.js, take a look at the following resources:
+### 🎙️ Resilient TTS Cascade
+Clipped integrates a multi-tiered Text-to-Speech (TTS) fallback system. It attempts high-fidelity voice cloning via **ElevenLabs**, falls back to **OpenAI TTS**, and if all quotas are exhausted, flawlessly defaults to keyless **Edge TTS** so your rendering queue never blocks.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 🎬 Heavy-Duty FFmpeg Render Worker
+The background worker orchestrates complex compositions. It supports dynamic Ken-Burns zoom and pan camera moves, "Hormozi-style" word-by-word Karaoke subtitles with custom glows and outlines, automated B-roll fetching, and background music ducking natively in FFmpeg.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 🎞️ 12+ Autonomous Workflows
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Clipped supports highly specialized workflows tailored to specific content niches.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+<div align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <img src="public/images/workflows/auto_cover.jpg" width="250" /><br />
+        <b>Auto-Pilot Engine</b><br/><i>Generate complete videos from a single prompt</i>
+      </td>
+      <td align="center">
+        <img src="public/images/workflows/url_cover.jpg" width="250" /><br />
+        <b>URL to Video</b><br/><i>Scrape blogs & news articles into viral shorts</i>
+      </td>
+      <td align="center">
+        <img src="public/images/workflows/ai_videos_cover.jpg" width="250" /><br />
+        <b>AI Videos</b><br/><i>Cinematic AI-generated storytelling</i>
+      </td>
+    </tr>
+    <tr>
+      <td align="center">
+        <img src="public/images/workflows/stories_cover.jpg" width="250" /><br />
+        <b>Reddit Stories</b><br/><i>Split-screen gameplay and TTS narration</i>
+      </td>
+      <td align="center">
+        <img src="public/images/workflows/whiteboard_cover.jpg" width="250" /><br />
+        <b>Whiteboard Animation</b><br/><i>Educational sketch-style explainers</i>
+      </td>
+      <td align="center">
+        <img src="public/images/workflows/drama_cover.jpg" width="250" /><br />
+        <b>Micro-Drama</b><br/><i>Multi-character AI soap operas</i>
+      </td>
+    </tr>
+  </table>
+</div>
 
-## Media Pipeline Configuration
+---
+
+## 🏗️ System Architecture & Media Pipeline
 
 Clipped relies on an intelligent cascading media pipeline for generation:
-- **Text & LLM Engine**: Powered exclusively by the OmniRoute local gateway.
+- **Text & LLM Engine**: Powered exclusively by the OmniRoute local gateway on port `:20128`.
 - **Stock Media**: Falls back gracefully across Openverse (keyless), Pexels, Pixabay, and Pollinations. Openverse attribution and license metadata is automatically preserved.
-- **AI Media Generation**: Video and high-fidelity image generation utilizes [fal.ai](https://fal.ai/). A free trial is available, which transitions to a paid tier depending on usage.
+- **AI Media Generation**: Video and high-fidelity image generation utilizes [fal.ai](https://fal.ai/). 
 
-**Important Note on Media URLs**: Generated media URLs from services like fal.ai and Pollinations may expire. The built-in orchestrator downloads these URLs to durable storage prior to the final video rendering pipeline.
+**Note on Media URLs**: Generated media URLs from services like fal.ai and Pollinations may expire. The built-in worker downloads these URLs to durable storage prior to the final video rendering pipeline.
 
-## Documentation & Development Journal
+---
 
-- **Master System Architecture**: [`docs/PROJECT_GIST.md`](file:///docs/PROJECT_GIST.md)
-- **Master Daily Changelog**: [`daily_documentation.md`](file:///daily_documentation.md)
-- **Chronological Devlogs**: [`docs/devlogs/`](file:///docs/devlogs/INDEX.md)
-- **Persistent Memory Protocol**: [`.agents/rules/daily-documentation.md`](file:///.agents/rules/daily-documentation.md)
+## 🚀 Getting Started
 
+### 1. Install Dependencies
+Clipped uses `pnpm` (v11+) to handle its massive monorepo workspace.
+```bash
+pnpm install
+```
+
+### 2. Configure Environment
+Copy `.env.example` to `.env.local` and fill in your Supabase credentials, OmniRoute keys, and media API keys.
+
+### 3. Run the Studio Stack
+You need three terminals to run the complete ecosystem locally:
+```bash
+# 1. Start the Next.js 16 Web Studio
+pnpm dev
+
+# 2. Start the local OmniRoute Gateway
+cd omniroute-server && npm run start
+
+# 3. Start the Background FFmpeg Render Worker
+npm run worker
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to enter the studio.
+
+---
+
+## 📖 Internal Documentation & Development Journal
+
+For developers, contributors, and agents working on the codebase, refer to the internal architectural docs:
+
+- **Master System Architecture**: [`docs/PROJECT_GIST.md`](docs/PROJECT_GIST.md)
+- **Master Daily Changelog**: [`daily_documentation.md`](daily_documentation.md)
+- **Chronological Devlogs**: [`docs/devlogs/`](docs/devlogs/INDEX.md)
+- **Persistent Memory Protocol**: [`.agents/rules/daily-documentation.md`](.agents/rules/daily-documentation.md)
