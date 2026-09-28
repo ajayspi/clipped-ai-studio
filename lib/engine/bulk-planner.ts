@@ -1,4 +1,4 @@
-﻿import { getOmniRouteConfig } from '@/lib/keys';
+import { getOmniRouteConfig } from '@/lib/keys';
 import { complete, parseJson } from '@/lib/engine/llm';
 import {
   BulkPlanRequest,
@@ -10,6 +10,7 @@ import { SYSTEM_PROMPTS, buildBulkPlanPrompt } from './prompts';
 interface BulkPlanPayloadItem {
   title?: string;
   hook?: string;
+  hookVariants?: string[];
   script?: string;
   visualPrompt?: string;
   targetPlatform?: string;
@@ -111,8 +112,10 @@ export class BulkPlanner {
       batchJobIds.push(jobId);
 
       const title = raw.title || `Day ${day}: The Ultimate ${niche} Growth Strategy`;
-      const hook = (raw.hook && String(raw.hook).trim()) ||
-        `Stop making this huge mistake with ${niche}! Here is what top performers do instead on Day ${day}.`;
+      const hookVariants = Array.isArray(raw.hookVariants) && raw.hookVariants.length > 0
+        ? raw.hookVariants
+        : (raw.hook ? [raw.hook] : [`Stop making this huge mistake with ${niche}! Here is what top performers do instead on Day ${day}.`]);
+      const hook = (raw.hook && String(raw.hook).trim()) || hookVariants[0];
       const script = (raw.script && String(raw.script).trim()) ||
         `Welcome to day ${day} of mastering ${niche}. Today we break down the single most effective framework that guarantees measurable results. Try implementing this step immediately to transform your progress.`;
       const itemVisualStyle = raw.visualPrompt || `${visualStyle}, eye-catching thumbnail and dynamic b-roll for ${niche}`;
@@ -124,6 +127,7 @@ export class BulkPlanner {
         day,
         title,
         hook,
+        hookVariants,
         script,
         visualPrompt: itemVisualStyle,
         targetPlatform,
@@ -186,6 +190,11 @@ export class BulkPlanner {
 
       const title = `Day ${day}: ${pillar.prefix} ${niche}`;
       const hook = `${pillar.hookStyle} ${niche}! Here is what you must fix right now on Day ${day}.`;
+      const hookVariants = [
+        hook,
+        `Nobody is talking about this ${niche} secret...`,
+        `I tried the ultimate ${niche} hack so you don't have to.`
+      ];
       const script = `In today's day ${day} breakdown for ${niche}, we focus on how to ${pillar.action.toLowerCase()}. When you follow this exact sequential step, your retention and output will instantly multiply. Save this video and take action today!`;
       const visualPrompt = `${visualStyle}, high impact cinematic visuals highlighting ${niche}, optimized for ${platform}`;
       const tags = [
@@ -200,6 +209,7 @@ export class BulkPlanner {
         day,
         title,
         hook,
+        hookVariants,
         script,
         visualPrompt,
         targetPlatform: platform,

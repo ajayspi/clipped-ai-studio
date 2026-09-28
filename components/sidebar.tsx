@@ -17,7 +17,6 @@ import {
   Wand2,
   Zap,
   ListVideo,
-  BookOpen,
   RadioTower
 } from "lucide-react"
 
@@ -31,10 +30,9 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Bulk Planner", href: "/create/bulk", icon: RadioTower, badge: "Trending", badgeColor: "from-orange-500 to-red-500" },
   { name: "Create AI Video", href: "/create", icon: Wand2, badge: "AI", badgeColor: "from-violet-500 to-fuchsia-500" },
-  { name: "Bulk Planner", href: "/planner", icon: CalendarDays },
-  { name: "Newsroom", href: "/create/bulk", icon: RadioTower, badge: "Trending", badgeColor: "from-orange-500 to-red-500" },
-  { name: "Stories Engine", href: "/create/stories", icon: BookOpen },
+  { name: "Calendar", href: "/planner", icon: CalendarDays },
   { name: "Render Queue", href: "/queue", icon: ListVideo, badge: "Live", badgeColor: "from-emerald-500 to-teal-500" },
   { name: "Library", href: "/library", icon: Library },
   { name: "Settings", href: "/settings", icon: Settings },

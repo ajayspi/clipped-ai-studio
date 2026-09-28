@@ -85,6 +85,11 @@ export default async function PlannerPage() {
                           {post.caption || parsed.subject || 'Untitled Video'}
                         </p>
                         <div className="flex gap-1 flex-wrap">
+                          {parsed.workflowType === 'bulk-plan' && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                              Bulk Plan
+                            </span>
+                          )}
                           {Array.isArray(post.platforms) && post.platforms.map((p: string) => (
                             <span key={p} className="text-[10px] capitalize px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                               {p}

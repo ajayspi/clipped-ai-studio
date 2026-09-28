@@ -21,16 +21,13 @@ import {
   Activity,
   Flame,
   RadioTower,
+  Save,
+  Download,
+  Copy,
+  FileJson,
+  Edit3
 } from "lucide-react"
-
-interface BulkPlanItem {
-  day: number
-  scheduledDate: string
-  title: string
-  targetPlatform: string
-  hook: string
-  tags?: string[]
-}
+import { BulkPlanItem } from "@/lib/engine/types"
 
 interface BulkPlan {
   planTitle?: string
@@ -50,6 +47,8 @@ export default function BulkPage() {
   const [error, setError] = useState("")
   const [generatedPlan, setGeneratedPlan] = useState<BulkPlan | null>(null)
   const [useTrendJacking, setUseTrendJacking] = useState(true)
+  const [pushing, setPushing] = useState(false)
+  const [editingDay, setEditingDay] = useState<number | null>(null)
 
   function togglePlatform(platformId: string) {
     if (platforms.includes(platformId)) {
@@ -69,6 +68,7 @@ export default function BulkPage() {
     setLoading(true)
     setError("")
     setGeneratedPlan(null)
+    setEditingDay(null)
 
     try {
       const res = await fetch("/api/workflows/bulk-plan", {
@@ -98,6 +98,78 @@ export default function BulkPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  async function handlePushAll() {
+    if (!generatedPlan || !generatedPlan.items) return
+    setPushing(true)
+    try {
+      const res = await fetch("/api/workflows/bulk-plan/push", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: generatedPlan.items, planTitle: generatedPlan.planTitle }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || "Failed to push to queue")
+      }
+      alert("Successfully pushed to render queue! Check Calendar and Render Queue.")
+    } catch (err) {
+      alert("Failed to push: " + (err as Error).message)
+    } finally {
+      setPushing(false)
+    }
+  }
+
+  function handleSavePlan() {
+    if (!generatedPlan) return
+    try {
+      const existing = JSON.parse(localStorage.getItem('clipped_bulk_plans') || '[]')
+      existing.push(generatedPlan)
+      localStorage.setItem('clipped_bulk_plans', JSON.stringify(existing))
+      alert("Plan saved to local library!")
+    } catch (err) {
+      alert("Failed to save plan")
+    }
+  }
+
+  function handleExportCSV() {
+    if (!generatedPlan?.items) return
+    const header = "Day,Date,Platform,Title,Hook,Script,Tags\n"
+    const rows = generatedPlan.items.map(item => 
+      `${item.day},${item.scheduledDate},${item.targetPlatform},"${item.title.replace(/"/g, '""')}","${item.hook.replace(/"/g, '""')}","${item.script.replace(/"/g, '""')}","${(item.tags||[]).join(' ')}"`
+    ).join("\n")
+    const blob = new Blob([header + rows], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `bulk-plan-${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+  }
+
+  function handleExportJSON() {
+    if (!generatedPlan) return
+    const blob = new Blob([JSON.stringify(generatedPlan, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `bulk-plan-${new Date().toISOString().split('T')[0]}.json`
+    a.click()
+  }
+
+  function handleExportClipboard() {
+    if (!generatedPlan?.items) return
+    const text = generatedPlan.items.map(item => 
+      `Day ${item.day} (${item.scheduledDate}, ${item.targetPlatform})\nTitle: ${item.title}\nHook: ${item.hook}\nScript: ${item.script}`
+    ).join("\n\n")
+    navigator.clipboard.writeText(text)
+    alert("Copied to clipboard!")
+  }
+
+  function updateItem(day: number, updates: Partial<BulkPlanItem>) {
+    if (!generatedPlan || !generatedPlan.items) return
+    const newItems = generatedPlan.items.map(item => item.day === day ? { ...item, ...updates } : item)
+    setGeneratedPlan({ ...generatedPlan, items: newItems })
   }
 
   return (
@@ -271,9 +343,27 @@ export default function BulkPage() {
               <p className="text-sm text-muted-foreground mt-1">
                 Your high-retention schedule is locked in. Edit hooks below before pushing to the render queue.
               </p>
+              <div className="flex items-center gap-2 mt-4 flex-wrap">
+                <button onClick={handleSavePlan} className="text-xs font-semibold px-3 py-1.5 bg-background border rounded-lg hover:bg-accent flex items-center gap-1.5 transition-colors">
+                  <Save className="w-3.5 h-3.5" /> Save Plan
+                </button>
+                <button onClick={handleExportCSV} className="text-xs font-semibold px-3 py-1.5 bg-background border rounded-lg hover:bg-accent flex items-center gap-1.5 transition-colors">
+                  <Download className="w-3.5 h-3.5" /> CSV
+                </button>
+                <button onClick={handleExportJSON} className="text-xs font-semibold px-3 py-1.5 bg-background border rounded-lg hover:bg-accent flex items-center gap-1.5 transition-colors">
+                  <FileJson className="w-3.5 h-3.5" /> JSON
+                </button>
+                <button onClick={handleExportClipboard} className="text-xs font-semibold px-3 py-1.5 bg-background border rounded-lg hover:bg-accent flex items-center gap-1.5 transition-colors">
+                  <Copy className="w-3.5 h-3.5" /> Copy Text
+                </button>
+              </div>
             </div>
-            <button className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-blue-600 text-white text-sm font-bold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2">
-              <Zap className="w-4 h-4 fill-white" /> Push All to Render Engine
+            <button 
+              onClick={handlePushAll} 
+              disabled={pushing}
+              className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-blue-600 text-white text-sm font-bold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2 disabled:opacity-50 disabled:hover:scale-100"
+            >
+              <Zap className="w-4 h-4 fill-white" /> {pushing ? "Pushing..." : "Push All to Render Engine"}
             </button>
           </div>
 
@@ -286,7 +376,7 @@ export default function BulkPage() {
                       Day {item.day}
                     </span>
                     <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                      {new Date(item.scheduledDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      {new Date(item.scheduledDate || "").toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                     </span>
                   </div>
                   {useTrendJacking && (
@@ -303,25 +393,65 @@ export default function BulkPage() {
                   </p>
                 </div>
 
-                <div className="bg-muted/50 p-3 rounded-xl border border-border/50 flex-1 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-orange-500"></div>
-                  <span className="text-[10px] font-black uppercase text-orange-500 mb-1 block">3-Second Hook</span>
-                  <p className="text-sm italic text-foreground leading-relaxed font-medium">
-                    &ldquo;{item.hook}&rdquo;
-                  </p>
-                </div>
-
-                <div className="pt-2 flex flex-wrap gap-1.5">
-                  {item.tags?.slice(0, 3).map((tag: string) => (
-                    <span key={tag} className="text-xs font-bold bg-secondary/80 px-2 py-1 rounded-md text-secondary-foreground">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-
-                <button className="w-full mt-2 py-2.5 border-2 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm font-bold rounded-xl hover:bg-emerald-500 hover:text-white transition-all active:scale-95">
-                  Edit Sub-Second Script
-                </button>
+                {editingDay === item.day ? (
+                  <div className="flex flex-col gap-2">
+                    {item.hookVariants && item.hookVariants.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        <span className="text-[10px] font-black uppercase text-orange-500 block w-full">Select Hook Variant:</span>
+                        {item.hookVariants.map((variant, idx) => (
+                          <button 
+                            key={idx} 
+                            onClick={() => updateItem(item.day, { hook: variant })}
+                            className={`text-[10px] px-2 py-1 rounded-md text-left transition-colors ${item.hook === variant ? 'bg-orange-500 text-white font-bold' : 'bg-orange-500/10 text-orange-600 hover:bg-orange-500/20'}`}
+                          >
+                            {variant.length > 50 ? variant.slice(0, 50) + "..." : variant}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <span className="text-[10px] font-black uppercase text-orange-500 block">Edit Hook</span>
+                    <textarea 
+                      value={item.hook} 
+                      onChange={(e) => updateItem(item.day, { hook: e.target.value })}
+                      className="w-full text-sm p-2 rounded-lg border focus:ring-2 focus:ring-emerald-500 bg-background resize-none h-16"
+                    />
+                    <span className="text-[10px] font-black uppercase text-emerald-500 block mt-2">Edit Script</span>
+                    <textarea 
+                      value={item.script} 
+                      onChange={(e) => updateItem(item.day, { script: e.target.value })}
+                      className="w-full text-sm p-2 rounded-lg border focus:ring-2 focus:ring-emerald-500 bg-background resize-none h-24"
+                    />
+                    <button 
+                      onClick={() => setEditingDay(null)}
+                      className="mt-2 py-1.5 bg-emerald-500 text-white text-xs font-bold rounded-lg hover:bg-emerald-600 transition-colors"
+                    >
+                      Done Editing
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="bg-muted/50 p-3 rounded-xl border border-border/50 flex-1 relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-1 h-full bg-orange-500"></div>
+                      <span className="text-[10px] font-black uppercase text-orange-500 mb-1 block">3-Second Hook</span>
+                      <p className="text-sm italic text-foreground leading-relaxed font-medium">
+                        &ldquo;{item.hook}&rdquo;
+                      </p>
+                    </div>
+                    <div className="pt-2 flex flex-wrap gap-1.5">
+                      {item.tags?.slice(0, 3).map((tag: string) => (
+                        <span key={tag} className="text-xs font-bold bg-secondary/80 px-2 py-1 rounded-md text-secondary-foreground">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                    <button 
+                      onClick={() => setEditingDay(item.day)}
+                      className="w-full mt-2 py-2.5 border-2 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm font-bold rounded-xl hover:bg-emerald-500 hover:text-white transition-all active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      <Edit3 className="w-4 h-4" /> Edit Sub-Second Script
+                    </button>
+                  </>
+                )}
               </div>
             ))}
           </div>

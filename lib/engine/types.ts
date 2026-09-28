@@ -159,6 +159,7 @@ export interface BulkPlanItem {
   day: number;
   title: string;
   hook: string;
+  hookVariants?: string[];
   script: string;
   status: string;
   visualPrompt?: string;

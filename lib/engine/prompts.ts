@@ -194,7 +194,7 @@ Visual Style: ${visualStyle}
 For each day/item provide:
 1. day: Number (1 to ${contentCount})
 2. title: Catchy video title
-3. hook: First 3 seconds spoken hook
+3. hookVariants: 2-3 different first 3-second spoken hooks to choose from
 4. script: 30-45 second spoken script
 5. visualPrompt: Prompt for thumbnail / AI video generation
 6. targetPlatform: Best platform for this piece
@@ -207,7 +207,7 @@ Return valid JSON:
     {
       "day": 1,
       "title": "...",
-      "hook": "...",
+      "hookVariants": ["hook variant 1", "hook variant 2"],
       "script": "...",
       "visualPrompt": "...",
       "targetPlatform": "${platforms[0] || 'TikTok'}",
