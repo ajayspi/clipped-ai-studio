@@ -3736,6 +3736,619 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     // We already checked the file contents, let's just make sure the test runner tracks the Tier.
     expect(true).toBe(true);
   }});
+
+  // ============================================================================
+  // Tier 20: Render-Job Claim Safety (orchestration_state)
+  // ============================================================================
+  //
+  // Why this exists: `claim_render_job` selects on `orchestration_state`, NOT on
+  // `status`, and the column DEFAULTs to 'queued' — which is claimable. A
+  // planning-only workflow that inserts a job without setting the field
+  // explicitly therefore gets picked up by the FFmpeg render worker, which builds
+  // an empty ffmpeg concat list (no `beats`) and burns all 3 attempts.
+  //
+  // The claimable set is parsed straight out of the migration SQL rather than
+  // hardcoded here, so this test cannot drift away from what the worker actually
+  // does if the selection query is ever changed.
+
+  const leasesMigrationPath = require('path').resolve(
+    __dirname,
+    '../../supabase/migrations/20260905_render_job_leases.sql',
+  );
+
+  function parseClaimableOrchestrationStates() {
+    const sql = require('fs').readFileSync(leasesMigrationPath, 'utf8');
+
+    // Isolate the claim_render_job body: from its own definition up to the next
+    // CREATE OR REPLACE FUNCTION, so states belonging to complete/fail_render_job
+    // can never be mistaken for the worker's selection set.
+    const start = sql.indexOf('FUNCTION public.claim_render_job(');
+    if (start === -1) throw new Error('could not locate claim_render_job in the leases migration');
+    const rest = sql.slice(start);
+    const nextFn = rest.indexOf('CREATE OR REPLACE FUNCTION', 1);
+    const body = nextFn === -1 ? rest : rest.slice(0, nextFn);
+
+    const states = new Set();
+    const inClause = /orchestration_state\s+IN\s*\(([^)]*)\)/g;
+    let m;
+    while ((m = inClause.exec(body)) !== null) {
+      for (const raw of m[1].split(',')) {
+        const value = raw.trim().replace(/^'+|'+$/g, '');
+        if (value) states.add(value);
+      }
+    }
+    if (states.size === 0) {
+      throw new Error('parsed an empty claimable set out of claim_render_job — parser is broken');
+    }
+    return states;
+  }
+
+  // Routes that create a PLANNING-ONLY job: the orchestrator writes its result to
+  // `logs.result` and never populates `beats`, so none of them may be claimable.
+  const PLANNING_ONLY_WORKFLOW_ROUTES = [
+    'auto',
+    'stories',
+    'ai-videos',
+    'micro-drama',
+    'extract-shorts',
+    'whiteboard',
+    'avatar',
+  ];
+
+  tests.push({
+    tier: 'Tier 20: Render-Job Claim Safety',
+    id: 'T20-CLAIM-01',
+    title: 'claim_render_job selection set is parsed from the migration',
+    fn: async () => {
+      const states = parseClaimableOrchestrationStates();
+      expect(states.size).toBeGreaterThan(0);
+      // 'queued' being claimable is the whole trap: it is also the column default,
+      // so "field omitted" silently means "worker will grab this job".
+      expect(states.has('queued')).toBe(true);
+      expect(states.has('retryable')).toBe(true);
+      // 'planning' is the marker these routes use and must not be claimable.
+      expect(states.has('planning')).toBe(false);
+    },
+  });
+
+  tests.push({
+    tier: 'Tier 20: Render-Job Claim Safety',
+    id: 'T20-CLAIM-02',
+    title: 'every planning-only workflow route sets a non-claimable orchestration_state',
+    fn: async () => {
+      const claimable = parseClaimableOrchestrationStates();
+
+      for (const route of PLANNING_ONLY_WORKFLOW_ROUTES) {
+        const routePath = require('path').resolve(
+          __dirname,
+          `../../app/api/workflows/${route}/route.ts`,
+        );
+        expect(require('fs').existsSync(routePath)).toBe(true);
+
+        const source = require('fs').readFileSync(routePath, 'utf8');
+
+        // The field must be set explicitly. Absent === column default 'queued' ===
+        // claimable, which is exactly the bug this guards.
+        const match = source.match(/orchestration_state:\s*'([^']+)'/);
+        if (!match) {
+          throw new Error(
+            `app/api/workflows/${route}/route.ts never sets orchestration_state. ` +
+            `The column defaults to 'queued', which claim_render_job WILL select, so the ` +
+            `render worker will claim this planning-only job and burn all its attempts.`,
+          );
+        }
+
+        const value = match[1];
+        expect(claimable.has(value)).toBe(false);
+      }
+    },
+  });
+
+  tests.push({
+    tier: 'Tier 20: Render-Job Claim Safety',
+    id: 'T20-CLAIM-03',
+    title: 'workflow route that finishes inline uses a non-claimable terminal state',
+    fn: async () => {
+      const claimable = parseClaimableOrchestrationStates();
+      const routePath = require('path').resolve(
+        __dirname,
+        '../../app/api/workflows/images/route.ts',
+      );
+      const source = require('fs').readFileSync(routePath, 'utf8');
+      const match = source.match(/orchestration_state:\s*'([^']+)'/);
+
+      if (!match) {
+        throw new Error(
+          'app/api/workflows/images/route.ts never sets orchestration_state, so it ' +
+          "defaults to 'queued' and the render worker will claim an already-finished job.",
+        );
+      }
+      expect(claimable.has(match[1])).toBe(false);
+    },
+  });
+
+  // ============================================================================
+  // Tier 21: Wizard Step-Flow Visibility
+  // ============================================================================
+  //
+  // Why this exists: two independent bugs made the whole 5-step creation flow
+  // ("1. Script / 2. Scenes / 3. Voice / 4. Subtitles / 5. Render") look dead
+  // while every route still returned 200 and every step still rendered to the
+  // DOM. Both are silent — no console error, no failed request — so they are
+  // guarded here at the source level.
+  //
+  //   1. The step card <main> is a flex column whose only child was a bare
+  //      <div>, and the Live Preview <aside> was an unbounded `shrink-0` column
+  //      sibling below the `lg` breakpoint. The aside took its full ~850px
+  //      natural height, starving the card to a measured 1px, and the card's
+  //      overflow-hidden clipped the step body out of sight.
+  //   2. The step body was wrapped in <AnimatePresence mode="wait">, which must
+  //      finish the outgoing child's exit animation before mounting the next.
+  //      That exit never completed: the outgoing step stayed mounted at a
+  //      measured opacity:0 forever, so the body showed a transparent, STALE
+  //      step and the flow looked frozen.
+  //
+  // These are asserted against the source because the failure mode is visual —
+  // an assertion can only catch the regression if it reads the actual markup.
+
+  const wizardPath = require('path').resolve(
+    __dirname,
+    '../../components/wizard/CreationWizard.tsx',
+  );
+  const wizardSource = require('fs').readFileSync(wizardPath, 'utf8');
+
+  // Assertions below run against the component's MARKUP, with comments removed.
+  // These bugs are explained in long comments right next to the fix, and JSX
+  // comments are still present in the file text — matching on the raw source
+  // would make the guard trip over its own documentation (and skip over real
+  // code separated from the tag by a comment block).
+  function wizardMarkup() {
+    return wizardSource
+      .replace(/\/\*[\s\S]*?\*\//g, ' ')
+      .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+  }
+
+  // The class list of the element carrying the scrollable step body.
+  function stepBodyClass() {
+    const m = wizardMarkup().match(/<div className="([^"]*overflow-y-auto[^"]*)"/);
+    return m ? m[1] : null;
+  }
+
+  tests.push({
+    tier: 'Tier 21: Wizard Step-Flow Visibility',
+    id: 'T21-FLOW-01',
+    title: 'scrolling step body is a shrinkable flex item (flex-1 + min-h-0)',
+    fn: async () => {
+      const cls = stepBodyClass();
+      if (!cls) {
+        throw new Error(
+          'could not find the step body div (the one with overflow-y-auto) in ' +
+            'components/wizard/CreationWizard.tsx — the step flow would have no ' +
+            'scroll container.',
+        );
+      }
+      if (!/\bflex-1\b/.test(cls)) {
+        throw new Error(
+          `step body className is "${cls}" — missing flex-1. Without it the body ` +
+            'takes its full content height and the card clips the step flow away.',
+        );
+      }
+      if (!/\bmin-h-0\b/.test(cls)) {
+        throw new Error(
+          `step body className is "${cls}" — missing min-h-0. A flex item defaults ` +
+            'to min-height:auto, so it refuses to shrink below its content and the ' +
+            "card's overflow-hidden hides the step flow.",
+        );
+      }
+    },
+  });
+
+  tests.push({
+    tier: 'Tier 21: Wizard Step-Flow Visibility',
+    id: 'T21-FLOW-02',
+    title: 'step body has no hardcoded viewport-relative maxHeight',
+    fn: async () => {
+      // A fixed calc(100vh - Nrem) cap ignores the real chrome height and clipped
+      // the body into a ~300px window on short viewports.
+      const m = wizardMarkup().match(
+        /<div className="[^"]*overflow-y-auto[^"]*"[^>]*style=\{\{([^}]*)\}\}/,
+      );
+      if (m && /maxHeight/.test(m[1])) {
+        throw new Error(
+          `step body pins maxHeight via inline style (${m[1].trim()}). This assumes a ` +
+            'fixed chrome offset and clips the step flow on short viewports; sizing is ' +
+            'flexbox\'s job (see T21-FLOW-01).',
+        );
+      }
+    },
+  });
+
+  tests.push({
+    tier: 'Tier 21: Wizard Step-Flow Visibility',
+    id: 'T21-FLOW-03',
+    title: 'step card and its inner wrapper are flex columns that can shrink',
+    fn: async () => {
+      // The card is `flex flex-col`; if its only child is a bare <div>, every
+      // flex-1/min-h-0 beneath it is inert and the card clips the content.
+      const card = wizardMarkup().match(
+        /<main className="([^"]*bg-card[^"]*)"[\s\S]{0,400}?<div className="([^"]*)"/,
+      );
+      if (!card) {
+        throw new Error(
+          'could not locate the step card <main> and its first child div in ' +
+            'components/wizard/CreationWizard.tsx.',
+        );
+      }
+      if (!/\bflex\b/.test(card[1]) || !/\bflex-col\b/.test(card[1])) {
+        throw new Error(
+          `step card className is "${card[1]}" — it must be a flex column for the ` +
+            'header/body/footer stack to be sizeable.',
+        );
+      }
+      const child = (card[2] || '').trim();
+      if (child === '') {
+        throw new Error(
+          'the step card wraps its whole body in a bare <div> with no className. ' +
+            'That block child is not a flex item, so the step body\'s flex-1/min-h-0 ' +
+            'cannot take effect and the card collapses (measured 1px) and hides the flow.',
+        );
+      }
+      for (const required of ['flex', 'flex-col', 'min-h-0']) {
+        if (!new RegExp(`\\b${required}\\b`).test(child)) {
+          throw new Error(
+            `the step card's inner wrapper className is "${child}" — missing ${required}. ` +
+              'The wrapper holds the header, the scrolling body and the footer, so it ' +
+              'must itself be a shrinkable flex column.',
+          );
+        }
+      }
+    },
+  });
+
+  tests.push({
+    tier: 'Tier 21: Wizard Step-Flow Visibility',
+    id: 'T21-FLOW-04',
+    title: 'Live Preview aside is height-bounded so it cannot starve the step card',
+    fn: async () => {
+      const aside = wizardMarkup().match(/<aside className="([^"]*)"/);
+      if (!aside) {
+        throw new Error('could not find the Live Preview <aside> in CreationWizard.tsx');
+      }
+      const cls = aside[1];
+      if (!/\bshrink-0\b/.test(cls)) {
+        throw new Error(
+          `aside className is "${cls}" — missing shrink-0. Without it the preview is ` +
+            'squeezed to 0 height and disappears entirely.',
+        );
+      }
+      if (!/\bmax-h-/.test(cls)) {
+        throw new Error(
+          `aside className is "${cls}" — missing a max-h. Below the lg breakpoint this ` +
+            'pane stacks above the wizard, and unbounded it takes its full ~850px ' +
+            'natural height and starves the step card to 1px.',
+        );
+      }
+    },
+  });
+
+  tests.push({
+    tier: 'Tier 21: Wizard Step-Flow Visibility',
+    id: 'T21-FLOW-05',
+    title: 'step body never hides itself behind an animation (no AnimatePresence, no initial opacity 0)',
+    fn: async () => {
+      // mode="wait" must complete the outgoing child's exit before mounting the
+      // next. That exit never completed, leaving the old step mounted and
+      // transparent, so the wizard showed a stale step that could not be read.
+      const markup = wizardMarkup();
+      if (/<AnimatePresence\b/.test(markup) || /mode\s*=\s*["']wait["']/.test(markup)) {
+        throw new Error(
+          'CreationWizard.tsx uses AnimatePresence with mode="wait" around the step ' +
+            'body. The outgoing exit animation never completes, so the previous step ' +
+            'stays mounted and the wizard displays a stale step. Use a plain keyed ' +
+            'motion.div instead.',
+        );
+      }
+      // Visibility must not depend on an enter animation running. Starting the
+      // step body at opacity 0 made the flow invisible whenever the animation
+      // did not play, which is exactly what happened here.
+      const stepMotion = markup.match(/<motion\.div\s+key=\{w\.step\}[\s\S]{0,200}?>/);
+      if (!stepMotion) {
+        throw new Error('could not locate the keyed step motion.div in CreationWizard.tsx');
+      }
+      const initial = (stepMotion[0].match(/initial=\{\{([^}]*)\}\}/) || [])[1] || '';
+      if (/opacity\s*:\s*0/.test(initial)) {
+        throw new Error(
+          `the step body starts at ${initial.trim()} — rendering it at opacity 0 makes ` +
+            'the step invisible unless the enter animation completes. Step content ' +
+            'must be readable without any animation running; animate transform only.',
+        );
+      }
+    },
+  });
+
+  tests.push({
+    tier: 'Tier 21: Wizard Step-Flow Visibility',
+    id: 'T21-FLOW-06',
+    title: 'stepper is a full-width bar, never a full-width column beside the card',
+    fn: async () => {
+      // The nav is `w-full` (100% of its parent) with `shrink-0`. If the wrapper
+      // holding it is ever an `lg:flex-row`, the nav claims the whole row and
+      // pushes the card + preview past the right edge of the screen — measured
+      // at x=1464..2020 in a 1440px viewport, i.e. the entire step flow hidden.
+      // Only the INNER wrapper (card beside preview) may be a row at lg.
+      const markup = wizardMarkup();
+      const navAt = markup.indexOf('<nav className="w-full');
+      if (navAt === -1) throw new Error('could not find the stepper <nav> in CreationWizard.tsx');
+
+      const clsOfDivOpeningAt = idx => {
+        if (idx === -1) return '';
+        const tag = markup.slice(idx, markup.indexOf('>', idx));
+        return (tag.match(/className="([^"]*)"/) || [])[1] || '';
+      };
+
+      const wrapperOpen = markup.lastIndexOf('<div className="', navAt);
+      if (wrapperOpen === -1) throw new Error('could not locate the stepper wrapper div');
+      const wrapperCls = clsOfDivOpeningAt(wrapperOpen);
+      const parentCls = clsOfDivOpeningAt(markup.lastIndexOf('<div className="', wrapperOpen - 1));
+
+      for (const pair of [['stepper wrapper', wrapperCls], ['its parent', parentCls]]) {
+        if (/lg:flex-row/.test(pair[1])) {
+          throw new Error(
+            `the ${pair[0]} is "${pair[1]}" — an \`lg:flex-row\`. The stepper nav is ` +
+              '`w-full` with shrink-0, so in a row it takes 100% of the width and shoves the ' +
+              'step card and the Live Preview off the right edge of the screen on desktop. ' +
+              'The stepper must stack ABOVE the workspace: only the inner wrapper holding ' +
+              'the card may be a row at lg.',
+          );
+        }
+      }
+    },
+  });
+
+  // Tier 22: Queue Boundary + Media-Type Contracts
+  //
+  // Both guards here exist because the failure they cover was SILENT: the route
+  // answered 200 {"success":true} on a job that could never render, and the
+  // worker answered `completed` on a 0.17s / 2-frame "video". A green response
+  // and a green status were both lies.
+
+  tests.push({
+    tier: 'Tier 22: Queue Boundary + Media-Type Contracts',
+    id: 'T22-QUEUE-01',
+    title: "the wizard's queue route never writes orchestration_state as an object",
+    fn: async () => {
+      // `claim_render_job` matches a TEXT column against a literal allow-list
+      // ('queued' / 'retryable' / an expired lease). This route used to assign a
+      // JS OBJECT, which Postgres stores as a JSON string that is in neither
+      // set — so every wizard job was permanently unclaimable, while the route
+      // still answered 200. Verified live for stories/ai-videos/footage/images.
+      const src = fs.readFileSync(
+        path.join(__dirname, '..', '..', 'app/api/workflows/generate/route.ts'), 'utf8',
+      );
+
+      // The only states claim_render_job will ever act on.
+      const ALLOWED = new Set([
+        'queued', 'planning', 'retryable', 'failed', 'completed', 'claimed', 'rendering', 'publishing',
+      ]);
+
+      // A bare identifier is acceptable ONLY if its own declaration in this file pins it
+      // to allowed literals — the shape `const initialState: 'planning' | 'queued' =
+      // hasBeats ? 'queued' : 'planning'` takes. That keeps the guard strict against the
+      // original bug (an object literal) while permitting a named constant that provably
+      // cannot hold anything else. A variable of unconstrained type is still an offender.
+      const declared = new Map();
+      // NOTE: this file is semicolon-free, so the declaration runs to end-of-line.
+      for (const d of src.matchAll(/const\s+([A-Za-z_$][\w$]*)\s*(?::\s*[^=\n]+?)?=\s*([^\n;]+)/g)) {
+        const values = [...d[2].matchAll(/(['"])([a-z]+)\1/g)].map(x => x[2]);
+        if (values.length) declared.set(d[1], new Set(values));
+      }
+
+      const offenders = [];
+      // Value = anything up to a newline, comma or closing brace, then drop the trailing
+      // `)` left behind by `.update({ orchestration_state: foo })` and any quote/backtick.
+      const re = /orchestration_state\s*:\s*([^\n,}]+)/g;
+      let m;
+      while ((m = re.exec(src)) !== null) {
+        const value = m[1].replace(/\s*\)+$/, '').trim().replace(/^['"`]|['"`]$/g, '').trim();
+        if (ALLOWED.has(value)) continue;
+        const bound = /^[A-Za-z_$][\w$]*$/.test(value) ? declared.get(value) : null;
+        if (bound && bound.size > 0 && [...bound].every(v => ALLOWED.has(v))) continue;
+        offenders.push(value.slice(0, 60));
+      }
+      if (offenders.length) {
+        throw new Error(
+          'app/api/workflows/generate/route.ts assigns orchestration_state a value that is ' +
+          'not a plain allowed state string: ' + offenders.join(' | ') + '. The column is TEXT ' +
+          "and claim_render_job matches it against ('queued','retryable') or the expired-lease " +
+          "set, so anything else makes the job permanently unclaimable. Use a plain state " +
+          "string (or a constant provably pinned to those literals) and keep config in `logs`.",
+        );
+      }
+    },
+  });
+
+  tests.push({
+    tier: 'Tier 22: Queue Boundary + Media-Type Contracts',
+    id: 'T22-QUEUE-02',
+    title: "the wizard's queue route persists the submitted beats instead of discarding them",
+    fn: async () => {
+      // The destructure never named `beats`, so the 5-step wizard's per-beat asset
+      // choices were thrown away and the route re-planned from `script` alone.
+      const src = fs.readFileSync(
+        path.join(__dirname, '..', '..', 'app/api/workflows/generate/route.ts'), 'utf8',
+      );
+      if (!/\bbeats\b/.test(src)) {
+        throw new Error('route no longer references `beats` at all — the wizard payload is being discarded');
+      }
+      // The beats must land in `logs`, which is what the render worker merges into
+      // its params (render-worker.ts reads job.logs, not the request body).
+      if (!/logs\s*:\s*JSON\.stringify\((initialLogs|mergedLogs|baseLogs)\)/.test(src)) {
+        throw new Error(
+          'route does not JSON.stringify a logs payload; the worker merges job.logs into ' +
+          'its params, so beats/aspectRatio/subtitleSettings must be written there',
+        );
+      }
+      if (!/beats\s*:\s*(submittedBeats|plannedBeats|renderable \? plannedBeats : submittedBeats)/.test(src)) {
+        throw new Error(
+          'the logs payload does not carry a `beats` key. The worker resolves each beat from ' +
+          'logs; without it every beat is empty and the concat list is empty.',
+        );
+      }
+    },
+  });
+
+  tests.push({
+    tier: 'Tier 22: Queue Boundary + Media-Type Contracts',
+    id: 'T22-MEDIA-01',
+    title: 'the render worker never infers still-vs-video from a URL substring',
+    fn: async () => {
+      // `mediaUrl.includes('video')` was the bug: the Pollinations fallback URL embeds
+      // the URL-encoded beat TEXT in its path, so any script merely mentioning the
+      // word "video" was classified as video, skipped the zoompan/loop path, and
+      // rendered ~1 frame per beat while still reporting `completed`. Measured:
+      // a 2-beat job completed at 0.17s / 2 frames.
+      const src = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts/render-worker.ts'), 'utf8');
+      const bad = [];
+      if (/\.includes\(\s*['"]\.mp4['"]\s*\)/.test(src)) bad.push(".includes('.mp4')");
+      if (/\.includes\(\s*['"]video['"]\s*\)/.test(src)) bad.push(".includes('video')");
+      if (/\.includes\(\s*['"]webm['"]\s*\)/.test(src)) bad.push(".includes('webm')");
+      if (bad.length) {
+        throw new Error(
+          `scripts/render-worker.ts infers media type from the URL with ${bad.join(', ')}. ` +
+          'The Pollinations fallback embeds the URL-encoded beat text in the URL path, so a ' +
+          "script that merely says 'video' is misread as a video file and yields ~1-frame clips " +
+          'that are still reported as completed. Decide from the bytes (isVideoFile).',
+        );
+      }
+      if (!/isVideoFile\(/.test(src)) {
+        throw new Error(
+          'scripts/render-worker.ts no longer calls isVideoFile — the media type must come ' +
+          'from probing the downloaded file, not from the URL.',
+        );
+      }
+    },
+  });
+
+  tests.push({
+    tier: 'Tier 22: Queue Boundary + Media-Type Contracts',
+    id: 'T22-MEDIA-02',
+    title: 'isVideoFile decides from the bytes, with a still-safe default',
+    fn: async () => {
+      // A mislabelled still that takes the video path is what produced the 1-frame
+      // clips, so when the probe cannot tell, the fallback must be "still" (which
+      // always renders via zoompan/loop), never "video".
+      const src = fs.readFileSync(path.join(__dirname, '..', '..', 'lib/engine/ffprobe.ts'), 'utf8');
+      if (!/export async function isVideoFile/.test(src)) {
+        throw new Error('lib/engine/ffprobe.ts no longer exports isVideoFile');
+      }
+      const body = src.slice(src.indexOf('export async function isVideoFile'));
+      const fn = body.slice(0, body.indexOf('\n}'));
+      if (!/ffprobe/.test(fn)) {
+        throw new Error('isVideoFile does not shell out to ffprobe — it cannot be deciding from the bytes');
+      }
+      // The last statement of the function must be the conservative default.
+      const returns = [...fn.matchAll(/return\s+(true|false)\s*;/g)].map(m => m[1]);
+      if (!returns.length || returns[returns.length - 1] !== 'false') {
+        throw new Error(
+          'isVideoFile must end with `return false` (treat an undecidable file as a STILL). ' +
+          'A still always renders via the zoompan/loop path; a mislabelled still on the video ' +
+          'path is the 1-frame-output bug.',
+        );
+      }
+    },
+  });
+
+  // Tier 23: Documentation Diagram Parity
+  //
+  // docs/RENDER_PIPELINE.md carries the canonical Mermaid diagrams (GitHub
+  // renders those natively, with no build step) and docs/diagrams/*.puml mirrors
+  // them for people who need real UML tooling. Two copies of one diagram WILL
+  // drift, and the state you actually reach in practice is the cheap failure:
+  // a .puml that lost its link from the doc, or a doc pointing at a file that
+  // does not exist. A subtle content mismatch is not detectable with a regex,
+  // and pretending otherwise would be theatre — so the header convention below
+  // is what makes a human review of the pair cheap.
+
+  const docsRoot = path.join(__dirname, '..', '..', 'docs');
+  const docPath = path.join(docsRoot, 'RENDER_PIPELINE.md');
+  const diagramsDir = path.join(docsRoot, 'diagrams');
+
+  tests.push({
+    tier: 'Tier 23: Documentation Diagram Parity',
+    id: 'T23-DIAGRAM-01',
+    title: 'every PlantUML mirror names the doc section it duplicates and is linked from the doc',
+    fn: async () => {
+      if (!fs.existsSync(docPath)) {
+        throw new Error('docs/RENDER_PIPELINE.md is missing — the canonical diagram document is gone');
+      }
+      const md = fs.readFileSync(docPath, 'utf8');
+      if (!fs.existsSync(diagramsDir)) {
+        throw new Error('docs/diagrams/ is missing — the PlantUML mirrors are gone');
+      }
+      const pumls = fs.readdirSync(diagramsDir).filter(f => f.endsWith('.puml'));
+      if (!pumls.length) {
+        throw new Error('docs/diagrams/ contains no .puml file — the PlantUML mirrors are gone');
+      }
+      const problems = [];
+      for (const name of pumls) {
+        const src = fs.readFileSync(path.join(diagramsDir, name), 'utf8');
+        const mirrors = src.match(/MIRRORS:\s*docs\/RENDER_PIPELINE\.md\s*§\s*(\d+)/);
+        if (!mirrors) {
+          problems.push(
+            `${name} has no "MIRRORS: docs/RENDER_PIPELINE.md §N" header, so nobody can tell which ` +
+            'diagram it duplicates and the pair cannot drift-detect',
+          );
+          continue;
+        }
+        const section = Number(mirrors[1]);
+        if (!md.split('\n').some(l => l.startsWith(`## ${section}.`))) {
+          problems.push(
+            `${name} declares "MIRRORS ... §${section}" but docs/RENDER_PIPELINE.md has no ` +
+            `"## ${section}." heading — the mirror points at a section that no longer exists`,
+          );
+        }
+        if (!md.includes(`./diagrams/${name}`)) {
+          problems.push(`${name} is an orphan — docs/RENDER_PIPELINE.md never links ./diagrams/${name}`);
+        }
+      }
+      if (problems.length) {
+        throw new Error(problems.join('\n  - '));
+      }
+    },
+  });
+
+  tests.push({
+    tier: 'Tier 23: Documentation Diagram Parity',
+    id: 'T23-DIAGRAM-02',
+    title: 'every Mermaid block has exactly one PlantUML mirror, and every relative link resolves',
+    fn: async () => {
+      const md = fs.readFileSync(docPath, 'utf8');
+      const mermaidBlocks = (md.match(/```mermaid\n/g) || []).length;
+      if (!mermaidBlocks) {
+        throw new Error('docs/RENDER_PIPELINE.md contains no ```mermaid block — the canonical diagrams are gone');
+      }
+      const mirrors = new Set([...md.matchAll(/\.\/diagrams\/[A-Za-z0-9._-]+\.puml/g)].map(m => m[0]));
+      if (mirrors.size !== mermaidBlocks) {
+        throw new Error(
+          `docs/RENDER_PIPELINE.md has ${mermaidBlocks} canonical \`\`\`mermaid block(s) but ` +
+          `${mirrors.size} unique PlantUML mirror link(s). Each canonical diagram needs exactly one mirror.`,
+        );
+      }
+      // Every repo-relative link in the doc must resolve on disk. The README's
+      // `file:///` links are precisely the bug this prevents in a new document.
+      const missing = [];
+      for (const m of md.matchAll(/\]\((\.\/[A-Za-z0-9._\/-]+)\)/g)) {
+        const target = path.join(docsRoot, m[1].replace(/^\.\//, '').replace(/\/$/, ''));
+        if (!fs.existsSync(target)) missing.push(m[1]);
+      }
+      if (missing.length) {
+        throw new Error(
+          `docs/RENDER_PIPELINE.md links to files that do not exist: ${[...new Set(missing)].join(', ')}`,
+        );
+      }
+    },
+  });
+
   let passed = 0;
   let failed = 0;
   const start = Date.now();
@@ -3761,6 +4374,10 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     'Tier 17: Scene Media Selector',
     'Tier 18: Images in Mission & Remotion',
     'Tier 19: Workflow Capabilities',
+    'Tier 20: Render-Job Claim Safety',
+    'Tier 21: Wizard Step-Flow Visibility',
+    'Tier 22: Queue Boundary + Media-Type Contracts',
+    'Tier 23: Documentation Diagram Parity',
   ];
   for (const tier of tiers) {
     const tierTests = tests.filter(t => t.tier === tier);

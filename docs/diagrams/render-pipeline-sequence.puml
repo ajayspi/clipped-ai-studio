@@ -1,0 +1,140 @@
+@startuml render-pipeline-sequence
+'==============================================================================
+' Render pipeline — end-to-end: wizard to mp4
+'
+' MIRRORS: docs/RENDER_PIPELINE.md §1 "The happy path"
+'   (the ```mermaid block in that section is CANONICAL — edit both or neither)
+'
+' Rendered by:  plantuml docs/diagrams/render-pipeline-sequence.puml
+' GitHub does NOT render .puml. This file exists for export to PNG/SVG.
+'==============================================================================
+
+title Render pipeline — end-to-end: wizard to mp4
+
+autonumber
+
+actor User
+participant WIZ as CreationWizard\n(browser)
+participant API as POST /api/workflows/generate\n(Next.js)
+participant DB as Supabase\nrender_jobs
+participant W as render-worker\n(node --import tsx)
+participant TTS as TTS cascade
+participant MED as Media sources
+participant FF as ffmpeg + ffprobe
+
+== Queue boundary ==
+
+User -> WIZ: completes 5 steps, clicks "Send to Queue"
+WIZ -> API: POST { workflow, script, subject, aspectRatio,\nvoice*, music*, subtitle*, tone, beats[] }
+
+note right of API
+  beats[] is the whole point — one beat per
+  scene, each with the asset the user picked.
+  The user's pick is ordered FIRST in urls[],
+  so the worker reads it as urls[0].
+end note
+
+API -> API: validate script; normalise beats[]\n(drop empty-text beats, default duration 3)
+API -> DB: INSERT render_jobs\norchestration_state='queued', logs={...beats, settings}
+API --> WIZ: 200 { success, jobId, beatCount }
+WIZ --> User: router.push(/dashboard?job=<jobId>)
+
+note right of DB
+  orchestration_state is TEXT and is matched
+  by claim_render_job against a literal
+  allow-list. It is a STATE MACHINE, not a
+  settings bag — all config goes in logs.
+end note
+
+== Claim ==
+
+loop poll (every few seconds)
+  W -> DB: claim_render_job(worker_id, lease_token, lease_ms=900000)
+  DB --> W: 1 row, or empty set
+end
+
+DB --> W: job row (state 'claimed', attempt_count+1)
+
+note over W, DB
+  Claimable when state IN ('queued','retryable')
+  OR state IN ('claimed','rendering','publishing')
+     AND lease_expires_at < now()
+  AND attempt_count < max_attempts (default 3)
+  ORDER BY created_at ASC FOR UPDATE SKIP LOCKED
+end note
+
+note right of W
+  params = { ...columns, ...JSON.parse(job.logs) }
+  Beats and every setting come from logs, because
+  the worker's JSON.parse(job.orchestration_state)
+  throws on a plain state string and yields {}.
+end note
+
+== Per-beat render loop ==
+
+loop for each beat
+  W -> TTS: synthesize(text, provider, voice)
+  TTS --> W: audio url + duration
+
+  note over TTS
+    cascade: elevenlabs -> omniroute -> keyless
+    keyless sub-cascade: Edge TTS
+      -> Google Translate TTS -> synthetic WAV
+    TTS failure does NOT fail the beat:
+    the clip gets a silent anullsrc track.
+  end note
+
+  W -> MED: resolve beat media, then download
+  MED --> W: local media file
+
+  note right of MED
+    chain: selectedVideo.url || imageUrl
+      || videoUrl || clipUrl || urls[0]
+    fallbacks: OmniRoute images (empty body!)
+      -> Pollinations  <- de-facto source
+  end note
+
+  W -> FF: isVideoFile() — still vs video from BYTES
+  W -> FF: ffprobe audio duration (exact frame math)
+  W -> FF: encode clip_i.mp4\n(loop+zoompan if still, -t if video,\nlibx264 + aac, subtitles via drawtext)
+end
+
+== Concat, music, completion ==
+
+W -> FF: concat -f concat -safe 0 -c copy -> concat_temp.mp4
+
+opt musicVolume > 0 AND pixabay key
+  W -> MED: GET pixabay.com/api/audio/?key=...&q=...
+  MED --> W: track.preview
+  W -> FF: sidechaincompress ducking + amix -> final mp4
+  note right of FF
+    [bgm][main1]sidechaincompress=threshold=0.08:ratio=4\n  :attack=5:release=50[bgm_ducked]
+    [main2][bgm_ducked]amix=inputs=2:duration=first[aout]
+    A BGM failure is caught and the render
+    continues without music — it never fails the job.
+  end note
+end
+
+W -> DB: complete_render_job(job, worker, lease_token, output_url, logs)
+DB --> W: true — only if the lease is still valid
+
+note right of DB
+  requires ALL of: id, worker_id, lease_token,
+  AND lease_expires_at > now()
+  writes: orchestration_state='completed',
+          status='completed', output_url
+  output file: public/renders/<jobId>.mp4
+end note
+
+== Failure ==
+
+alt any step throws
+  W -> DB: fail_render_job(job, worker, lease_token, error)
+  note right of DB
+    'retryable' while attempt_count < max_attempts,
+    else 'failed'. attempt_count is incremented
+    at CLAIM time, so max_attempts=3 = 3 total tries.
+  end note
+end
+
+@enduml

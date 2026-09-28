@@ -1,0 +1,80 @@
+@startuml render-job-state
+'==============================================================================
+' Render job state machine (render_jobs.orchestration_state)
+'
+' MIRRORS: docs/RENDER_PIPELINE.md §5 "The render job state machine"
+'   (the ```mermaid block in that section is CANONICAL — edit both or neither)
+'
+' Rendered by:  plantuml docs/diagrams/render-job-state.puml
+' GitHub does NOT render .puml. This file exists for export to PNG/SVG.
+'==============================================================================
+
+title render_jobs.orchestration_state — state machine
+
+[*] --> queued : INSERT (column DEFAULT 'queued')
+
+state "planning" as planning
+state "queued" as queued
+state "claimed" as claimed
+state "retryable" as retryable
+state "completed" as completed
+state "failed" as failed
+state "rendering" as rendering
+state "publishing" as publishing
+
+planning --> queued : plan produced scenes
+planning --> failed : plan produced no scenes
+planning --> failed : orchestrator threw
+
+queued --> claimed : claim_render_job
+retryable --> claimed : claim_render_job\n(attempt_count < 3)
+claimed --> claimed : lease expired, re-claimed
+claimed --> completed : complete_render_job
+claimed --> retryable : fail_render_job (attempt < 3)
+claimed --> failed : fail_render_job (attempt = 3)
+
+completed --> [*]
+failed --> [*]
+
+note right of rendering
+  NOT written by the render worker.
+  Only the one-off backfill maps
+  status='processing' to it.
+end note
+
+note right of publishing
+  NOT written by the render worker.
+  Listed in the claim function's
+  expired-lease set, but no code
+  on this path produces it.
+end note
+
+note right of queued
+  DANGEROUS DEFAULT.
+  orchestration_state TEXT NOT NULL
+  DEFAULT 'queued' means any route that
+  omits the column creates a CLAIMABLE
+  job. A beatless claimable job builds an
+  empty concat.txt and burns all 3
+  attempts on an ffmpeg error.
+end note
+
+note bottom of claimed
+  A worker crash mid-render leaves the row
+  here ('claimed'), which IS in the
+  reclaimable expired-lease set.
+end note
+
+legend right
+  |= state |= claimable? |= written by |
+  | planning | no | the queue route |
+  | queued | yes | INSERT (default) |
+  | retryable | yes | fail_render_job |
+  | claimed | expired lease only | claim_render_job |
+  | rendering | expired lease only | (nothing today) |
+  | publishing | expired lease only | (nothing today) |
+  | completed | no | complete_render_job |
+  | failed | no | fail_render_job |
+endlegend
+
+@enduml
