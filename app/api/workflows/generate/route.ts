@@ -72,6 +72,12 @@ export async function POST(req: Request) {
               ...(typeof b.imagePrompt === 'string' && b.imagePrompt.trim()
                 ? { imagePrompt: b.imagePrompt.trim() }
                 : {}),
+              ...(typeof b.searchQuery === 'string' && b.searchQuery.trim()
+                ? { searchQuery: b.searchQuery.trim() }
+                : {}),
+              ...(Array.isArray(b.keywords)
+                ? { keywords: b.keywords.filter(k => typeof k === 'string') }
+                : {}),
             }
           })
           // A beat with no text renders as "Clipped Video Beat" placeholder copy.

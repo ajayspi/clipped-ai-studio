@@ -69,12 +69,13 @@ ${passes.length > 1 ? `This is part ${index + 1} of ${passes.length} of a longer
 
 Every word of the narration must appear in exactly one scene, in order.
 
-Shot direction rules:
+Shot direction and pacing rules:
 - Both fields are closed lists. Use those exact spellings; nothing else is renderable.
 - VARIETY IS THE POINT. Do not repeat one cameraMove across consecutive scenes —
   identical motion on every shot is what makes a cut look like a slideshow.
-- Open on "wide". Use "close-up" where the narration lands an emphasis or a
-  specific detail, "macro" only for a genuine object detail.
+- Beat 1 is the hook and must be the most visually dynamic shot. Open on motion.
+- Alternate visual density and land a visual change on every sentence that carries a new idea.
+- End on a loop-friendly final beat.
 - "static" is legitimate for a beat that should land still, but use it rarely.
 - Pair sensibly: a "push-in" on an opening "wide" builds; a "pull-out" reveals.
 
@@ -95,14 +96,32 @@ Return ONLY valid JSON, no markdown:
 
       for (const scene of parsed.scenes ?? []) {
         if (!scene?.text) continue;
-        // The model proposes; the planner decides. `shotFromScene` enforces the
+        
+        const sceneText = String(scene.text);
+        const words = sceneText.trim().split(/\s+/).length;
+        // Assume speaking rate of ~2.5 words per second
+        const spokenDuration = words / 2.5; 
+        
+        let dur = Number(scene.duration) || 4;
+        
+        // Duration clamps
+        if (dur > spokenDuration) dur = spokenDuration;
+        if (dur > 3.5) dur = 3.5;
+        if (dur < 1.8) dur = 1.8;
+        
+        // First beat must be <= 2.5s
+        if (scenes.length === 0 && dur > 2.5) {
+          dur = 2.5;
+        }
+
+        // The model proposes; the planner decides. \`shotFromScene\` enforces the
         // closed vocabulary and supplies the deterministic rhythm when the
         // fields are missing or the model invented a move, so a scene can never
         // reach the renderer with an unrenderable camera instruction.
         const shot = shotFromScene(
           {
-            text: String(scene.text),
-            description: String(scene.description ?? scene.text),
+            text: sceneText,
+            description: String(scene.description ?? sceneText),
             keywords: Array.isArray(scene.keywords) ? scene.keywords.map(String) : [],
             shotType: scene.shotType,
             cameraMove: scene.cameraMove,
@@ -110,11 +129,11 @@ Return ONLY valid JSON, no markdown:
           scenes.length
         );
         scenes.push({
-          id: `scene-${scenes.length}`,
-          text: String(scene.text),
+          id: \`scene-\${scenes.length}\`,
+          text: sceneText,
           keywords: Array.isArray(scene.keywords) ? scene.keywords.map(String) : [],
-          description: String(scene.description ?? scene.text),
-          duration: Number(scene.duration) || 4,
+          description: String(scene.description ?? sceneText),
+          duration: dur,
           emotion: scene.emotion ? String(scene.emotion) : undefined,
           shotType: shot.shotType,
           cameraMove: shot.cameraMove,

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Smart API Router â€” lib/api-router.ts
  *
  * Provides automatic health-aware failover across all configured AI providers.
@@ -400,7 +400,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     id: 'coverr_free',
     name: 'Coverr (Free Stock Video)',
     category: 'video',
-    healthEndpoint: 'https://api.coverr.co/videos?page=1&per_page=1',
+    healthEndpoint: undefined, // Requires API key
     baseUrl: 'https://api.coverr.co',
     isFree: true,
     defaultPriority: 45,
@@ -409,7 +409,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     id: 'mixkit_free',
     name: 'Mixkit (Free HD Video)',
     category: 'video',
-    healthEndpoint: 'https://mixkit.co/free-stock-video/',
+    healthEndpoint: undefined, // No API
     baseUrl: 'https://mixkit.co',
     isFree: true,
     defaultPriority: 40,
@@ -418,7 +418,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     id: 'mazwai_free',
     name: 'Mazwai (Free Cinematic)',
     category: 'video',
-    healthEndpoint: 'https://mazwai.com/wp-json/wp/v2/posts?per_page=1',
+    healthEndpoint: undefined, // Blocks bots
     baseUrl: 'https://mazwai.com',
     isFree: true,
     defaultPriority: 35,
@@ -427,7 +427,8 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     id: 'videvo_free',
     name: 'Videvo (Free CC Video)',
     category: 'video',
-    healthEndpoint: 'https://www.videvo.net/api/v1/footage/?page=1&page_size=1&license_type=all&resolution=all',
+    healthEndpoint: undefined, // Requires API key
+
     baseUrl: 'https://www.videvo.net/api/v1',
     isFree: true,
     defaultPriority: 30,

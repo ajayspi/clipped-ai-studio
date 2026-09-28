@@ -69,25 +69,12 @@ export interface RemotionCompositionPackage {
   };
 }
 
+import { MIXKIT_CLIPS } from '../media/mixkit-catalog';
+
 const DRY_RUN_SAMPLE_VIDEOS: Record<string, string[]> = {
-  portrait: [
-    'https://assets.mixkit.co/videos/preview/mixkit-futuristic-city-with-flying-cars-41484-large.mp4',
-    'https://assets.mixkit.co/videos/preview/mixkit-vertical-shot-of-a-dj-working-with-his-equipment-43346-large.mp4',
-    'https://assets.mixkit.co/videos/preview/mixkit-vertical-animation-of-abstract-digital-circuits-43348-large.mp4',
-    'https://assets.mixkit.co/videos/preview/mixkit-neon-lights-in-a-cyberpunk-alley-43349-large.mp4',
-  ],
-  landscape: [
-    'https://assets.mixkit.co/videos/preview/mixkit-set-of-plateaus-seen-from-the-sky-in-a-sunset-26070-large.mp4',
-    'https://assets.mixkit.co/videos/preview/mixkit-aerial-view-of-city-traffic-at-night-42407-large.mp4',
-    'https://assets.mixkit.co/videos/preview/mixkit-waterfall-in-forest-2213-large.mp4',
-    'https://assets.mixkit.co/videos/preview/mixkit-stars-in-space-background-1610-large.mp4',
-  ],
-  square: [
-    'https://assets.mixkit.co/videos/preview/mixkit-waves-in-the-water-1164-large.mp4',
-    'https://assets.mixkit.co/videos/preview/mixkit-ink-swirling-in-water-underwater-42994-large.mp4',
-    'https://assets.mixkit.co/videos/preview/mixkit-liquid-bubbles-and-foam-abstract-42995-large.mp4',
-    'https://assets.mixkit.co/videos/preview/mixkit-particles-in-slow-motion-42996-large.mp4',
-  ],
+  portrait: MIXKIT_CLIPS.filter(c => c.orientation === 'vertical').map(c => c.url),
+  landscape: MIXKIT_CLIPS.filter(c => c.orientation === 'horizontal').map(c => c.url),
+  square: MIXKIT_CLIPS.filter(c => c.orientation === 'square').map(c => c.url),
 };
 
 export class MissionOrchestrator {

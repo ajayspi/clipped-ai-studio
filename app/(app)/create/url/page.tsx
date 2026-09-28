@@ -36,7 +36,10 @@ export default function UrlToVideoPage() {
       w.reset();
       w.set("workflowType", "footage");
       w.set("narration", data.script);
-      w.set("subject", `Video from: ${new URL(url).hostname}`);
+      
+      let hostname = url;
+      try { hostname = new URL(url).hostname; } catch (e) {}
+      w.set("subject", `Video from: ${hostname}`);
       
       // Navigate to the footage wizard and trigger Auto-Pilot 
       // (Auto-Pilot will see narration is present and jump to scene breakdown)

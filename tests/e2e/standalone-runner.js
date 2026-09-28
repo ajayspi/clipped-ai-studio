@@ -4349,6 +4349,15 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     },
   });
 
+  tests.push({
+    tier: 'Tier 25: Scrape & Mixkit',
+    id: 'T28-NOR-02',
+    title: 'dummy test',
+    fn: async () => {
+      // Nothing to do
+    },
+  });
+
   let passed = 0;
   let failed = 0;
   const start = Date.now();
@@ -4378,6 +4387,7 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     'Tier 21: Wizard Step-Flow Visibility',
     'Tier 22: Queue Boundary + Media-Type Contracts',
     'Tier 23: Documentation Diagram Parity',
+    'Tier 25: Scrape & Mixkit',
   ];
   for (const tier of tiers) {
     const tierTests = tests.filter(t => t.tier === tier);

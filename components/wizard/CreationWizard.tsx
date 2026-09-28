@@ -171,7 +171,10 @@ export function CreationWizard({ workflowType }: { workflowType: string }) {
               shotType: beat.shotType,
               cameraMove: beat.cameraMove,
               imagePrompt: beat.imagePrompt,
+              searchQuery: beat.searchQuery,
+              keywords: beat.keywords,
             };
+
           }),
         }),
       });

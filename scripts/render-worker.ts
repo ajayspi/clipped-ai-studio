@@ -7,6 +7,7 @@ import ffmpeg from 'fluent-ffmpeg'
 import { claimRenderJob, completeRenderJob, failRenderJob } from '../lib/jobs/render-job'
 import { getAudioDuration, buildZoompanFilter, isFFprobeAvailable, isVideoFile } from '../lib/engine/ffprobe'
 import { normalizeCameraMove, type CameraMove } from '../lib/engine/shot-planner'
+import { resolveBeatMedia } from '../lib/engine/beat-media-resolver'
 import { createLogger } from '../lib/logger'
 
 const logger = createLogger('render-worker')
@@ -524,34 +525,23 @@ async function pollAndProcess() {
       let mediaUrl = b?.selectedVideo?.url || b?.imageUrl || b?.videoUrl || b.clipUrl || b.urls?.[0] || b.candidates?.[0]?.url || '';
       
       if (!mediaUrl) {
-        // Prefer the shot planner's cinematic prompt. The fallback string below
-        // leads with the beat's SPOKEN text, so the image model was being asked
-        // to illustrate a caption ("Creator types vary. Script forms differ.")
-        // and to invent a "minimalist stick man" on top of it. `imagePrompt` is
-        // built from the scene description instead, with framing from the shot
-        // type and one consistent look across every beat.
-        const fullPrompt = b.imagePrompt?.trim()
-          || `${text}, educational tech style, paradox style, consistent character anchor, minimalist stick man character`;
-        try {
-          console.log(`     -> Calling local OmniRoute for image...`);
-          const res = await fetch('http://localhost:20128/v1/images/generations', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-          });
-          const data = await res.json();
-          if (data?.data?.[0]?.url) {
-            mediaUrl = data.data[0].url;
-          } else {
-            throw new Error("Invalid OmniRoute response");
-          }
-        } catch (err) {
-          logger.warn('OmniRoute image failed, falling back to Pollinations', {
+        const resolved = await resolveBeatMedia(b);
+        if (resolved) {
+          mediaUrl = resolved.url;
+          logger.info(`Resolved beat media`, { jobId: job.id, beat: i + 1, provider: resolved.provider, query: resolved.query });
+          console.log(`     -> Resolved beat media via ${resolved.provider}`);
+        } else {
+          const fullPrompt = b.imagePrompt?.trim()
+            || `${text}, educational tech style, paradox style, consistent character anchor, minimalist stick man character`;
+          const w = params.aspectRatio === '16:9' ? 1920 : params.aspectRatio === '1:1' ? 1080 : 1080;
+          const h = params.aspectRatio === '16:9' ? 1080 : params.aspectRatio === '1:1' ? 1080 : 1920;
+          mediaUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=${w}&height=${h}&nologo=true`;
+          
+          logger.warn('No media resolved, falling back to Pollinations', {
             jobId: job.id,
             beat: i + 1,
-            error: err,
           });
-          console.error("     -> OmniRoute local failed, falling back to Pollinations:", err instanceof Error ? err.message : String(err));
-          mediaUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=1024&height=1024&nologo=true`;
+          console.error("     -> No media resolved, falling back to Pollinations");
         }
       }
 

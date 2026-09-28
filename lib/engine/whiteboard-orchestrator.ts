@@ -9,6 +9,7 @@ import {
 } from './types';
 import { supabase } from '@/lib/db';
 import { geminiCharacterGenerator } from '@/lib/ai/gemini-character-generator';
+import { MIXKIT_CLIPS } from '../media/mixkit-catalog';
 
 export interface WhiteboardJobState {
   jobId: string;
@@ -207,7 +208,7 @@ export class WhiteboardOrchestrator {
         },
       };
 
-      const videoUrl = `https://assets.mixkit.co/videos/preview/mixkit-animation-of-futuristic-circuits-and-shapes-43347-large.mp4`;
+      const videoUrl = MIXKIT_CLIPS[0]?.url || '';
 
       jobState.videoUrl = videoUrl;
       jobState.status = 'completed';

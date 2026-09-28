@@ -1,3 +1,4 @@
+import { MIXKIT_CLIPS } from '../media/mixkit-catalog';
 import {
   AIVideoGenerationRequest,
   AIVideoGenerationResponse,
@@ -9,9 +10,9 @@ import { getApiKey } from '@/lib/keys';
 
 // Sample royalty-free fallback video clips for dry-run / mock modes
 const DRY_RUN_SAMPLE_VIDEOS: Record<string, string> = {
-  landscape: 'https://assets.mixkit.co/videos/preview/mixkit-set-of-plateaus-seen-from-the-sky-in-a-sunset-26070-large.mp4',
-  portrait: 'https://assets.mixkit.co/videos/preview/mixkit-futuristic-city-with-flying-cars-41484-large.mp4',
-  square: 'https://assets.mixkit.co/videos/preview/mixkit-waves-in-the-water-1164-large.mp4',
+  landscape: MIXKIT_CLIPS.find(c => c.orientation === 'horizontal')?.url || '',
+  portrait: MIXKIT_CLIPS.find(c => c.orientation === 'vertical')?.url || '',
+  square: MIXKIT_CLIPS.find(c => c.orientation === 'square')?.url || '',
 };
 
 export class VideoGenerator {
