@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { CameraMove, ShotType } from '@/lib/engine/shot-planner';
 
 export const STEPS = [
   { key: 'script', name: 'Script', hint: 'Subject & narration' },
@@ -32,6 +33,18 @@ export interface Beat {
   duration: number;
   candidates?: Footage[];
   selectedId?: string;
+  /**
+   * Shot direction, assigned by /api/v1/analyze and consumed by the render
+   * worker. Optional because beats constructed without the planner (or by an
+   * older stored session) still have to render -- the worker falls back to the
+   * alternating zoom those jobs always used.
+   */
+  shotType?: ShotType;
+  cameraMove?: CameraMove;
+  /** Cinematic prompt for the generative image fallback. Never the narration. */
+  imagePrompt?: string;
+  /** Bare stock-search keywords, split from the image prompt. */
+  searchQuery?: string;
 }
 
 export interface SubtitlePresetConfig {

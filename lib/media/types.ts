@@ -149,8 +149,27 @@ export interface FalSubmitOptions {
  * Consumed by image-sources.searchImages().
  */
 export interface ImageSourceQuery {
-  /** Plain-text search keywords. */
+  /**
+   * Plain-text search keywords for the STOCK sources (Openverse, Pexels,
+   * Pixabay). Bare nouns: those APIs rank by keyword match, so "city skyline
+   * sunset" finds a photo and "cinematic photography, 35mm lens" finds nothing.
+   */
   query: string;
+
+  /**
+   * Cinematic prompt for the GENERATIVE fallback (Pollinations).
+   *
+   * Split from `query` deliberately. These two want opposite strings: a
+   * text-to-image model wants lens/framing/lighting language, a stock search
+   * wants keywords. Before this field existed, one `query.query` was sent to
+   * both -- and because callers passed the beat's spoken narration, Pollinations
+   * was being asked to illustrate "Creator types vary. Script forms differ.",
+   * which is a caption, not a picture.
+   *
+   * Optional: falls back to `query` when absent, so existing callers are
+   * unaffected.
+   */
+  imagePrompt?: string;
 
   /** Target aspect ratio -- used to bias width/height in results. */
   aspectRatio: '16:9' | '9:16' | '1:1';

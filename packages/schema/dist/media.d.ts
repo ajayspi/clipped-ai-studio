@@ -368,6 +368,7 @@ export declare const SceneSchema: z.ZodObject<{
         } | undefined;
     } | undefined;
     exactDuration?: number | undefined;
+    imagePrompt?: string | undefined;
     audioUrl?: string | undefined;
     mediaAsset?: {
         url: string;
@@ -387,7 +388,6 @@ export declare const SceneSchema: z.ZodObject<{
     emotion?: string | undefined;
     cameraMotion?: string | undefined;
     visualPrompt?: string | undefined;
-    imagePrompt?: string | undefined;
 }, {
     id: string;
     text: string;
@@ -428,6 +428,7 @@ export declare const SceneSchema: z.ZodObject<{
         } | undefined;
     } | undefined;
     exactDuration?: number | undefined;
+    imagePrompt?: string | undefined;
     audioUrl?: string | undefined;
     mediaAsset?: {
         url: string;
@@ -447,7 +448,6 @@ export declare const SceneSchema: z.ZodObject<{
     emotion?: string | undefined;
     cameraMotion?: string | undefined;
     visualPrompt?: string | undefined;
-    imagePrompt?: string | undefined;
 }>;
 export type Scene = z.infer<typeof SceneSchema>;
 /**
@@ -834,6 +834,7 @@ export declare const ScriptAnalysisSchema: z.ZodObject<{
             } | undefined;
         } | undefined;
         exactDuration?: number | undefined;
+        imagePrompt?: string | undefined;
         audioUrl?: string | undefined;
         mediaAsset?: {
             url: string;
@@ -853,7 +854,6 @@ export declare const ScriptAnalysisSchema: z.ZodObject<{
         emotion?: string | undefined;
         cameraMotion?: string | undefined;
         visualPrompt?: string | undefined;
-        imagePrompt?: string | undefined;
     }, {
         id: string;
         text: string;
@@ -894,6 +894,7 @@ export declare const ScriptAnalysisSchema: z.ZodObject<{
             } | undefined;
         } | undefined;
         exactDuration?: number | undefined;
+        imagePrompt?: string | undefined;
         audioUrl?: string | undefined;
         mediaAsset?: {
             url: string;
@@ -913,7 +914,6 @@ export declare const ScriptAnalysisSchema: z.ZodObject<{
         emotion?: string | undefined;
         cameraMotion?: string | undefined;
         visualPrompt?: string | undefined;
-        imagePrompt?: string | undefined;
     }>, "many">;
     totalDuration: z.ZodNumber;
     title: z.ZodOptional<z.ZodString>;
@@ -960,6 +960,7 @@ export declare const ScriptAnalysisSchema: z.ZodObject<{
             } | undefined;
         } | undefined;
         exactDuration?: number | undefined;
+        imagePrompt?: string | undefined;
         audioUrl?: string | undefined;
         mediaAsset?: {
             url: string;
@@ -979,7 +980,6 @@ export declare const ScriptAnalysisSchema: z.ZodObject<{
         emotion?: string | undefined;
         cameraMotion?: string | undefined;
         visualPrompt?: string | undefined;
-        imagePrompt?: string | undefined;
     }[];
     totalDuration: number;
     title?: string | undefined;
@@ -1026,6 +1026,7 @@ export declare const ScriptAnalysisSchema: z.ZodObject<{
             } | undefined;
         } | undefined;
         exactDuration?: number | undefined;
+        imagePrompt?: string | undefined;
         audioUrl?: string | undefined;
         mediaAsset?: {
             url: string;
@@ -1045,7 +1046,6 @@ export declare const ScriptAnalysisSchema: z.ZodObject<{
         emotion?: string | undefined;
         cameraMotion?: string | undefined;
         visualPrompt?: string | undefined;
-        imagePrompt?: string | undefined;
     }[];
     totalDuration: number;
     title?: string | undefined;
@@ -1295,6 +1295,7 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                 } | undefined;
             } | undefined;
             exactDuration?: number | undefined;
+            imagePrompt?: string | undefined;
             audioUrl?: string | undefined;
             mediaAsset?: {
                 url: string;
@@ -1314,7 +1315,6 @@ export declare const GenerationResponseSchema: z.ZodObject<{
             emotion?: string | undefined;
             cameraMotion?: string | undefined;
             visualPrompt?: string | undefined;
-            imagePrompt?: string | undefined;
         }, {
             id: string;
             text: string;
@@ -1355,6 +1355,7 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                 } | undefined;
             } | undefined;
             exactDuration?: number | undefined;
+            imagePrompt?: string | undefined;
             audioUrl?: string | undefined;
             mediaAsset?: {
                 url: string;
@@ -1374,7 +1375,6 @@ export declare const GenerationResponseSchema: z.ZodObject<{
             emotion?: string | undefined;
             cameraMotion?: string | undefined;
             visualPrompt?: string | undefined;
-            imagePrompt?: string | undefined;
         }>, "many">;
         totalDuration: z.ZodNumber;
         title: z.ZodOptional<z.ZodString>;
@@ -1421,6 +1421,7 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                 } | undefined;
             } | undefined;
             exactDuration?: number | undefined;
+            imagePrompt?: string | undefined;
             audioUrl?: string | undefined;
             mediaAsset?: {
                 url: string;
@@ -1440,7 +1441,6 @@ export declare const GenerationResponseSchema: z.ZodObject<{
             emotion?: string | undefined;
             cameraMotion?: string | undefined;
             visualPrompt?: string | undefined;
-            imagePrompt?: string | undefined;
         }[];
         totalDuration: number;
         title?: string | undefined;
@@ -1487,6 +1487,7 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                 } | undefined;
             } | undefined;
             exactDuration?: number | undefined;
+            imagePrompt?: string | undefined;
             audioUrl?: string | undefined;
             mediaAsset?: {
                 url: string;
@@ -1506,7 +1507,6 @@ export declare const GenerationResponseSchema: z.ZodObject<{
             emotion?: string | undefined;
             cameraMotion?: string | undefined;
             visualPrompt?: string | undefined;
-            imagePrompt?: string | undefined;
         }[];
         totalDuration: number;
         title?: string | undefined;
@@ -1719,6 +1719,7 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                 } | undefined;
             } | undefined;
             exactDuration?: number | undefined;
+            imagePrompt?: string | undefined;
             audioUrl?: string | undefined;
             mediaAsset?: {
                 url: string;
@@ -1738,7 +1739,6 @@ export declare const GenerationResponseSchema: z.ZodObject<{
             emotion?: string | undefined;
             cameraMotion?: string | undefined;
             visualPrompt?: string | undefined;
-            imagePrompt?: string | undefined;
         }[];
         totalDuration: number;
         title?: string | undefined;
@@ -1821,6 +1821,7 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                 } | undefined;
             } | undefined;
             exactDuration?: number | undefined;
+            imagePrompt?: string | undefined;
             audioUrl?: string | undefined;
             mediaAsset?: {
                 url: string;
@@ -1840,7 +1841,6 @@ export declare const GenerationResponseSchema: z.ZodObject<{
             emotion?: string | undefined;
             cameraMotion?: string | undefined;
             visualPrompt?: string | undefined;
-            imagePrompt?: string | undefined;
         }[];
         totalDuration: number;
         title?: string | undefined;

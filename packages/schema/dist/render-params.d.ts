@@ -130,6 +130,12 @@ export declare const RenderBeatSchema: z.ZodObject<{
         confidence?: number | undefined;
     }>, "many">>;
     exactDuration: z.ZodOptional<z.ZodNumber>;
+    shotType: z.ZodOptional<z.ZodString>;
+    cameraMove: z.ZodOptional<z.ZodString>;
+    /** Cinematic prompt for the generative image fallback. Never the narration. */
+    imagePrompt: z.ZodOptional<z.ZodString>;
+    /** Bare stock-search keywords, kept separate from the image prompt. */
+    searchQuery: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     url?: string | undefined;
     wordTimestamps?: {
@@ -158,6 +164,10 @@ export declare const RenderBeatSchema: z.ZodObject<{
         previewUrl?: string | undefined;
     } | undefined;
     exactDuration?: number | undefined;
+    shotType?: string | undefined;
+    cameraMove?: string | undefined;
+    imagePrompt?: string | undefined;
+    searchQuery?: string | undefined;
 }, {
     url?: string | undefined;
     wordTimestamps?: {
@@ -186,6 +196,10 @@ export declare const RenderBeatSchema: z.ZodObject<{
         previewUrl?: string | undefined;
     } | undefined;
     exactDuration?: number | undefined;
+    shotType?: string | undefined;
+    cameraMove?: string | undefined;
+    imagePrompt?: string | undefined;
+    searchQuery?: string | undefined;
 }>;
 export type RenderBeat = z.infer<typeof RenderBeatSchema>;
 /**
@@ -228,6 +242,10 @@ export declare const RenderSceneSchema: z.ZodObject<{
         confidence?: number | undefined;
     }>, "many">>;
     exactDuration: z.ZodOptional<z.ZodNumber>;
+    shotType: z.ZodOptional<z.ZodString>;
+    cameraMove: z.ZodOptional<z.ZodString>;
+    imagePrompt: z.ZodOptional<z.ZodString>;
+    searchQuery: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     url?: string | undefined;
     wordTimestamps?: {
@@ -249,6 +267,10 @@ export declare const RenderSceneSchema: z.ZodObject<{
         previewUrl?: string | undefined;
     } | undefined;
     exactDuration?: number | undefined;
+    shotType?: string | undefined;
+    cameraMove?: string | undefined;
+    imagePrompt?: string | undefined;
+    searchQuery?: string | undefined;
 }, {
     url?: string | undefined;
     wordTimestamps?: {
@@ -270,6 +292,10 @@ export declare const RenderSceneSchema: z.ZodObject<{
         previewUrl?: string | undefined;
     } | undefined;
     exactDuration?: number | undefined;
+    shotType?: string | undefined;
+    cameraMove?: string | undefined;
+    imagePrompt?: string | undefined;
+    searchQuery?: string | undefined;
 }>;
 export type RenderScene = z.infer<typeof RenderSceneSchema>;
 /**
@@ -336,6 +362,12 @@ export declare const RenderParamsSchema: z.ZodObject<{
             confidence?: number | undefined;
         }>, "many">>;
         exactDuration: z.ZodOptional<z.ZodNumber>;
+        shotType: z.ZodOptional<z.ZodString>;
+        cameraMove: z.ZodOptional<z.ZodString>;
+        /** Cinematic prompt for the generative image fallback. Never the narration. */
+        imagePrompt: z.ZodOptional<z.ZodString>;
+        /** Bare stock-search keywords, kept separate from the image prompt. */
+        searchQuery: z.ZodOptional<z.ZodString>;
     }, "strip", z.ZodTypeAny, {
         url?: string | undefined;
         wordTimestamps?: {
@@ -364,6 +396,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
             previewUrl?: string | undefined;
         } | undefined;
         exactDuration?: number | undefined;
+        shotType?: string | undefined;
+        cameraMove?: string | undefined;
+        imagePrompt?: string | undefined;
+        searchQuery?: string | undefined;
     }, {
         url?: string | undefined;
         wordTimestamps?: {
@@ -392,6 +428,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
             previewUrl?: string | undefined;
         } | undefined;
         exactDuration?: number | undefined;
+        shotType?: string | undefined;
+        cameraMove?: string | undefined;
+        imagePrompt?: string | undefined;
+        searchQuery?: string | undefined;
     }>, "many">>;
     input: z.ZodOptional<z.ZodObject<{
         script: z.ZodOptional<z.ZodString>;
@@ -446,6 +486,12 @@ export declare const RenderParamsSchema: z.ZodObject<{
                 confidence?: number | undefined;
             }>, "many">>;
             exactDuration: z.ZodOptional<z.ZodNumber>;
+            shotType: z.ZodOptional<z.ZodString>;
+            cameraMove: z.ZodOptional<z.ZodString>;
+            /** Cinematic prompt for the generative image fallback. Never the narration. */
+            imagePrompt: z.ZodOptional<z.ZodString>;
+            /** Bare stock-search keywords, kept separate from the image prompt. */
+            searchQuery: z.ZodOptional<z.ZodString>;
         }, "strip", z.ZodTypeAny, {
             url?: string | undefined;
             wordTimestamps?: {
@@ -474,6 +520,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
                 previewUrl?: string | undefined;
             } | undefined;
             exactDuration?: number | undefined;
+            shotType?: string | undefined;
+            cameraMove?: string | undefined;
+            imagePrompt?: string | undefined;
+            searchQuery?: string | undefined;
         }, {
             url?: string | undefined;
             wordTimestamps?: {
@@ -502,6 +552,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
                 previewUrl?: string | undefined;
             } | undefined;
             exactDuration?: number | undefined;
+            shotType?: string | undefined;
+            cameraMove?: string | undefined;
+            imagePrompt?: string | undefined;
+            searchQuery?: string | undefined;
         }>, "many">>;
     }, "strip", z.ZodTypeAny, {
         script?: string | undefined;
@@ -534,6 +588,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
                 previewUrl?: string | undefined;
             } | undefined;
             exactDuration?: number | undefined;
+            shotType?: string | undefined;
+            cameraMove?: string | undefined;
+            imagePrompt?: string | undefined;
+            searchQuery?: string | undefined;
         }[] | undefined;
     }, {
         script?: string | undefined;
@@ -566,6 +624,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
                 previewUrl?: string | undefined;
             } | undefined;
             exactDuration?: number | undefined;
+            shotType?: string | undefined;
+            cameraMove?: string | undefined;
+            imagePrompt?: string | undefined;
+            searchQuery?: string | undefined;
         }[] | undefined;
     }>>;
     analysis: z.ZodOptional<z.ZodObject<{
@@ -606,6 +668,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
                 confidence?: number | undefined;
             }>, "many">>;
             exactDuration: z.ZodOptional<z.ZodNumber>;
+            shotType: z.ZodOptional<z.ZodString>;
+            cameraMove: z.ZodOptional<z.ZodString>;
+            imagePrompt: z.ZodOptional<z.ZodString>;
+            searchQuery: z.ZodOptional<z.ZodString>;
         }, "strip", z.ZodTypeAny, {
             url?: string | undefined;
             wordTimestamps?: {
@@ -627,6 +693,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
                 previewUrl?: string | undefined;
             } | undefined;
             exactDuration?: number | undefined;
+            shotType?: string | undefined;
+            cameraMove?: string | undefined;
+            imagePrompt?: string | undefined;
+            searchQuery?: string | undefined;
         }, {
             url?: string | undefined;
             wordTimestamps?: {
@@ -648,6 +718,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
                 previewUrl?: string | undefined;
             } | undefined;
             exactDuration?: number | undefined;
+            shotType?: string | undefined;
+            cameraMove?: string | undefined;
+            imagePrompt?: string | undefined;
+            searchQuery?: string | undefined;
         }>, "many">>;
     }, "strip", z.ZodTypeAny, {
         scenes?: {
@@ -671,6 +745,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
                 previewUrl?: string | undefined;
             } | undefined;
             exactDuration?: number | undefined;
+            shotType?: string | undefined;
+            cameraMove?: string | undefined;
+            imagePrompt?: string | undefined;
+            searchQuery?: string | undefined;
         }[] | undefined;
     }, {
         scenes?: {
@@ -694,6 +772,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
                 previewUrl?: string | undefined;
             } | undefined;
             exactDuration?: number | undefined;
+            shotType?: string | undefined;
+            cameraMove?: string | undefined;
+            imagePrompt?: string | undefined;
+            searchQuery?: string | undefined;
         }[] | undefined;
     }>>;
     result: z.ZodOptional<z.ZodObject<{
@@ -734,6 +816,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
                 confidence?: number | undefined;
             }>, "many">>;
             exactDuration: z.ZodOptional<z.ZodNumber>;
+            shotType: z.ZodOptional<z.ZodString>;
+            cameraMove: z.ZodOptional<z.ZodString>;
+            imagePrompt: z.ZodOptional<z.ZodString>;
+            searchQuery: z.ZodOptional<z.ZodString>;
         }, "strip", z.ZodTypeAny, {
             url?: string | undefined;
             wordTimestamps?: {
@@ -755,6 +841,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
                 previewUrl?: string | undefined;
             } | undefined;
             exactDuration?: number | undefined;
+            shotType?: string | undefined;
+            cameraMove?: string | undefined;
+            imagePrompt?: string | undefined;
+            searchQuery?: string | undefined;
         }, {
             url?: string | undefined;
             wordTimestamps?: {
@@ -776,6 +866,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
                 previewUrl?: string | undefined;
             } | undefined;
             exactDuration?: number | undefined;
+            shotType?: string | undefined;
+            cameraMove?: string | undefined;
+            imagePrompt?: string | undefined;
+            searchQuery?: string | undefined;
         }>, "many">>;
     }, "strip", z.ZodTypeAny, {
         scenes?: {
@@ -799,6 +893,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
                 previewUrl?: string | undefined;
             } | undefined;
             exactDuration?: number | undefined;
+            shotType?: string | undefined;
+            cameraMove?: string | undefined;
+            imagePrompt?: string | undefined;
+            searchQuery?: string | undefined;
         }[] | undefined;
     }, {
         scenes?: {
@@ -822,6 +920,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
                 previewUrl?: string | undefined;
             } | undefined;
             exactDuration?: number | undefined;
+            shotType?: string | undefined;
+            cameraMove?: string | undefined;
+            imagePrompt?: string | undefined;
+            searchQuery?: string | undefined;
         }[] | undefined;
     }>>;
     scenes: z.ZodOptional<z.ZodArray<z.ZodObject<{
@@ -861,6 +963,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
             confidence?: number | undefined;
         }>, "many">>;
         exactDuration: z.ZodOptional<z.ZodNumber>;
+        shotType: z.ZodOptional<z.ZodString>;
+        cameraMove: z.ZodOptional<z.ZodString>;
+        imagePrompt: z.ZodOptional<z.ZodString>;
+        searchQuery: z.ZodOptional<z.ZodString>;
     }, "strip", z.ZodTypeAny, {
         url?: string | undefined;
         wordTimestamps?: {
@@ -882,6 +988,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
             previewUrl?: string | undefined;
         } | undefined;
         exactDuration?: number | undefined;
+        shotType?: string | undefined;
+        cameraMove?: string | undefined;
+        imagePrompt?: string | undefined;
+        searchQuery?: string | undefined;
     }, {
         url?: string | undefined;
         wordTimestamps?: {
@@ -903,6 +1013,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
             previewUrl?: string | undefined;
         } | undefined;
         exactDuration?: number | undefined;
+        shotType?: string | undefined;
+        cameraMove?: string | undefined;
+        imagePrompt?: string | undefined;
+        searchQuery?: string | undefined;
     }>, "many">>;
     subtitleSettings: z.ZodOptional<z.ZodObject<{
         burnSubtitles: z.ZodDefault<z.ZodBoolean>;
@@ -1061,6 +1175,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
             previewUrl?: string | undefined;
         } | undefined;
         exactDuration?: number | undefined;
+        shotType?: string | undefined;
+        cameraMove?: string | undefined;
+        imagePrompt?: string | undefined;
+        searchQuery?: string | undefined;
     }[] | undefined;
     input?: {
         script?: string | undefined;
@@ -1093,6 +1211,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
                 previewUrl?: string | undefined;
             } | undefined;
             exactDuration?: number | undefined;
+            shotType?: string | undefined;
+            cameraMove?: string | undefined;
+            imagePrompt?: string | undefined;
+            searchQuery?: string | undefined;
         }[] | undefined;
     } | undefined;
     scenes?: {
@@ -1116,6 +1238,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
             previewUrl?: string | undefined;
         } | undefined;
         exactDuration?: number | undefined;
+        shotType?: string | undefined;
+        cameraMove?: string | undefined;
+        imagePrompt?: string | undefined;
+        searchQuery?: string | undefined;
     }[] | undefined;
     analysis?: {
         scenes?: {
@@ -1139,6 +1265,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
                 previewUrl?: string | undefined;
             } | undefined;
             exactDuration?: number | undefined;
+            shotType?: string | undefined;
+            cameraMove?: string | undefined;
+            imagePrompt?: string | undefined;
+            searchQuery?: string | undefined;
         }[] | undefined;
     } | undefined;
     result?: {
@@ -1163,6 +1293,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
                 previewUrl?: string | undefined;
             } | undefined;
             exactDuration?: number | undefined;
+            shotType?: string | undefined;
+            cameraMove?: string | undefined;
+            imagePrompt?: string | undefined;
+            searchQuery?: string | undefined;
         }[] | undefined;
     } | undefined;
     subtitleSettings?: {
@@ -1246,6 +1380,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
             previewUrl?: string | undefined;
         } | undefined;
         exactDuration?: number | undefined;
+        shotType?: string | undefined;
+        cameraMove?: string | undefined;
+        imagePrompt?: string | undefined;
+        searchQuery?: string | undefined;
     }[] | undefined;
     input?: {
         script?: string | undefined;
@@ -1278,6 +1416,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
                 previewUrl?: string | undefined;
             } | undefined;
             exactDuration?: number | undefined;
+            shotType?: string | undefined;
+            cameraMove?: string | undefined;
+            imagePrompt?: string | undefined;
+            searchQuery?: string | undefined;
         }[] | undefined;
     } | undefined;
     scenes?: {
@@ -1301,6 +1443,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
             previewUrl?: string | undefined;
         } | undefined;
         exactDuration?: number | undefined;
+        shotType?: string | undefined;
+        cameraMove?: string | undefined;
+        imagePrompt?: string | undefined;
+        searchQuery?: string | undefined;
     }[] | undefined;
     analysis?: {
         scenes?: {
@@ -1324,6 +1470,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
                 previewUrl?: string | undefined;
             } | undefined;
             exactDuration?: number | undefined;
+            shotType?: string | undefined;
+            cameraMove?: string | undefined;
+            imagePrompt?: string | undefined;
+            searchQuery?: string | undefined;
         }[] | undefined;
     } | undefined;
     result?: {
@@ -1348,6 +1498,10 @@ export declare const RenderParamsSchema: z.ZodObject<{
                 previewUrl?: string | undefined;
             } | undefined;
             exactDuration?: number | undefined;
+            shotType?: string | undefined;
+            cameraMove?: string | undefined;
+            imagePrompt?: string | undefined;
+            searchQuery?: string | undefined;
         }[] | undefined;
     } | undefined;
     subtitleSettings?: {

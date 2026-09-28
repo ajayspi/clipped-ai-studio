@@ -5,12 +5,16 @@ import * as fs from 'fs'
 import * as crypto from 'crypto'
 import ffmpeg from 'fluent-ffmpeg'
 import { claimRenderJob, completeRenderJob, failRenderJob } from '../lib/jobs/render-job'
-import { getAudioDuration, buildZoompanFilter, isFFprobeAvailable } from '../lib/engine/ffprobe'
-import { 
-  SubtitleConfig, 
-  RenderBeat, 
-  RenderScene, 
-  RenderParams, 
+import { getAudioDuration, buildZoompanFilter, isFFprobeAvailable, isVideoFile } from '../lib/engine/ffprobe'
+import { normalizeCameraMove, type CameraMove } from '../lib/engine/shot-planner'
+import { createLogger } from '../lib/logger'
+
+const logger = createLogger('render-worker')
+import {
+  SubtitleConfig,
+  RenderBeat,
+  RenderScene,
+  RenderParams,
   RenderOrchestrationState,
   validateRenderParams,
   validateSubtitleConfig,
@@ -60,6 +64,14 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:30
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy_service_key';
 const supabase = createClient(supabaseUrl, supabaseKey);
 const workerId = process.env.RENDER_WORKER_ID || `render-worker-${process.pid}`
+
+// How long a claim on a render job stays valid. A single job is TTS-per-beat
+// plus a Pollinations image fetch per beat, and every paid provider is tried
+// before the keyless fallback, so a 7-beat video took ~5-8 minutes — longer than
+// the previous hardcoded 5 minutes. The lease is renewed on a heartbeat while a
+// job is in flight, so this only needs to cover the gap between heartbeats, but
+// it is kept generous so a paused/stalled worker is still reclaimable.
+const LEASE_MS = Math.max(60_000, Number(process.env.RENDER_LEASE_MS) || 900_000)
 
 const RENDER_DIR = path.resolve(ROOT_DIR, 'public', 'renders');
 const TEMP_DIR = path.resolve(ROOT_DIR, 'tmp_renders');
@@ -119,6 +131,23 @@ export function normalizeBoxColor(raw?: string): string {
   return clean;
 }
 
+function wrapText(text: string, maxChars: number = 25): string {
+  const words = text.split(' ');
+  let lines: string[] = [];
+  let currentLine = '';
+  
+  for (const word of words) {
+    if ((currentLine + word).length > maxChars) {
+      if (currentLine) lines.push(currentLine.trim());
+      currentLine = word + ' ';
+    } else {
+      currentLine += word + ' ';
+    }
+  }
+  if (currentLine) lines.push(currentLine.trim());
+  return lines.join('\n');
+}
+
 export function buildSubtitleDrawtextFilter(text: string, settings?: SubtitleConfig): string | null {
   if (!text || !text.trim()) return null;
   if (settings && settings.burnSubtitles === false) return null;
@@ -128,6 +157,10 @@ export function buildSubtitleDrawtextFilter(text: string, settings?: SubtitleCon
   if (s.subtitleUppercase === true || (s.subtitleUppercase !== false && s.subtitlePreset && ['Hormozi Pop', 'Cyber Neon', 'Cinematic Boxed', 'Bold Impact'].includes(s.subtitlePreset))) {
     content = content.toUpperCase();
   }
+  
+  // Wrap text to prevent horizontal overflow on 1080p vertical video
+  content = wrapText(content, 22);
+  
   const escaped = escapeFfmpegDrawtext(content);
   if (!escaped) return null;
 
@@ -157,13 +190,14 @@ export function buildSubtitleDrawtextFilter(text: string, settings?: SubtitleCon
     borderw = typeof s.subtitleOutlineWidth === 'number' && s.subtitleOutlineWidth > 0 
       ? Math.round(s.subtitleOutlineWidth) 
       : (s.subtitleOutline === 'thick' ? 4 : 2);
-    bordercolor = normalizeColor(s.subtitleGlow ? s.subtitleGlowColor : 'black', 'black');
+    // Prefer the requested outline color, fallback to glow color, then black
+    bordercolor = normalizeColor(s.subtitleOutlineColor as string || (s.subtitleGlow ? s.subtitleGlowColor : 'black'), 'black');
   } else if (s.subtitlePreset === 'Hormozi Pop') {
     borderw = 3;
-    bordercolor = 'black';
+    bordercolor = normalizeColor(s.subtitleOutlineColor as string, 'black');
   } else if (s.subtitlePreset === 'Bold Impact') {
     borderw = 4;
-    bordercolor = 'black';
+    bordercolor = normalizeColor(s.subtitleOutlineColor as string, 'black');
   }
 
   const isBox = s.subtitleBox === true || s.subtitlePreset === 'Cinematic Boxed' || s.subtitlePreset === 'Retro Karaoke';
@@ -173,7 +207,7 @@ export function buildSubtitleDrawtextFilter(text: string, settings?: SubtitleCon
     boxParam = `:box=1:boxcolor=${boxColor}:boxborderw=10`;
   }
 
-  let filter = `drawtext=text='${escaped}':fontsize=${fontSize}:fontcolor=${fontColor}:x=${xExpr}:y=${yExpr}`;
+  let filter = `drawtext=text='${escaped}':fontsize=${fontSize}:fontcolor=${fontColor}:text_align=M:x=${xExpr}:y=${yExpr}`;
   if (borderw > 0) {
     filter += `:borderw=${borderw}:bordercolor=${bordercolor}`;
   }
@@ -223,13 +257,13 @@ export function buildKaraokeSubtitleFilter(
     borderw = typeof s.subtitleOutlineWidth === 'number' && s.subtitleOutlineWidth > 0 
       ? Math.round(s.subtitleOutlineWidth) 
       : (s.subtitleOutline === 'thick' ? 4 : 2);
-    bordercolor = normalizeColor(s.subtitleGlow ? s.subtitleGlowColor : 'black', 'black');
+    bordercolor = normalizeColor(s.subtitleOutlineColor as string || (s.subtitleGlow ? s.subtitleGlowColor : 'black'), 'black');
   } else if (s.subtitlePreset === 'Hormozi Pop') {
     borderw = 3;
-    bordercolor = 'black';
+    bordercolor = normalizeColor(s.subtitleOutlineColor as string, 'black');
   } else if (s.subtitlePreset === 'Bold Impact') {
     borderw = 4;
-    bordercolor = 'black';
+    bordercolor = normalizeColor(s.subtitleOutlineColor as string, 'black');
   }
 
   const isBox = s.subtitleBox === true || s.subtitlePreset === 'Cinematic Boxed' || s.subtitlePreset === 'Retro Karaoke';
@@ -239,8 +273,7 @@ export function buildKaraokeSubtitleFilter(
     boxParam = `:box=1:boxcolor=${boxColor}:boxborderw=10`;
   }
 
-  // Build the base style for normal words
-  let baseStyle = `fontsize=${fontSize}:fontcolor=${fontColor}:x=${xExpr}:y=${yExpr}`;
+  let baseStyle = `fontsize=${fontSize}:fontcolor=${fontColor}:text_align=M:x=${xExpr}:y=${yExpr}`;
   if (borderw > 0) {
     baseStyle += `:borderw=${borderw}:bordercolor=${bordercolor}`;
   }
@@ -248,48 +281,48 @@ export function buildKaraokeSubtitleFilter(
     baseStyle += boxParam;
   }
 
-  // Build the highlight style for active word
-  let highlightStyle = `fontsize=${fontSize}:fontcolor=${highlightColor}:x=${xExpr}:y=${yExpr}`;
-  if (borderw > 0) {
-    highlightStyle += `:borderw=${borderw}:bordercolor=${bordercolor}`;
-  }
-  if (boxParam) {
-    highlightStyle += boxParam;
-  }
+  // Group words into chunks of up to 3 words or punctuated breaks
+  let chunks: Array<{ text: string; start: number; end: number }> = [];
+  let currentChunk: string[] = [];
+  let chunkStart = 0;
 
-  // Generate drawtext filters for each word
-  // We create a base layer with all text in normal color, then overlay highlighted words
-  const escapedWords = wordTimestamps.map(w => {
-    const text = w.word.trim();
-    return text
-      .replace(/\\/g, '\\\\')
-      .replace(/'/g, "'\\''")
-      .replace(/:/g, '\\:')
-      .replace(/%/g, '\\%')
-      .replace(/[\r\n]+/g, ' ')
-      .trim();
-  });
-
-  const allText = escapedWords.join(' ');
-  if (!allText) return null;
-
-  // Base layer: all text in normal color
-  let filter = `drawtext=text='${escapeFfmpegDrawtext(allText)}':${baseStyle}`;
-
-  // Overlay each word with highlight during its time window
   for (let i = 0; i < wordTimestamps.length; i++) {
     const wt = wordTimestamps[i];
-    const word = escapedWords[i];
-    if (!word) continue;
+    let word = wt.word.trim();
+    if (s.subtitleUppercase === true || (s.subtitleUppercase !== false && s.subtitlePreset && ['Hormozi Pop', 'Cyber Neon', 'Cinematic Boxed', 'Bold Impact'].includes(s.subtitlePreset))) {
+      word = word.toUpperCase();
+    }
     
-    const globalStart = beatStartTime + wt.start;
-    const globalEnd = beatStartTime + wt.end;
-    const enableExpr = `between(t,${globalStart.toFixed(3)},${globalEnd.toFixed(3)})`;
-    
-    filter += `,drawtext=text='${word}':${highlightStyle}:enable='${enableExpr}'`;
+    if (currentChunk.length === 0) chunkStart = wt.start;
+    currentChunk.push(word);
+
+    const isPunctuation = /[.!?]$/.test(word);
+    if (currentChunk.length >= 3 || isPunctuation || i === wordTimestamps.length - 1) {
+      chunks.push({
+        text: currentChunk.join(' '),
+        start: chunkStart,
+        end: wt.end
+      });
+      currentChunk = [];
+    }
   }
 
-  return filter;
+  let filter = '';
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i];
+    const escaped = escapeFfmpegDrawtext(chunk.text);
+    if (!escaped) continue;
+    
+    // Slight overlap overlap/extension to prevent flickering between chunks
+    const globalStart = beatStartTime + chunk.start;
+    const globalEnd = beatStartTime + chunk.end + 0.1;
+    const enableExpr = `between(t,${globalStart.toFixed(3)},${globalEnd.toFixed(3)})`;
+    
+    const drawtext = `drawtext=text='${escaped}':${baseStyle}:enable='${enableExpr}'`;
+    filter = filter ? `${filter},${drawtext}` : drawtext;
+  }
+
+  return filter || null;
 }
 
 async function startWorker() {
@@ -299,6 +332,7 @@ async function startWorker() {
     try {
       await pollAndProcess()
     } catch (err) {
+      logger.error('Worker loop error', { error: err })
       console.error('Worker error:', err instanceof Error ? err.message : String(err))
     }
     await new Promise(resolve => setTimeout(resolve, 5000))
@@ -310,9 +344,36 @@ async function pollAndProcess() {
   const claim = await claimRenderJob(renderJobRpc, {
     workerId,
     leaseToken,
-    leaseMs: 300000,
+    leaseMs: LEASE_MS,
   })
   if (!claim) return
+
+  // A real render (TTS per beat, with paid providers timing out before the
+  // keyless fallbacks) routinely outruns the lease. Once it expires, this worker's
+  // own next poll re-claims the job and renders the whole video a second time,
+  // and complete_render_job silently no-ops because it requires a live lease.
+  // Renew on a heartbeat so ownership is held for as long as the work runs.
+  const renewTimer = setInterval(() => {
+    // The supabase query builder yields a PromiseLike, not a Promise, so it has
+    // no .catch() — wrap the await in an async fn and use try/catch instead.
+    void (async () => {
+      try {
+        const { error } = await supabase
+          .from('render_jobs')
+          .update({ lease_expires_at: new Date(Date.now() + LEASE_MS).toISOString() })
+          .eq('id', claim.id)
+          .eq('worker_id', workerId)
+          .eq('lease_token', leaseToken)
+        if (error) {
+          logger.warn('Lease renew failed', { jobId: claim.id, error: error.message })
+          console.warn(`[lease] renew failed for ${claim.id}: ${error.message}`)
+        }
+      } catch (e) {
+        logger.warn('Lease renew error', { jobId: claim.id, error: e })
+        console.warn(`[lease] renew error for ${claim.id}: ${e instanceof Error ? e.message : String(e)}`)
+      }
+    })()
+  }, Math.max(15000, Math.floor(LEASE_MS / 3)))
 
   const { data: job, error } = await supabase
     .from('render_jobs')
@@ -321,9 +382,11 @@ async function pollAndProcess() {
     .single()
 
   if (error || !job) {
-    console.error('Supabase job fetch error:', error?.message || 'Job not found')
+    logger.error('Supabase job fetch error', { jobId: claim.id, error: error?.message || 'Job not found' })
+    clearInterval(renewTimer)
     return
   }
+  logger.info(`Found pending job: ${job.id}`)
   console.log(`\n📦 Found pending job: ${job.id}`)
 
   const jobTempDir = path.join(TEMP_DIR, job.id);
@@ -453,6 +516,7 @@ async function pollAndProcess() {
           b.wordTimestamps = ttsRes.metadata.wordTimestamps;
         }
       } catch (err) {
+        logger.error('TTS generation failed', { jobId: job.id, beat: i + 1, error: err })
         console.error("TTS generation failed:", err instanceof Error ? err.message : String(err))
       }
 
@@ -460,7 +524,14 @@ async function pollAndProcess() {
       let mediaUrl = b?.selectedVideo?.url || b?.imageUrl || b?.videoUrl || b.clipUrl || b.urls?.[0] || b.candidates?.[0]?.url || '';
       
       if (!mediaUrl) {
-        const fullPrompt = `${text}, educational tech style, paradox style, consistent character anchor, minimalist stick man character`;
+        // Prefer the shot planner's cinematic prompt. The fallback string below
+        // leads with the beat's SPOKEN text, so the image model was being asked
+        // to illustrate a caption ("Creator types vary. Script forms differ.")
+        // and to invent a "minimalist stick man" on top of it. `imagePrompt` is
+        // built from the scene description instead, with framing from the shot
+        // type and one consistent look across every beat.
+        const fullPrompt = b.imagePrompt?.trim()
+          || `${text}, educational tech style, paradox style, consistent character anchor, minimalist stick man character`;
         try {
           console.log(`     -> Calling local OmniRoute for image...`);
           const res = await fetch('http://localhost:20128/v1/images/generations', {
@@ -474,17 +545,49 @@ async function pollAndProcess() {
             throw new Error("Invalid OmniRoute response");
           }
         } catch (err) {
+          logger.warn('OmniRoute image failed, falling back to Pollinations', {
+            jobId: job.id,
+            beat: i + 1,
+            error: err,
+          });
           console.error("     -> OmniRoute local failed, falling back to Pollinations:", err instanceof Error ? err.message : String(err));
           mediaUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=1024&height=1024&nologo=true`;
         }
       }
 
-      const isVideo = mediaUrl.includes('.mp4') || mediaUrl.includes('video') || b?.selectedVideo?.platform === 'pexels';
-      const ext = isVideo ? 'mp4' : 'jpg';
-      const mediaPath = path.join(jobTempDir, `media_${i}.${ext}`);
-      
-      console.log(`     -> Downloading media (${ext})...`);
-      await downloadFile(mediaUrl, mediaPath);
+      // Decide still-vs-video from the URL only as a *hint*. The real answer comes
+      // from probing the downloaded bytes below, because the Pollinations fallback
+      // URL embeds the URL-encoded beat text in its path: substring matching
+      // classified any beat whose script merely mentioned the word "video" as a
+      // video, which skipped the zoompan/loop path and emitted ~1 frame per beat
+      // (a 0.17s "video" still reported completed). Restrict the guess to the
+      // path, before the query string, and on real file extensions only.
+      const urlPath = mediaUrl.split(/[?#]/)[0];
+      const hintedVideo = /\.(mp4|webm|mov|m4v|avi|mkv)$/i.test(urlPath);
+      const downloadPath = path.join(jobTempDir, `media_${i}.dl`);
+
+      console.log(`     -> Downloading media (${hintedVideo ? 'mp4' : 'jpg'})...`);
+      await downloadFile(mediaUrl, downloadPath);
+
+      // The authoritative still-vs-video decision is what the bytes actually are.
+      let isVideo = hintedVideo;
+      if (FF_PROBE_AVAILABLE) {
+        try {
+          isVideo = await isVideoFile(downloadPath);
+        } catch (e) {
+          console.warn(
+            `     -> media type probe failed, falling back to URL hint (${hintedVideo ? 'video' : 'still'}):`,
+            e instanceof Error ? e.message : String(e)
+          );
+        }
+      } else {
+        console.warn('     -> ffprobe unavailable; media type guessed from URL');
+      }
+
+      // Name the file from the probed answer, so ffmpeg is handed the container it
+      // actually got (pexels URLs frequently have no extension at all).
+      const mediaPath = path.join(jobTempDir, `media_${i}.${isVideo ? 'mp4' : 'jpg'}`);
+      fs.renameSync(downloadPath, mediaPath);
   
       let audioPath = '';
       let exactDuration = 0;
@@ -524,7 +627,17 @@ async function pollAndProcess() {
       
       // Build video filter with exact frame count from ffprobe duration
       if (!isVideo) {
-        baseFilter += `,${buildZoompanFilter(finalDuration, fps, AR.width, AR.height, i % 2 === 0 ? 'in' : 'out')}`;
+        // Shot direction, when the beat carries it. A beat without a cameraMove
+        // is a job created before shot planning existed, or one whose planner
+        // fell back -- keep the exact alternating zoom those jobs always
+        // rendered with (push-in / pull-out on alternating beats) rather than
+        // silently restyling them all as push-in.
+        const cameraMove: CameraMove = b.cameraMove
+          ? normalizeCameraMove(b.cameraMove)
+          : i % 2 === 0
+            ? 'push-in'
+            : 'pull-out';
+        baseFilter += `,${buildZoompanFilter(finalDuration, fps, AR.width, AR.height, cameraMove)}`;
       }
       const videoFilter = subFilter ? `${baseFilter},${subFilter}` : baseFilter;
 
@@ -654,6 +767,11 @@ async function pollAndProcess() {
       fs.copyFileSync(concatTempPath, outputPath);
     }
   
+    logger.info('Render complete', {
+      jobId: job.id,
+      outputUrl: publicUrl,
+      durationSeconds: totalDurationSeconds,
+    })
     console.log(`🎬 Render complete: ${outputPath}`)
 
     await completeRenderJob(renderJobRpc, {
@@ -666,6 +784,7 @@ async function pollAndProcess() {
 
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err)
+    logger.error('Job failed', { jobId: job.id, error: err })
     console.error(`❌ Job ${job.id} failed:`, errorMsg)
     await failRenderJob(renderJobRpc, {
       jobId: job.id,
@@ -674,6 +793,7 @@ async function pollAndProcess() {
       errorMessage: errorMsg,
     })
   } finally {
+    clearInterval(renewTimer)
     try { fs.rmSync(jobTempDir, { recursive: true, force: true }); } catch {}
   }
 }

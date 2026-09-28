@@ -14,6 +14,12 @@ export async function searchImages(
 ): Promise<MediaAsset[]> {
   const limit = query.limit || 5;
   const q = encodeURIComponent(query.query);
+  // The generative fallback wants lens/framing/lighting language; the stock
+  // searches above want bare keywords. One string cannot satisfy both, so
+  // Pollinations gets its own prompt and falls back to `query` when the caller
+  // did not supply one.
+  const prompt = query.imagePrompt?.trim() || query.query;
+  const promptQ = encodeURIComponent(prompt);
   const results: MediaAsset[] = [];
 
   // Helper to fetch Openverse
@@ -130,11 +136,11 @@ export async function searchImages(
       id: `pollinations-${Date.now()}`,
       kind: 'image',
       provider: 'pollinations',
-      url: `https://image.pollinations.ai/prompt/${q}?width=${width}&height=${height}&nologo=true`,
+      url: `https://image.pollinations.ai/prompt/${promptQ}?width=${width}&height=${height}&nologo=true`,
       width,
       height,
       generated: true,
-      prompt: query.query,
+      prompt,
     });
   }
 

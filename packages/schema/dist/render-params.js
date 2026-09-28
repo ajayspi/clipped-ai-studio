@@ -59,6 +59,22 @@ export const RenderBeatSchema = z.object({
     })).optional(),
     // Exact audio duration from ffprobe
     exactDuration: z.number().positive().optional(),
+    // Shot direction, assigned by lib/engine/shot-planner.ts. These MUST be
+    // declared here: z.object() strips undeclared keys, so a beat that parsed
+    // through this schema would arrive at the worker with its camera direction
+    // silently removed and every shot falling back to the same centred zoom.
+    //
+    // Typed as plain strings rather than a closed enum on purpose -- this package
+    // is the lowest layer and must not import app code for its vocabulary. The
+    // closed list is enforced where it is authored (the planner) and again at the
+    // point of use: the worker runs every value through `normalizeCameraMove`,
+    // which is total, so an unexpected string cannot produce a broken filter.
+    shotType: z.string().optional(),
+    cameraMove: z.string().optional(),
+    /** Cinematic prompt for the generative image fallback. Never the narration. */
+    imagePrompt: z.string().optional(),
+    /** Bare stock-search keywords, kept separate from the image prompt. */
+    searchQuery: z.string().optional(),
 });
 /**
  * Scene representation (alternative to beats for some workflows)
@@ -84,6 +100,13 @@ export const RenderSceneSchema = z.object({
         confidence: z.number().min(0).max(1).optional(),
     })).optional(),
     exactDuration: z.number().positive().optional(),
+    // Same reason as RenderBeatSchema: z.object() strips undeclared keys, and the
+    // worker maps scenes to beats (scripts/render-worker.ts:430) so direction
+    // assigned at plan time has to survive this schema.
+    shotType: z.string().optional(),
+    cameraMove: z.string().optional(),
+    imagePrompt: z.string().optional(),
+    searchQuery: z.string().optional(),
 });
 /**
  * Main render job parameters passed via job.logs

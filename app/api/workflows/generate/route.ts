@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { videoOrchestrator } from "@/lib/engine/orchestrator"
 import { imageOrchestrator } from "@/lib/engine/image-orchestrator"
 import { supabaseAdmin as supabase } from "@/lib/db"
+import { normalizeCameraMove, normalizeShotType } from "@/lib/engine/shot-planner"
 
 export async function POST(req: Request) {
   try {
@@ -60,6 +61,17 @@ export async function POST(req: Request) {
               duration: typeof b.duration === 'number' && b.duration > 0 ? b.duration : 3,
               urls,
               clipUrl: urls[0] || '',
+              // Shot direction has to survive this boundary for the same reason
+              // `beats` did: this whitelist is the whole payload, so a field not
+              // named here simply does not reach the worker. Normalised through
+              // the planner's closed vocabulary rather than passed through, so a
+              // hand-rolled API call cannot put an unrenderable camera
+              // instruction into a job.
+              ...(b.shotType ? { shotType: normalizeShotType(b.shotType) } : {}),
+              ...(b.cameraMove ? { cameraMove: normalizeCameraMove(b.cameraMove) } : {}),
+              ...(typeof b.imagePrompt === 'string' && b.imagePrompt.trim()
+                ? { imagePrompt: b.imagePrompt.trim() }
+                : {}),
             }
           })
           // A beat with no text renders as "Clipped Video Beat" placeholder copy.

@@ -1,4 +1,7 @@
 import type { MediaAsset } from '@/lib/media/types';
+// Type-only, and the dependency runs one way: shot-planner.ts does not import
+// this file (it takes a structural input), so there is no cycle.
+import type { CameraMove, ShotType } from './shot-planner';
 
 export interface Video {
   id: string;
@@ -21,6 +24,17 @@ export interface Scene {
   cameraMotion?: string;
   visualPrompt?: string;
   imagePrompt?: string;
+  /**
+   * Shot language, produced by lib/engine/shot-planner.ts.
+   *
+   * Optional because the model proposes and the planner decides: a scene from a
+   * model that ignored the instruction, or one persisted before shot planning
+   * existed, has neither field and still renders with a valid fallback shot.
+   */
+  shotType?: ShotType;
+  cameraMove?: CameraMove;
+  /** Bare stock-search keywords, split out from the generative prompt. */
+  searchQuery?: string;
   selectedVideo?: Video;
   imageUrl?: string;
   videoUrl?: string;

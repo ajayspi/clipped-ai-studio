@@ -1,9 +1,11 @@
 import { getOmniRouteConfig } from '@/lib/keys';
 import { complete, parseJson } from '@/lib/engine/llm';
 import { Scene, ScriptAnalysis } from "./types";
+import { CAMERA_MOVES, SHOT_TYPES, shotFromScene } from './shot-planner';
 
 const SYSTEM_PROMPT =
-  'You break video narration into visual scenes for stock-footage sourcing. Return valid JSON only.';
+  'You break video narration into visual scenes for stock-footage sourcing, and direct each ' +
+  'shot with a framing and a camera move. Return valid JSON only.';
 
 const WORDS_PER_PASS = 350;
 
@@ -62,14 +64,25 @@ ${passes.length > 1 ? `This is part ${index + 1} of ${passes.length} of a longer
 3. description — what is shown on screen
 4. duration — seconds, estimated from the spoken length (if constrained, strictly output ${targetDuration || 'the length'})
 5. emotion — the tone
+6. shotType — the framing, from exactly one of: ${SHOT_TYPES.join(', ')}
+7. cameraMove — how the camera moves, from exactly one of: ${CAMERA_MOVES.join(', ')}
 
 Every word of the narration must appear in exactly one scene, in order.
+
+Shot direction rules:
+- Both fields are closed lists. Use those exact spellings; nothing else is renderable.
+- VARIETY IS THE POINT. Do not repeat one cameraMove across consecutive scenes —
+  identical motion on every shot is what makes a cut look like a slideshow.
+- Open on "wide". Use "close-up" where the narration lands an emphasis or a
+  specific detail, "macro" only for a genuine object detail.
+- "static" is legitimate for a beat that should land still, but use it rarely.
+- Pair sensibly: a "push-in" on an opening "wide" builds; a "pull-out" reveals.
 
 Narration:
 ${pass}
 
 Return ONLY valid JSON, no markdown:
-{"scenes":[{"text":"...","keywords":["..."],"description":"...","duration":${targetDuration || 5},"emotion":"educational"}]}`;
+{"scenes":[{"text":"...","keywords":["..."],"description":"...","duration":${targetDuration || 5},"emotion":"educational","shotType":"wide","cameraMove":"push-in"}]}`;
 
       const content = await complete({ system: SYSTEM_PROMPT, user: prompt, json: true }, undefined, 'auto');
       let parsed: { scenes?: Array<Record<string, unknown>> };
@@ -82,6 +95,20 @@ Return ONLY valid JSON, no markdown:
 
       for (const scene of parsed.scenes ?? []) {
         if (!scene?.text) continue;
+        // The model proposes; the planner decides. `shotFromScene` enforces the
+        // closed vocabulary and supplies the deterministic rhythm when the
+        // fields are missing or the model invented a move, so a scene can never
+        // reach the renderer with an unrenderable camera instruction.
+        const shot = shotFromScene(
+          {
+            text: String(scene.text),
+            description: String(scene.description ?? scene.text),
+            keywords: Array.isArray(scene.keywords) ? scene.keywords.map(String) : [],
+            shotType: scene.shotType,
+            cameraMove: scene.cameraMove,
+          },
+          scenes.length
+        );
         scenes.push({
           id: `scene-${scenes.length}`,
           text: String(scene.text),
@@ -89,6 +116,10 @@ Return ONLY valid JSON, no markdown:
           description: String(scene.description ?? scene.text),
           duration: Number(scene.duration) || 4,
           emotion: scene.emotion ? String(scene.emotion) : undefined,
+          shotType: shot.shotType,
+          cameraMove: shot.cameraMove,
+          imagePrompt: shot.imagePrompt,
+          searchQuery: shot.searchQuery,
         });
       }
     }

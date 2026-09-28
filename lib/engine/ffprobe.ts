@@ -1,6 +1,7 @@
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import type { CameraMove } from './shot-planner';
 
 /**
  * FFprobe utility for precise audio/video duration and metadata extraction
@@ -222,6 +223,115 @@ export async function ffprobeVideo(videoPath: string): Promise<FFprobeVideoResul
 }
 
 /**
+ * Tripwire for the still/misclassified-as-video bug.
+ *
+ * The render worker classified media with `mediaUrl.includes('video')`, and the
+ * Pollinations fallback URL embeds the URL-encoded beat text in its path — so
+ * any script merely MENTIONING the word "video" was treated as a video, skipped
+ * the zoompan/loop path, and rendered ~1 frame per beat while still reporting
+ * `completed`. `isVideoFile` below decides from the bytes instead.
+ *
+ * If you find yourself deleting this constant, you are about to reintroduce that
+ * bug; delete the test that guards it too, deliberately.
+ */
+export const STILL_IMAGE_PROBE_FIXED = true;
+
+/**
+ * Codec names that ffprobe reports for STILL images. ffprobe labels a JPEG a
+ * `codec_type: 'video'` stream (codec `mjpeg`) with exactly one frame, so
+ * "has a video stream" is not a usable test on its own — the frame count and
+ * the codec have to agree.
+ */
+const STILL_IMAGE_CODECS = new Set([
+  'mjpeg', 'jpeg', 'png', 'apng', 'bmp', 'tiff', 'tif', 'webp', 'jpegls',
+  'png_pipe', 'dpx', 'exr', 'hdr', 'targa',
+]);
+
+/**
+ * Container format names that unambiguously denote a moving-image file. The
+ * probe payload for a still is `image2` / `jpeg_pipe` / `png_pipe` / `webp_pipe`
+ * / `image2pipe`, none of which appear here.
+ */
+const MOVING_CONTAINER_RE = /(^|,|\|)(mov,mp4|mp4|matroska,webm|webm|avi|flv|mpegts|ogg|asf)/i;
+
+/**
+ * Decide whether a downloaded file is a playable VIDEO or a STILL IMAGE, by
+ * inspecting its bytes rather than its URL.
+ *
+ * Why this exists: the render worker used to infer this with
+ * `mediaUrl.includes('video')`. The Pollinations fallback URL embeds the
+ * URL-encoded beat text in its path, so any beat whose script merely *mentions*
+ * the word "video" was classified as video. The still image then took the video
+ * path — no `zoompan`, and `-t <duration>` truncation instead of `-loop` — and
+ * each beat encoded to roughly one frame, producing a 0.17s "video" that was
+ * still reported as `completed`.
+ *
+ * Returns `true` only when the file really has moving frames.
+ */
+export async function isVideoFile(filePath: string): Promise<boolean> {
+  if (!isFFprobeAvailable()) {
+    throw new Error('ffprobe not available on system');
+  }
+
+  // -count_frames makes ffprobe actually decode to count frames, so nb_read_frames
+  // is populated even for containers that do not store a count in the header
+  // (webm, some mov). -read_intervals "%+2" bounds that decode to the first two
+  // seconds, so the probe is O(1) in clip length rather than decoding the whole
+  // file: anything with 2+ frames in its first 2s is moving, by definition.
+  const cmd = `ffprobe -v error -count_frames -read_intervals %+2 -select_streams v:0 `
+    + `-show_entries "stream=codec_type,codec_name,nb_frames,nb_read_frames:format=format_name" `
+    + `-of json "${filePath}"`;
+
+  const output = execSync(cmd, {
+    encoding: 'utf-8',
+    timeout: 30000,
+    maxBuffer: 1024 * 1024,
+  });
+
+  const data = JSON.parse(output) as {
+    streams?: Array<{
+      codec_type?: string;
+      codec_name?: string;
+      nb_frames?: string;
+      nb_read_frames?: string;
+    }>;
+    format?: { format_name?: string };
+  };
+
+  const stream = data.streams?.find((s) => s.codec_type === 'video');
+  if (!stream) return false;
+
+  const container = data.format?.format_name || '';
+
+  // A container that is definitively a moving-image container wins first: a
+  // 1-frame mp4 is still an mp4 pipeline input, and B-frames can make
+  // nb_read_frames unreliable.
+  if (MOVING_CONTAINER_RE.test(container)) return true;
+
+  // A still-image container is definitive in the other direction.
+  if (/image2|jpeg_pipe|png_pipe|webp_pipe|image2pipe|bmp_pipe|tiff_pipe/i.test(container)) {
+    return false;
+  }
+
+  // Frame count: prefer the counted value, fall back to the header value.
+  const counted = parseInt(stream.nb_read_frames || '', 10);
+  const declared = parseInt(stream.nb_frames || '', 10);
+  const frames = Number.isFinite(counted) ? counted : declared;
+  if (Number.isFinite(frames) && frames > 1) return true;
+  if (Number.isFinite(frames) && frames <= 1) return false;
+
+  // No usable frame count (some webm/streamed webm): fall back to the codec.
+  const codec = (stream.codec_name || '').toLowerCase();
+  if (STILL_IMAGE_CODECS.has(codec)) return false;
+  if (codec) return true;
+
+  // Nothing to go on: treat as a still, which is the safe direction. A still
+  // gets the zoompan/loop treatment and always renders; a mislabelled still
+  // that took the video path is what produced 1-frame clips.
+  return false;
+}
+
+/**
  * Get exact duration of audio file in seconds
  * This is the primary function used for frame calculation
  */
@@ -247,22 +357,85 @@ export function calculateFrameCount(durationSeconds: number, fps: number): numbe
 }
 
 /**
- * Calculate zoompan filter string for exact duration
- * Replaces the heuristic frame calculation in render-worker.ts
+ * Peak zoom for a beat. Also the pan headroom: at z=1.15 the crop window has
+ * 0.13*width (~140px at 1080) of horizontal slack to travel across, which reads
+ * as a slow drift rather than a jump. Going higher buys travel but costs
+ * resolution -- 1.15x upscale of a stock photo is invisible, 1.4x is not.
+ */
+const ZOOM_MAX = 1.15;
+/** Kept as a literal rather than `ZOOM_MAX - 1`: 1.15-1 is 0.15000000000000002. */
+const ZOOM_DELTA = 0.15;
+
+/**
+ * Calculate the zoompan filter string for a still, driven by a shot's camera move.
+ *
+ * The `x`/`y` expressions are `slack * progress`, where `slack` is
+ * `(iw-iw/zoom)` -- the full range the crop window can legally travel -- and
+ * `progress` runs 0..1 across the shot. Because the window is always
+ * `slack * [0..1]` from the origin, it stays inside the frame on EVERY output
+ * frame. This is the property that keeps pans and tilts free of black edges,
+ * and it holds for any input size without needing a separate oversample step.
+ *
+ * THE VARIABLE IS `on`, NEVER `in`. This is the buildZoompanFilter version of
+ * "the crop window off the frame" -- a failure mode that produced valid files
+ * and quiet reports, and survived centuries of eyeballing a filter string:
+ * zoompan's `in` is the INPUT frame counter and does NOT advance while it
+ * generates output frames, so an `(in/...)` progress expression evaluates to
+ * the same value on every output frame and the shot renders as a frozen
+ * still. `on` is the OUTPUT frame counter and advances 0..N-1. MEASURED
+ * 2026-09-28 on the render worker's exact recipe (-loop 1 -i still -t <dur>
+ * + anullsrc + -shortest + -tune stillimage): every in-based move rendered
+ * frame-to-frame MAD < 0.03 (frozen), the same expressions with `on` render
+ * MAD > 11 (moving). Guarded by the real-encode motion tests in
+ * test/camera-move-filter.test.ts -- string-level readability of the filter
+ * is exactly how this bug shipped the first time.
+ *
+ * The previous version hardcoded a centred pan at every beat AND used `in`,
+ * so the render worker could only alternate push-in with pull-out
+ * (`i % 2 === 0 ? 'in' : 'out'`) and, because of the `in` bug, none of it
+ * moved at all. Direction now has somewhere to live, and it moves.
+ *
+ * Zoom never goes below 1.0, and never relies on float luck to prove it: the
+ * two zoom expressions are written as `1.0 + ZOOM_DELTA * p` and
+ * `1.0 + ZOOM_DELTA * (1 - p)`, so a pull-out lands on exactly 1.0 rather than
+ * 0.9999999999999999, which would make `iw - iw/zoom` very slightly negative.
  */
 export function buildZoompanFilter(
   durationSeconds: number,
   fps: number = 25,
   width: number = 1080,
   height: number = 1920,
-  zoomType: 'in' | 'out' = 'in'
+  move: CameraMove = 'push-in'
 ): string {
   const frames = calculateFrameCount(durationSeconds, fps);
-  const zoomExpr = zoomType === 'in' 
-    ? `1.0+(0.15*(in/${frames}))`
-    : `1.1-(0.15*(in/${frames}))`;
-  
-  return `zoompan=z='${zoomExpr}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${frames}:s=${width}x${height}:fps=${fps}`;
+  // `on` runs 0..frames-1, so divide by frames-1 for a progress that reaches
+  // exactly 1.0 on the final output frame. A 1-frame shot must not divide by
+  // zero -- and correctly renders no motion at all.
+  const span = Math.max(1, frames - 1);
+  const fwd = `(on/${span})`;
+  const back = `(1-${fwd})`;
+
+  const cx = '(iw-iw/zoom)/2';
+  const cy = '(ih-ih/zoom)/2';
+  const sx = '(iw-iw/zoom)';
+  const sy = '(ih-ih/zoom)';
+
+  const held = `1.0+${ZOOM_DELTA}*${fwd}`;
+  const released = `1.0+${ZOOM_DELTA}*${back}`;
+
+  const M: Record<CameraMove, { z: string; x: string; y: string }> = {
+    'static':       { z: '1.0',      x: '0', y: '0' },
+    'push-in':      { z: held,        x: cx, y: cy },
+    'pull-out':     { z: released,    x: cx, y: cy },
+    'pan-left':     { z: String(ZOOM_MAX), x: `${sx}*${back}`, y: cy },
+    'pan-right':    { z: String(ZOOM_MAX), x: `${sx}*${fwd}`,  y: cy },
+    'tilt-up':      { z: String(ZOOM_MAX), x: cx, y: `${sy}*${back}` },
+    'tilt-down':    { z: String(ZOOM_MAX), x: cx, y: `${sy}*${fwd}` },
+  };
+
+  const e = M[move] ?? M['push-in'];
+
+  return `zoompan=z='${e.z}':x='${e.x}':y='${e.y}':d=${frames}:s=${width}x${height}:fps=${fps}`;
 }
 
 /**

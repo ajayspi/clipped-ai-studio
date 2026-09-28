@@ -142,11 +142,11 @@ export declare const StoryPartSchema: z.ZodObject<{
             height?: number | undefined;
             thumbnail?: string | undefined;
         } | undefined;
+        imagePrompt?: string | undefined;
         audioUrl?: string | undefined;
         emotion?: string | undefined;
         cameraMotion?: string | undefined;
         visualPrompt?: string | undefined;
-        imagePrompt?: string | undefined;
     }, {
         id: string;
         text: string;
@@ -165,11 +165,11 @@ export declare const StoryPartSchema: z.ZodObject<{
             height?: number | undefined;
             thumbnail?: string | undefined;
         } | undefined;
+        imagePrompt?: string | undefined;
         audioUrl?: string | undefined;
         emotion?: string | undefined;
         cameraMotion?: string | undefined;
         visualPrompt?: string | undefined;
-        imagePrompt?: string | undefined;
     }>, "many">;
     estimatedDuration: z.ZodOptional<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
@@ -192,11 +192,11 @@ export declare const StoryPartSchema: z.ZodObject<{
             height?: number | undefined;
             thumbnail?: string | undefined;
         } | undefined;
+        imagePrompt?: string | undefined;
         audioUrl?: string | undefined;
         emotion?: string | undefined;
         cameraMotion?: string | undefined;
         visualPrompt?: string | undefined;
-        imagePrompt?: string | undefined;
     }[];
     title: string;
     partNumber: number;
@@ -223,11 +223,11 @@ export declare const StoryPartSchema: z.ZodObject<{
             height?: number | undefined;
             thumbnail?: string | undefined;
         } | undefined;
+        imagePrompt?: string | undefined;
         audioUrl?: string | undefined;
         emotion?: string | undefined;
         cameraMotion?: string | undefined;
         visualPrompt?: string | undefined;
-        imagePrompt?: string | undefined;
     }[];
     title: string;
     partNumber: number;
@@ -330,11 +330,11 @@ export declare const StorySeriesResponseSchema: z.ZodObject<{
                 height?: number | undefined;
                 thumbnail?: string | undefined;
             } | undefined;
+            imagePrompt?: string | undefined;
             audioUrl?: string | undefined;
             emotion?: string | undefined;
             cameraMotion?: string | undefined;
             visualPrompt?: string | undefined;
-            imagePrompt?: string | undefined;
         }, {
             id: string;
             text: string;
@@ -353,11 +353,11 @@ export declare const StorySeriesResponseSchema: z.ZodObject<{
                 height?: number | undefined;
                 thumbnail?: string | undefined;
             } | undefined;
+            imagePrompt?: string | undefined;
             audioUrl?: string | undefined;
             emotion?: string | undefined;
             cameraMotion?: string | undefined;
             visualPrompt?: string | undefined;
-            imagePrompt?: string | undefined;
         }>, "many">;
         estimatedDuration: z.ZodOptional<z.ZodNumber>;
     }, "strip", z.ZodTypeAny, {
@@ -380,11 +380,11 @@ export declare const StorySeriesResponseSchema: z.ZodObject<{
                 height?: number | undefined;
                 thumbnail?: string | undefined;
             } | undefined;
+            imagePrompt?: string | undefined;
             audioUrl?: string | undefined;
             emotion?: string | undefined;
             cameraMotion?: string | undefined;
             visualPrompt?: string | undefined;
-            imagePrompt?: string | undefined;
         }[];
         title: string;
         partNumber: number;
@@ -411,11 +411,11 @@ export declare const StorySeriesResponseSchema: z.ZodObject<{
                 height?: number | undefined;
                 thumbnail?: string | undefined;
             } | undefined;
+            imagePrompt?: string | undefined;
             audioUrl?: string | undefined;
             emotion?: string | undefined;
             cameraMotion?: string | undefined;
             visualPrompt?: string | undefined;
-            imagePrompt?: string | undefined;
         }[];
         title: string;
         partNumber: number;
@@ -449,11 +449,11 @@ export declare const StorySeriesResponseSchema: z.ZodObject<{
                 height?: number | undefined;
                 thumbnail?: string | undefined;
             } | undefined;
+            imagePrompt?: string | undefined;
             audioUrl?: string | undefined;
             emotion?: string | undefined;
             cameraMotion?: string | undefined;
             visualPrompt?: string | undefined;
-            imagePrompt?: string | undefined;
         }[];
         title: string;
         partNumber: number;
@@ -486,11 +486,11 @@ export declare const StorySeriesResponseSchema: z.ZodObject<{
                 height?: number | undefined;
                 thumbnail?: string | undefined;
             } | undefined;
+            imagePrompt?: string | undefined;
             audioUrl?: string | undefined;
             emotion?: string | undefined;
             cameraMotion?: string | undefined;
             visualPrompt?: string | undefined;
-            imagePrompt?: string | undefined;
         }[];
         title: string;
         partNumber: number;
@@ -721,11 +721,11 @@ export declare const DramaEpisodeSchema: z.ZodObject<{
             height?: number | undefined;
             thumbnail?: string | undefined;
         } | undefined;
+        imagePrompt?: string | undefined;
         audioUrl?: string | undefined;
         emotion?: string | undefined;
         cameraMotion?: string | undefined;
         visualPrompt?: string | undefined;
-        imagePrompt?: string | undefined;
     }, {
         id: string;
         text: string;
@@ -744,11 +744,11 @@ export declare const DramaEpisodeSchema: z.ZodObject<{
             height?: number | undefined;
             thumbnail?: string | undefined;
         } | undefined;
+        imagePrompt?: string | undefined;
         audioUrl?: string | undefined;
         emotion?: string | undefined;
         cameraMotion?: string | undefined;
         visualPrompt?: string | undefined;
-        imagePrompt?: string | undefined;
     }>, "many">;
     cliffhanger: z.ZodOptional<z.ZodString>;
     duration: z.ZodOptional<z.ZodNumber>;
@@ -772,11 +772,11 @@ export declare const DramaEpisodeSchema: z.ZodObject<{
             height?: number | undefined;
             thumbnail?: string | undefined;
         } | undefined;
+        imagePrompt?: string | undefined;
         audioUrl?: string | undefined;
         emotion?: string | undefined;
         cameraMotion?: string | undefined;
         visualPrompt?: string | undefined;
-        imagePrompt?: string | undefined;
     }[];
     title: string;
     episodeNumber: number;
@@ -802,11 +802,11 @@ export declare const DramaEpisodeSchema: z.ZodObject<{
             height?: number | undefined;
             thumbnail?: string | undefined;
         } | undefined;
+        imagePrompt?: string | undefined;
         audioUrl?: string | undefined;
         emotion?: string | undefined;
         cameraMotion?: string | undefined;
         visualPrompt?: string | undefined;
-        imagePrompt?: string | undefined;
     }[];
     title: string;
     episodeNumber: number;
@@ -946,11 +946,11 @@ export declare const DramaSeriesResponseSchema: z.ZodObject<{
                 height?: number | undefined;
                 thumbnail?: string | undefined;
             } | undefined;
+            imagePrompt?: string | undefined;
             audioUrl?: string | undefined;
             emotion?: string | undefined;
             cameraMotion?: string | undefined;
             visualPrompt?: string | undefined;
-            imagePrompt?: string | undefined;
         }, {
             id: string;
             text: string;
@@ -969,11 +969,11 @@ export declare const DramaSeriesResponseSchema: z.ZodObject<{
                 height?: number | undefined;
                 thumbnail?: string | undefined;
             } | undefined;
+            imagePrompt?: string | undefined;
             audioUrl?: string | undefined;
             emotion?: string | undefined;
             cameraMotion?: string | undefined;
             visualPrompt?: string | undefined;
-            imagePrompt?: string | undefined;
         }>, "many">;
         cliffhanger: z.ZodOptional<z.ZodString>;
         duration: z.ZodOptional<z.ZodNumber>;
@@ -997,11 +997,11 @@ export declare const DramaSeriesResponseSchema: z.ZodObject<{
                 height?: number | undefined;
                 thumbnail?: string | undefined;
             } | undefined;
+            imagePrompt?: string | undefined;
             audioUrl?: string | undefined;
             emotion?: string | undefined;
             cameraMotion?: string | undefined;
             visualPrompt?: string | undefined;
-            imagePrompt?: string | undefined;
         }[];
         title: string;
         episodeNumber: number;
@@ -1027,11 +1027,11 @@ export declare const DramaSeriesResponseSchema: z.ZodObject<{
                 height?: number | undefined;
                 thumbnail?: string | undefined;
             } | undefined;
+            imagePrompt?: string | undefined;
             audioUrl?: string | undefined;
             emotion?: string | undefined;
             cameraMotion?: string | undefined;
             visualPrompt?: string | undefined;
-            imagePrompt?: string | undefined;
         }[];
         title: string;
         episodeNumber: number;
@@ -1068,11 +1068,11 @@ export declare const DramaSeriesResponseSchema: z.ZodObject<{
                 height?: number | undefined;
                 thumbnail?: string | undefined;
             } | undefined;
+            imagePrompt?: string | undefined;
             audioUrl?: string | undefined;
             emotion?: string | undefined;
             cameraMotion?: string | undefined;
             visualPrompt?: string | undefined;
-            imagePrompt?: string | undefined;
         }[];
         title: string;
         episodeNumber: number;
@@ -1109,11 +1109,11 @@ export declare const DramaSeriesResponseSchema: z.ZodObject<{
                 height?: number | undefined;
                 thumbnail?: string | undefined;
             } | undefined;
+            imagePrompt?: string | undefined;
             audioUrl?: string | undefined;
             emotion?: string | undefined;
             cameraMotion?: string | undefined;
             visualPrompt?: string | undefined;
-            imagePrompt?: string | undefined;
         }[];
         title: string;
         episodeNumber: number;
@@ -1880,11 +1880,11 @@ export declare const MissionJobStateSchema: z.ZodObject<{
             height?: number | undefined;
             thumbnail?: string | undefined;
         } | undefined;
+        imagePrompt?: string | undefined;
         audioUrl?: string | undefined;
         emotion?: string | undefined;
         cameraMotion?: string | undefined;
         visualPrompt?: string | undefined;
-        imagePrompt?: string | undefined;
     }, {
         id: string;
         text: string;
@@ -1903,11 +1903,11 @@ export declare const MissionJobStateSchema: z.ZodObject<{
             height?: number | undefined;
             thumbnail?: string | undefined;
         } | undefined;
+        imagePrompt?: string | undefined;
         audioUrl?: string | undefined;
         emotion?: string | undefined;
         cameraMotion?: string | undefined;
         visualPrompt?: string | undefined;
-        imagePrompt?: string | undefined;
     }>, "many">>;
     audioUrl: z.ZodOptional<z.ZodString>;
     videoUrl: z.ZodOptional<z.ZodString>;
@@ -1949,11 +1949,11 @@ export declare const MissionJobStateSchema: z.ZodObject<{
             height?: number | undefined;
             thumbnail?: string | undefined;
         } | undefined;
+        imagePrompt?: string | undefined;
         audioUrl?: string | undefined;
         emotion?: string | undefined;
         cameraMotion?: string | undefined;
         visualPrompt?: string | undefined;
-        imagePrompt?: string | undefined;
     }[] | undefined;
     error?: string | undefined;
     audioUrl?: string | undefined;
@@ -1994,11 +1994,11 @@ export declare const MissionJobStateSchema: z.ZodObject<{
             height?: number | undefined;
             thumbnail?: string | undefined;
         } | undefined;
+        imagePrompt?: string | undefined;
         audioUrl?: string | undefined;
         emotion?: string | undefined;
         cameraMotion?: string | undefined;
         visualPrompt?: string | undefined;
-        imagePrompt?: string | undefined;
     }[] | undefined;
     error?: string | undefined;
     audioUrl?: string | undefined;
@@ -2133,11 +2133,11 @@ export declare function validateMissionJobState(data: unknown): {
             height?: number | undefined;
             thumbnail?: string | undefined;
         } | undefined;
+        imagePrompt?: string | undefined;
         audioUrl?: string | undefined;
         emotion?: string | undefined;
         cameraMotion?: string | undefined;
         visualPrompt?: string | undefined;
-        imagePrompt?: string | undefined;
     }[] | undefined;
     error?: string | undefined;
     audioUrl?: string | undefined;
