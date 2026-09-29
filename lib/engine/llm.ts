@@ -2,6 +2,8 @@ import { getOmniRouteConfig } from '@/lib/keys';
 import { supabaseAdmin, supabase } from '@/lib/db';
 import { PROVIDER_REGISTRY } from '@/lib/api-router';
 import { createLogger } from '@/lib/logger';
+import { loadHealth, isProviderAvailable, recordProviderFailure, recordProviderSuccess } from './provider-health';
+export { resetProviderHealthCache } from './provider-health';
 
 const logger = createLogger('llm');
 
@@ -271,10 +273,13 @@ export async function complete(
   const apiKey = config.apiKey || '';
   const selectedModel = model || 'auto'; // OmniRoute smart auto-routing
 
+  let attemptedCount = 0;
+
   // Tier 1 — OmniRoute gateway (only when actually configured).
   if (config.isConfigured) {
     try {
-      return await attemptCompletion(
+      attemptedCount++;
+      const content = await attemptCompletion(
         {
           id: 'omniroute',
           name: 'OmniRoute Gateway',
@@ -287,6 +292,8 @@ export async function complete(
         request,
         GATEWAY_TIMEOUT_MS
       );
+      await recordProviderSuccess('llm', 'omniroute');
+      return content;
     } catch (err) {
       const reason =
         err instanceof Error
@@ -294,6 +301,7 @@ export async function complete(
             ? `timed out after ${GATEWAY_TIMEOUT_MS}ms`
             : err.message || String(err)
           : String(err);
+      await recordProviderFailure('llm', 'omniroute', reason);
       logger.warn('OmniRoute gateway unavailable — falling back', { reason });
       console.warn(`[LLM] OmniRoute gateway unavailable (${reason}) — falling back.`);
       errors.push(`OmniRoute gateway: ${reason}`);
@@ -307,7 +315,15 @@ export async function complete(
 
   // Tier 2 — directly configured provider keys.
   try {
+    const healthMap = await loadHealth();
     for (const target of await resolveDirectLLMProviders()) {
+      const isAvail = await isProviderAvailable('llm', target.id);
+      if (!isAvail) {
+        const h = healthMap.get(`llm:${target.id}`);
+        errors.push(`${target.name}: in cooldown until ${h?.cooldown_until}`);
+        continue;
+      }
+
       for (const model of target.models.slice(0, MAX_MODELS_PER_PROVIDER)) {
         const remaining = deadline - Date.now();
         if (remaining < 1500) {
@@ -315,24 +331,25 @@ export async function complete(
           return failed(errors);
         }
         try {
+          attemptedCount++;
           const content = await attemptCompletion(
             { ...target, model },
             request,
             Math.min(PROVIDER_TIMEOUT_MS, remaining)
           );
+          await recordProviderSuccess('llm', target.id);
           logger.info('Served by fallback provider', { provider: target.name, model });
           console.warn(`[LLM] Served by fallback provider: ${target.name} (${model}).`);
           return content;
         } catch (err) {
-          // Record every attempt. The cascade deliberately swallows individual
-          // provider failures, so without this a fully-failing provider set leaves
-          // no trace anywhere except the final aggregate error.
+          const reason = err instanceof Error ? err.message : String(err);
+          await recordProviderFailure('llm', target.id, reason);
           logger.warn('Direct provider attempt failed', {
             provider: target.name,
             model,
             error: err,
           });
-          errors.push(`${target.name}/${model}: ${err instanceof Error ? err.message : String(err)}`);
+          errors.push(`${target.name}/${model}: ${reason}`);
         }
       }
     }
@@ -344,21 +361,34 @@ export async function complete(
   // Tier 3 — keyless OpenAI-compatible endpoint.
   const keyless = resolveKeylessProvider();
   if (keyless) {
-    for (const model of keyless.models.slice(0, 2)) {
-      const remaining = deadline - Date.now();
-      if (remaining < 1500) break;
-      try {
-        const content = await attemptCompletion(
-          { ...keyless, model },
-          request,
-          Math.min(PROVIDER_TIMEOUT_MS, remaining)
-        );
-        logger.info('Served by keyless fallback', { provider: keyless.name, model });
-        console.warn(`[LLM] Served by keyless fallback: ${keyless.name} (${model}).`);
-        return content;
-      } catch (err) {
-        logger.warn('Keyless provider attempt failed', { provider: keyless.name, model, error: err });
-        errors.push(`${keyless.name}/${model}: ${err instanceof Error ? err.message : String(err)}`);
+    const isAvail = await isProviderAvailable('llm', keyless.id);
+    const healthMap = await loadHealth();
+    
+    // A demotion is never a total refusal: force attempt if nothing else was tried
+    if (!isAvail && attemptedCount > 0) {
+      const h = healthMap.get(`llm:${keyless.id}`);
+      errors.push(`${keyless.name}: in cooldown until ${h?.cooldown_until}`);
+    } else {
+      for (const model of keyless.models.slice(0, 2)) {
+        const remaining = deadline - Date.now();
+        if (remaining < 1500) break;
+        try {
+          attemptedCount++;
+          const content = await attemptCompletion(
+            { ...keyless, model },
+            request,
+            Math.min(PROVIDER_TIMEOUT_MS, remaining)
+          );
+          await recordProviderSuccess('llm', keyless.id);
+          logger.info('Served by keyless fallback', { provider: keyless.name, model });
+          console.warn(`[LLM] Served by keyless fallback: ${keyless.name} (${model}).`);
+          return content;
+        } catch (err) {
+          const reason = err instanceof Error ? err.message : String(err);
+          await recordProviderFailure('llm', keyless.id, reason);
+          logger.warn('Keyless provider attempt failed', { provider: keyless.name, model, error: err });
+          errors.push(`${keyless.name}/${model}: ${reason}`);
+        }
       }
     }
   }

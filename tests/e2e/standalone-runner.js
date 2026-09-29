@@ -4358,6 +4358,54 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     },
   });
 
+  tests.push({
+    tier: 'Tier 26: Provider Health Circuit',
+    id: 'T29-MIG-01',
+    title: 'Migration contains CREATE TABLE provider_health and all 3 RPCs',
+    fn: async () => {
+      const migPath = path.join(__dirname, '..', '..', 'supabase', 'migrations', '20260929_provider_health.sql');
+      const content = fs.readFileSync(migPath, 'utf-8');
+      expect(content.toLowerCase()).toContain('create table if not exists provider_health');
+      expect(content).toContain('record_provider_failure');
+      expect(content).toContain('record_provider_success');
+      expect(content).toContain('get_provider_health');
+    },
+  });
+
+  tests.push({
+    tier: 'Tier 26: Provider Health Circuit',
+    id: 'T29-MIG-02',
+    title: 'schema.sql contains CREATE TABLE provider_health',
+    fn: async () => {
+      const schemaPath = path.join(__dirname, '..', '..', 'schema.sql');
+      const content = fs.readFileSync(schemaPath, 'utf-8');
+      expect(content.toLowerCase()).toContain('create table if not exists provider_health');
+    },
+  });
+
+  tests.push({
+    tier: 'Tier 26: Provider Health Circuit',
+    id: 'T29-MIG-03',
+    title: 'RPC increments rather than overwrites',
+    fn: async () => {
+      const migPath = path.join(__dirname, '..', '..', 'supabase', 'migrations', '20260929_provider_health.sql');
+      const content = fs.readFileSync(migPath, 'utf-8');
+      expect(content).toContain('consecutive_failures = ph.consecutive_failures + 1');
+    },
+  });
+
+  tests.push({
+    tier: 'Tier 26: Provider Health Circuit',
+    id: 'T29-MIG-04',
+    title: 'Tier 26 is present in tiers array and tests',
+    fn: async () => {
+      const selfPath = path.join(__dirname, 'standalone-runner.js');
+      const content = fs.readFileSync(selfPath, 'utf-8');
+      expect(content).toContain("'Tier 26: Provider Health Circuit',");
+      expect(content).toContain("tier: 'Tier 26: Provider Health Circuit'");
+    },
+  });
+
   let passed = 0;
   let failed = 0;
   const start = Date.now();
@@ -4388,6 +4436,7 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     'Tier 22: Queue Boundary + Media-Type Contracts',
     'Tier 23: Documentation Diagram Parity',
     'Tier 25: Scrape & Mixkit',
+    'Tier 26: Provider Health Circuit',
   ];
   for (const tier of tiers) {
     const tierTests = tests.filter(t => t.tier === tier);
