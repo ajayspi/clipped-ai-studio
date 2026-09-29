@@ -45,7 +45,10 @@ Analyze long-form video transcripts to identify the highest-retention, high-emot
 Assign each clip a viral potential score (1-100) and pinpoint precise start/end timestamps and hook lines.`,
 
   AUTOPILOT_SYNTHESIS: `You are an autonomous AI media producer.
-Synthesize trending topics, news summaries, or niche prompts into polished, production-ready video concepts and production scripts.`,
+Synthesize trending topics, news summaries, or niche prompts into polished, production-ready video concepts and production scripts.
+Get straight to the point, don't start with unnecessary things like 'welcome to this video'.
+NEVER USE A TITLE. YOU MUST NOT INCLUDE ANY TYPE OF MARKDOWN.
+ONLY RETURN THE RAW CONTENT. DO NOT INCLUDE 'VOICEOVER', 'NARRATOR' OR SIMILAR INDICATORS.`,
 };
 
 // ==========================================
@@ -88,20 +91,35 @@ Return valid JSON with the following structure:
  * Builds a cinematic AI video prompt for text-to-video generators.
  */
 export function buildAIVideoPrompt(options: {
-  sceneText: string;
+  sceneText?: string;
   visualStyle?: string;
   cameraMotion?: string;
   negativePrompt?: string;
   characterAnchor?: string;
+  topic?: string;
+  sentenceLength?: number;
 }): string {
   const {
     sceneText = '',
     visualStyle = 'cinematic 8k photorealistic',
     cameraMotion = 'smooth cinematic camera movement',
     characterAnchor,
+    topic,
+    sentenceLength,
   } = options;
 
   const parts: string[] = [];
+
+  // Script generation constraints
+  if (topic) {
+    parts.push(`Topic: ${topic}`);
+    parts.push("Get straight to the point, don't start with unnecessary things like 'welcome to this video'.");
+    parts.push("NEVER USE A TITLE. YOU MUST NOT INCLUDE ANY TYPE OF MARKDOWN.");
+    parts.push("ONLY RETURN THE RAW CONTENT. DO NOT INCLUDE 'VOICEOVER', 'NARRATOR' OR SIMILAR INDICATORS.");
+    if (sentenceLength) {
+      parts.push(`YOU MUST NOT EXCEED THE ${sentenceLength} SENTENCES LIMIT.`);
+    }
+  }
 
   if (characterAnchor) {
     parts.push(`[Character: ${characterAnchor}]`);
@@ -130,7 +148,9 @@ export function buildAIVideoPrompt(options: {
     parts.push(motionMap[cameraMotion] || cameraMotion);
   }
 
-  parts.push('masterpiece, ultra-detailed, 24fps film grain, photorealistic lighting');
+  if (!topic) {
+    parts.push('masterpiece, ultra-detailed, 24fps film grain, photorealistic lighting');
+  }
 
   return parts.join(', ');
 }

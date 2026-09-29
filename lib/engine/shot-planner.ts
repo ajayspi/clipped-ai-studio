@@ -89,6 +89,8 @@ export interface ShotSpec {
   imagePrompt: string;
   /** 3-5 stock-search keywords. Never a sentence. */
   searchQuery: string;
+  /** Paced duration in seconds */
+  duration?: number;
 }
 
 const SHOT_TYPE_SET: ReadonlySet<string> = new Set(SHOT_TYPES);
@@ -313,6 +315,29 @@ export function shotFromScene(scene: ShotSceneInput | null | undefined, fallback
 /**
  * Attach a shot spec to every scene in an analysis, preserving order.
  */
-export function planShots(scenes: ShotSceneInput[], fallbackStart = 0): ShotSpec[] {
-  return scenes.map((scene, i) => shotFromScene(scene, fallbackStart + i));
+export function planShots(scenes: ShotSceneInput[], fallbackStart = 0): (ShotSpec & { duration: number })[] {
+  // Estimate total TTS duration (2.5 words per sec)
+  const validScenes = scenes.filter(Boolean);
+  const totalWords = validScenes.reduce((acc, s) => {
+    const text = s?.text || s?.description || '';
+    const words = text.trim().split(/\s+/).filter(Boolean).length;
+    return acc + words;
+  }, 0);
+  
+  const totalTtsDuration = totalWords / 2.5;
+  const numBeats = validScenes.length || 1;
+  let beatDuration = Number((totalTtsDuration / numBeats).toFixed(2));
+  
+  // Fallback if no words found
+  if (!beatDuration || beatDuration <= 0) {
+    beatDuration = 4;
+  }
+
+  return scenes.map((scene, i) => {
+    const shot = shotFromScene(scene, fallbackStart + i);
+    return {
+      ...shot,
+      duration: beatDuration
+    };
+  });
 }

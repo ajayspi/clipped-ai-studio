@@ -134,7 +134,7 @@ Return ONLY valid JSON, no markdown:
           scenes.length
         );
         scenes.push({
-          id: \`scene-\${scenes.length}\`,
+          id: `scene-${scenes.length}`,
           text: sceneText,
           keywords: Array.isArray(scene.keywords) ? scene.keywords.map(String) : [],
           description: String(scene.description ?? sceneText),
@@ -149,6 +149,14 @@ Return ONLY valid JSON, no markdown:
     }
 
     if (scenes.length === 0) throw new Error('The model returned no scenes');
+
+    const totalWords = script.trim().split(/\s+/).filter(Boolean).length;
+    const totalTtsDuration = totalWords / 2.5;
+    const beatDuration = Number((totalTtsDuration / scenes.length).toFixed(2)) || 4;
+
+    for (const scene of scenes) {
+      scene.duration = beatDuration;
+    }
 
     return {
       script,
