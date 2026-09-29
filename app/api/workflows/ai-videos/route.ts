@@ -1,4 +1,13 @@
-import { NextResponse } from "next/server";
+/**
+ * WORKFLOW ROUTE — ai-videos
+ *   KIND:          queue
+ *   UI CALLER:     NONE (API only)
+ *   WRITES QUEUE:  yes
+ *   CLAIMABLE:     yes
+ *   DISTINCT FROM: generate (ai-videos is a simplified single-prompt wrapper)
+ */
+import { NextResponse } from "next/server"
+import { enqueueRenderJob } from "@/lib/jobs/enqueue";
 import { supabaseAdmin as supabase } from "@/lib/db";
 import { videoGenerator } from "@/lib/engine/video-generator";
 import { AIVideoModel, AspectRatio, CameraMotion } from "@/lib/engine/types";

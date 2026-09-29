@@ -1,4 +1,13 @@
-import { NextResponse } from "next/server";
+/**
+ * WORKFLOW ROUTE — micro-drama
+ *   KIND:          queue
+ *   UI CALLER:     create/drama
+ *   WRITES QUEUE:  yes
+ *   CLAIMABLE:     yes
+ *   DISTINCT FROM: generate (drama focuses on dialogue and multiple characters)
+ */
+import { NextResponse } from "next/server"
+import { enqueueRenderJob } from "@/lib/jobs/enqueue";
 import { supabaseAdmin as supabase } from "@/lib/db";
 import { dramaOrchestrator } from "@/lib/engine/drama-orchestrator";
 import { AspectRatio, DramaCharacter } from "@/lib/engine/types";

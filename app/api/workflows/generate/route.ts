@@ -1,3 +1,11 @@
+/**
+ * WORKFLOW ROUTE — generate
+ *   KIND:          queue
+ *   UI CALLER:     components/wizard/CreationWizard.tsx
+ *   WRITES QUEUE:  yes
+ *   CLAIMABLE:     yes
+ *   DISTINCT FROM: images (images terminal-only, generate renders)
+ */
 import { NextResponse } from "next/server"
 import { videoOrchestrator } from "@/lib/engine/orchestrator"
 import { imageOrchestrator } from "@/lib/engine/image-orchestrator"

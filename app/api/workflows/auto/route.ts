@@ -1,4 +1,13 @@
-import { NextResponse } from "next/server";
+/**
+ * WORKFLOW ROUTE — auto
+ *   KIND:          queue
+ *   UI CALLER:     create/auto
+ *   WRITES QUEUE:  yes
+ *   CLAIMABLE:     yes
+ *   DISTINCT FROM: generate (auto picks all settings for you)
+ */
+import { NextResponse } from "next/server"
+import { enqueueRenderJob } from "@/lib/jobs/enqueue";
 import { supabaseAdmin as supabase } from "@/lib/db";
 import { autoPilot } from "@/lib/engine/auto-pilot";
 import { AspectRatio } from "@/lib/engine/types";

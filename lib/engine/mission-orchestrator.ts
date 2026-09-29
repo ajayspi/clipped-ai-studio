@@ -117,13 +117,13 @@ export class MissionOrchestrator {
 
     // Persist to Supabase if reachable
     try {
-      await supabase.from('render_jobs').insert({
+      const { enqueueRenderJob } = await import('@/lib/jobs/enqueue');
+      await enqueueRenderJob({
         id: jobId,
+        intent: 'plan-only',
         status: 'processing',
         progress: 0,
-        logs: JSON.stringify(state),
-        started_at: new Date().toISOString(),
-        created_at: new Date().toISOString(),
+        logs: state as any,
       });
     } catch {
       // Graceful fallback for offline / mock DB test environments
@@ -376,15 +376,14 @@ export class MissionOrchestrator {
 
       // Finalize database record
       try {
-        await supabase
-          .from('render_jobs')
-          .update({
-            status: 'completed',
-            progress: 100,
-            completed_at: new Date().toISOString(),
-            logs: JSON.stringify(state),
-          })
-          .eq('id', jobId);
+        const { enqueueRenderJob } = await import('@/lib/jobs/enqueue');
+        await enqueueRenderJob({
+          id: jobId,
+          intent: 'render',
+          status: 'pending',
+          progress: 10,
+          logs: { beats: remotionPackage.beats, ...state }
+        });
       } catch {}
 
       this.memoryStore.set(jobId, state);

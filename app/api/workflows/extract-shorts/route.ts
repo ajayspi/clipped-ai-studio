@@ -1,4 +1,13 @@
-import { NextResponse } from "next/server";
+/**
+ * WORKFLOW ROUTE — extract-shorts
+ *   KIND:          queue
+ *   UI CALLER:     create/shorts
+ *   WRITES QUEUE:  yes
+ *   CLAIMABLE:     yes
+ *   DISTINCT FROM: generate (extract-shorts processes existing video vs creating from scratch)
+ */
+import { NextResponse } from "next/server"
+import { enqueueRenderJob } from "@/lib/jobs/enqueue";
 import { supabaseAdmin as supabase } from "@/lib/db";
 import { shortsExtractor } from "@/lib/engine/shorts-extractor";
 import { AspectRatio } from "@/lib/engine/types";

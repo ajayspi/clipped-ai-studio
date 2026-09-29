@@ -1,3 +1,11 @@
+/**
+ * WORKFLOW ROUTE — scrape
+ *   KIND:          utility
+ *   UI CALLER:     create/url
+ *   WRITES QUEUE:  no
+ *   CLAIMABLE:     no
+ *   DISTINCT FROM: generate (scrape only extracts text from a URL, does not render)
+ */
 import { NextResponse } from 'next/server';
 import { complete } from '@/lib/ai/llm';
 import { safeFetch, SafeFetchError } from '@/lib/net/safe-fetch';

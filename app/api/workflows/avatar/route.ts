@@ -1,3 +1,11 @@
+/**
+ * WORKFLOW ROUTE — avatar
+ *   KIND:          queue
+ *   UI CALLER:     create/avatar
+ *   WRITES QUEUE:  yes
+ *   CLAIMABLE:     yes
+ *   DISTINCT FROM: generate (avatar uses a specific character model vs generic b-roll)
+ */
 import { NextResponse } from 'next/server';
 import { avatarOrchestrator } from '@/lib/engine/avatar-orchestrator';
 import { supabaseAdmin as supabase } from '@/lib/db';

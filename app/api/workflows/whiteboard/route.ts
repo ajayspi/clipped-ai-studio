@@ -1,3 +1,11 @@
+/**
+ * WORKFLOW ROUTE — whiteboard
+ *   KIND:          queue
+ *   UI CALLER:     create/whiteboard
+ *   WRITES QUEUE:  yes
+ *   CLAIMABLE:     yes
+ *   DISTINCT FROM: generate (whiteboard creates drawing animations vs stock footage)
+ */
 import { NextResponse } from 'next/server';
 import { whiteboardOrchestrator } from '@/lib/engine/whiteboard-orchestrator';
 import { supabaseAdmin as supabase } from '@/lib/db';

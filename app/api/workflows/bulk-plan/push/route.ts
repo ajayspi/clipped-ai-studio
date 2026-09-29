@@ -1,4 +1,13 @@
-import { NextResponse } from "next/server";
+/**
+ * WORKFLOW ROUTE — bulk-plan/push
+ *   KIND:          queue
+ *   UI CALLER:     create/bulk
+ *   WRITES QUEUE:  yes
+ *   CLAIMABLE:     yes
+ *   DISTINCT FROM: bulk-plan (push queues actual jobs, bulk-plan only generates text)
+ */
+import { NextResponse } from "next/server"
+import { enqueueRenderJob } from "@/lib/jobs/enqueue";
 import { pushBulkPlanToQueue } from "@/lib/engine/bulk-plan-pusher";
 import { BulkPlanItem } from "@/lib/engine/types";
 

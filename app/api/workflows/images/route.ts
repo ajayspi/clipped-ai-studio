@@ -1,8 +1,16 @@
+/**
+ * WORKFLOW ROUTE — images
+ *   KIND:          terminal
+ *   UI CALLER:     NONE (API only)
+ *   WRITES QUEUE:  yes
+ *   CLAIMABLE:     no
+ *   DISTINCT FROM: generate?workflow=images (this one generates images and never renders, generate queues a video)
+ */
 import { NextResponse } from "next/server"
-import { supabaseAdmin as supabase } from "@/lib/db"
 import { sceneMatcher } from "@/lib/engine/scene-matcher"
 import { imageGenerator } from "@/lib/engine/image-generator"
 import { AspectRatio } from "@/lib/engine/types"
+import { enqueueRenderJob } from "@/lib/jobs/enqueue"
 
 export async function POST(req: Request) {
   try {
@@ -32,15 +40,11 @@ export async function POST(req: Request) {
         
         // Step 3: (Future) Generate TTS & Render FFmpeg
         
-        // Log the result to Supabase
-        await supabase.from('render_jobs').insert({
+        await enqueueRenderJob({
           id: jobId,
+          intent: 'terminal',
           status: 'completed',
           progress: 100,
-          // Terminal on insert, but orchestration_state still defaults to 'queued',
-          // which the FFmpeg render worker would claim — and this job has no `beats`,
-          // so it would build an empty ffmpeg concat list and fail all 3 attempts.
-          orchestration_state: 'completed',
           logs: {
             workflow: 'ai-images',
             analysis: {
@@ -48,15 +52,16 @@ export async function POST(req: Request) {
               scenes: scenesWithImages
             }
           }
-        })
+        });
       } catch (err) {
         console.error(`[JOB ${jobId}] Failed:`, err)
-        await supabase.from('render_jobs').insert({
+        await enqueueRenderJob({
           id: jobId,
+          intent: 'terminal',
           status: 'failed',
           progress: 0,
-          error_message: err instanceof Error ? err.message : 'Unknown error during image generation'
-        })
+          logs: { error_message: err instanceof Error ? err.message : 'Unknown error during image generation' }
+        });
       }
     }, 0)
 

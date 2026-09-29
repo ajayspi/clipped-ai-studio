@@ -1,3 +1,11 @@
+/**
+ * WORKFLOW ROUTE — bulk-plan
+ *   KIND:          utility
+ *   UI CALLER:     create/bulk
+ *   WRITES QUEUE:  no
+ *   CLAIMABLE:     no
+ *   DISTINCT FROM: bulk-plan/push (bulk-plan generates text, push queues videos)
+ */
 import { NextResponse } from "next/server";
 import { bulkPlanner } from "@/lib/engine/bulk-planner";
 import { AspectRatio } from "@/lib/engine/types";

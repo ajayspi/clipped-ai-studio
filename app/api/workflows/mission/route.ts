@@ -1,3 +1,11 @@
+/**
+ * WORKFLOW ROUTE — mission
+ *   KIND:          plan-only
+ *   UI CALLER:     create/mission/[id]
+ *   WRITES QUEUE:  yes (via orchestrator)
+ *   CLAIMABLE:     no
+ *   DISTINCT FROM: generate (mission has a 5-step pipeline and does its own orchestration)
+ */
 import { NextResponse } from 'next/server';
 import { after } from 'next/server';
 import { missionOrchestrator } from '@/lib/engine/mission-orchestrator';

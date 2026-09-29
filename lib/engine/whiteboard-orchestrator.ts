@@ -219,12 +219,7 @@ export class WhiteboardOrchestrator {
 
       // Persist to Supabase render_jobs so the FFmpeg worker picks it up
       try {
-        await supabase.from('render_jobs').upsert({
-          id: jobId,
-          user_id: null,
-          status: 'pending',
-          progress: 10,
-          logs: JSON.stringify({ beats: storyboard }),
+        await supabase.from('render_jobs').update({
           config: {
             workflow: 'whiteboard',
             prompt,
@@ -236,8 +231,16 @@ export class WhiteboardOrchestrator {
             storyboard,
             characterSheet,
             manifest,
-          },
-          updated_at: new Date().toISOString(),
+          }
+        }).eq('id', jobId);
+
+        const { enqueueRenderJob } = await import('@/lib/jobs/enqueue');
+        await enqueueRenderJob({
+          id: jobId,
+          intent: 'render',
+          status: 'pending',
+          progress: 10,
+          logs: { beats: storyboard }
         });
       } catch (dbErr) {
         console.warn(`[WhiteboardOrchestrator] Supabase persist note:`, dbErr);

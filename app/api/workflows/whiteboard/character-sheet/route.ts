@@ -1,3 +1,11 @@
+/**
+ * WORKFLOW ROUTE — whiteboard/character-sheet
+ *   KIND:          plan-only
+ *   UI CALLER:     create/whiteboard
+ *   WRITES QUEUE:  no (via orchestrator)
+ *   CLAIMABLE:     no
+ *   DISTINCT FROM: whiteboard (character-sheet only generates images, whiteboard renders video)
+ */
 import { NextResponse } from 'next/server';
 import { geminiCharacterGenerator } from '@/lib/ai/gemini-character-generator';
 

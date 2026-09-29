@@ -4437,7 +4437,9 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     'Tier 23: Documentation Diagram Parity',
     'Tier 25: Scrape & Mixkit',
     'Tier 26: Provider Health Circuit',
-  ];
+  ,
+  'Tier 24: Workflow Route Contracts'
+];
   for (const tier of tiers) {
     const tierTests = tests.filter(t => t.tier === tier);
     console.log(`\n--- ${tier} (${tierTests.length} tests) ---`);

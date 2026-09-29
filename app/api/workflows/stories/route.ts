@@ -1,4 +1,13 @@
-import { NextResponse } from "next/server";
+/**
+ * WORKFLOW ROUTE — stories
+ *   KIND:          queue
+ *   UI CALLER:     NONE (API only)
+ *   WRITES QUEUE:  yes
+ *   CLAIMABLE:     yes
+ *   DISTINCT FROM: generate (stories uses explicit scenes vs generated script)
+ */
+import { NextResponse } from "next/server"
+import { enqueueRenderJob } from "@/lib/jobs/enqueue";
 import { supabaseAdmin as supabase } from "@/lib/db";
 import { storiesOrchestrator } from "@/lib/engine/stories-orchestrator";
 import { AspectRatio } from "@/lib/engine/types";
