@@ -36,7 +36,8 @@ function splitIntoPasses(script: string): string[] {
 export class SceneMatcher {
   async analyzeScript(
     script: string,
-    targetDuration?: number
+    targetDuration?: number,
+    context?: string
   ): Promise<ScriptAnalysis> {
     const passes = splitIntoPasses(script);
     const scenes: Scene[] = [];
@@ -56,6 +57,10 @@ ${passes.length > 1 ? `This is part ${index + 1} of ${passes.length} of a longer
 
       if (targetDuration) {
         prompt += `\nIMPORTANT CONSTRAINT: Each scene MUST be approximately ${targetDuration} seconds long (roughly ${Math.round(targetDuration * 2.5)} words per scene). Break the script into small chunks strictly adhering to this duration constraint.`;
+      }
+
+      if (context) {
+        prompt += `\n\nCONTEXT/STYLE HINT: ${context}`;
       }
 
       prompt += `\n\nFor each scene give:

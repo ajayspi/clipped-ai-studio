@@ -23,6 +23,7 @@ import type { MediaAsset } from '@/lib/media/types';
 import { ttsEngine } from './tts';
 import { videoSourcer } from './video-sourcer';
 import { complete, parseJson } from '@/lib/ai/llm';
+import { sceneMatcher } from './scene-matcher';
 
 // Shape of the scenes parsed from the LLM JSON when planning a mission.
 interface MissionRawScene {
@@ -476,46 +477,13 @@ Return ONLY a valid JSON object with the following schema:
   ): Promise<Scene[]> {
     if (!mock) {
       try {
-        const systemPrompt = `You are a cinematic storyboard director. Break down the provided video narration into 3 to 6 distinct visual scenes.
-Return ONLY a valid JSON object:
-{
-  "scenes": [
-    {
-      "id": "sc-1",
-      "text": "Exact portion of narration for this beat",
-      "keywords": ["visual keyword 1", "visual keyword 2"],
-      "description": "Visual scene description",
-      "cameraMotion": "zoom_in | pan_left | pan_right | orbit | tilt_up | static",
-      "emotion": "intrigue | awe | excitement | dramatic"
-    }
-  ]
-}`;
-
-        const raw = await complete({
-          system: systemPrompt,
-          user: `Narration:\n${script}`,
-          json: true,
-        });
-
-        const parsed = parseJson<{ scenes?: MissionRawScene[] }>(raw);
-        if (Array.isArray(parsed.scenes) && parsed.scenes.length >= 2) {
-          return parsed.scenes.map((s, idx) => {
-            const wordCount = (s.text || '').split(/\s+/).filter(Boolean).length;
-            const estimatedDuration = Math.max(3.5, Math.min(10, Math.round((wordCount / 2.5) * 10) / 10));
-            return {
-              id: s.id || `sc-${idx + 1}`,
-              text: s.text || `Scene ${idx + 1}`,
-              keywords: Array.isArray(s.keywords) && s.keywords.length > 0 ? s.keywords : ['cinematic', 'footage'],
-              description: s.description || s.text || `Visual for scene ${idx + 1}`,
-              duration: estimatedDuration,
-              cameraMotion: s.cameraMotion || 'zoom_in',
-              emotion: s.emotion || 'dramatic',
-              visualPrompt: `${s.description || s.text}, ${style} style, 8k resolution, photorealistic`,
-            };
-          });
+        const context = `${style} cinematic style. 8k resolution, photorealistic.`;
+        const analysis = await sceneMatcher.analyzeScript(script, undefined, context);
+        if (analysis.scenes && analysis.scenes.length > 0) {
+          return analysis.scenes;
         }
-      } catch {
-        // Fallback to rule-based segmentation
+      } catch (err) {
+        console.warn('sceneMatcher failed, falling back to rule-based segmentation', err);
       }
     }
 

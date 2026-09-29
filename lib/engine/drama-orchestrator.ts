@@ -130,17 +130,15 @@ export class DramaOrchestrator {
       const epScript = rawEp.script || `Dialogue between ${characters.map((c) => c.name).join(' and ')}.`;
       const cliffhanger = rawEp.cliffhanger || (epNum < episodesCount ? `What happens next will change everything!` : 'The final truth uncovered.');
 
-      const scenes: Scene[] = (rawEp.scenes && Array.isArray(rawEp.scenes) && rawEp.scenes.length > 0)
-        ? rawEp.scenes.map((s, sIdx) => ({
-            id: `ep-${epNum}-scene-${sIdx + 1}`,
-            text: String(s.text || `${characters[0].name} speaks`),
-            description: String(s.description || `${characters[0].visualAnchor}. Dramatic scene in ${genre}`),
-            visualPrompt: String(s.visualPrompt || `[Character: ${characters[0].visualAnchor}], ${visualStyle}, ${genre}`),
-            duration: Number(s.duration) || 5,
-            emotion: s.emotion ? String(s.emotion) : 'intense',
-            keywords: Array.isArray(s.keywords) ? s.keywords.map(String) : [genre, characters[0].name],
-          }))
-        : this.generateDefaultScenesForEpisode(epNum, genre, characters, visualStyle);
+      let scenes: Scene[] = [];
+      try {
+        const { sceneMatcher } = await import('@/lib/engine/scene-matcher');
+        const context = `Genre: ${genre}. Style: ${visualStyle}. Characters: ${characters.map(c => c.visualAnchor).join(' | ')}`;
+        const analysis = await sceneMatcher.analyzeScript(epScript, undefined, context);
+        scenes = analysis.scenes;
+      } catch (err) {
+        scenes = this.generateDefaultScenesForEpisode(epNum, genre, characters, visualStyle);
+      }
 
       episodes.push({
         episodeNumber: epNum,
@@ -175,14 +173,14 @@ export class DramaOrchestrator {
   /**
    * Deterministic authentic dry-run fallback generator.
    */
-  private generateDryRunSeries(
+  private async generateDryRunSeries(
     genre: string,
     characters: DramaCharacter[],
     episodesCount: number,
     seedScript?: string,
     aspectRatio?: string,
     visualStyle?: string
-  ): DramaSeriesResponse {
+  ): Promise<DramaSeriesResponse> {
     // Generate genre-adaptive series title
     const genreTitleSlug = genre.includes('-')
       ? genre.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
@@ -255,7 +253,15 @@ export class DramaOrchestrator {
         : `${leadChar.name}: "${arc.hook}" As tension escalates, ${leadChar.name} ${arc.action} ${secondaryChar.name} steps into the light: "You should never have dug into this."`;
       const cliffhanger = ep < episodesCount ? arc.cliffhanger : 'The final chapter concludes, leaving an unforgettable legacy.';
 
-      const scenes = this.generateDefaultScenesForEpisode(ep, genre, characters, visualStyle, customScript);
+      let scenes: Scene[] = [];
+      try {
+        const { sceneMatcher } = await import('@/lib/engine/scene-matcher');
+        const context = `Genre: ${genre}. Style: ${visualStyle}. Characters: ${characters.map(c => c.visualAnchor).join(' | ')}`;
+        const analysis = await sceneMatcher.analyzeScript(script, undefined, context);
+        scenes = analysis.scenes;
+      } catch (err) {
+        scenes = this.generateDefaultScenesForEpisode(ep, genre, characters, visualStyle, customScript);
+      }
 
       episodes.push({
         episodeNumber: ep,

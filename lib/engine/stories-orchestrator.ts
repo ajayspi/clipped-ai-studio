@@ -126,28 +126,15 @@ export class StoriesOrchestrator {
       const cliffhanger = (rawPart.cliffhanger && String(rawPart.cliffhanger).trim()) || defaultCliffhanger;
       const title = rawPart.title || `Part ${partNum}: The ${storyType === 'horror' ? 'Haunting' : storyType === 'sci-fi' ? 'Anomaly' : 'Revelation'}`;
 
-      const rawScenes = Array.isArray(rawPart.scenes) ? rawPart.scenes : [];
-      const scenes: Scene[] = [];
-
-      if (rawScenes.length > 0) {
-        for (let sIdx = 0; sIdx < rawScenes.length; sIdx++) {
-          const s = rawScenes[sIdx];
-          scenes.push({
-            id: `story-part-${partNum}-scene-${sIdx + 1}`,
-            text: String(s.text || script.substring(0, 80)),
-            description: String(s.description || `${topic} scene in ${visualStyle}`),
-            visualPrompt: String(s.visualPrompt || `${visualStyle}, ${topic}, cinematic lighting, 8k resolution`),
-            cameraMotion: s.cameraMotion || 'zoom_in',
-            duration: Number(s.duration) || 5,
-            emotion: s.emotion || 'suspenseful',
-            keywords: Array.isArray(s.keywords) && s.keywords.length > 0
-              ? s.keywords.map(String)
-              : [topic, storyType, 'cinematic', visualStyle.split(',')[0].trim()],
-          });
-        }
-      } else {
-        // Generate default structured scenes
-        scenes.push(
+      const fullScript = (includeHooks ? hook + ' ' : '') + script + ' ' + cliffhanger;
+      let scenes: Scene[] = [];
+      try {
+        const { sceneMatcher } = await import('@/lib/engine/scene-matcher');
+        const context = `Story Type: ${storyType}. Style: ${visualStyle}. Topic: ${topic}`;
+        const analysis = await sceneMatcher.analyzeScript(fullScript, undefined, context);
+        scenes = analysis.scenes;
+      } catch (err) {
+        scenes = [
           {
             id: `story-part-${partNum}-scene-1`,
             text: hook,
@@ -178,7 +165,7 @@ export class StoriesOrchestrator {
             emotion: 'climactic',
             keywords: [topic, 'cliffhanger', 'dramatic', storyType],
           }
-        );
+        ];
       }
 
       parts.push({

@@ -279,54 +279,26 @@ export class WhiteboardOrchestrator {
     markerColor: string,
     _mock?: boolean
   ): Promise<WhiteboardStoryboardBeat[]> {
-    // _mock is accepted for API compatibility but unused in storyboard generation
-    void _mock;
-    // If prompt is ultra long or multi-sentence, chunk intelligently
-    const textToBreak = customScript || prompt;
-    const sentences = textToBreak
-      .split(/(?<=[.?!])\s+/)
-      .map((s) => s.trim())
-      .filter((s) => s.length > 5);
+    const { sceneMatcher } = await import('@/lib/engine/scene-matcher');
+    const textToBreak = customScript || `Welcome. Today we're exploring ${prompt}. Here is the key principle that makes this concept work. Notice how this principle applies across real-world situations. Mastering this gives you a profound advantage.`;
+
+    const context = `Whiteboard animation sketch style. ${sheet.archetype} character.`;
+    const analysis = await sceneMatcher.analyzeScript(textToBreak, undefined, context);
 
     let rawBeats: Array<{ text: string; narration: string; duration: number }>;
-
-    if (sentences.length >= 3 && sentences.length <= 8) {
-      rawBeats = sentences.map((s) => ({
-        text: s.length > 60 ? s.slice(0, 57) + '...' : s,
-        narration: s,
-        duration: Math.max(3.0, Math.min(8.0, Math.ceil(s.split(/\s+/).length / 2.5))),
-      }));
-    } else if (sentences.length > 8) {
-      // Clamp to max 8-10 beats
-      const clamped = sentences.slice(0, 8);
-      rawBeats = clamped.map((s) => ({
-        text: s.length > 60 ? s.slice(0, 57) + '...' : s,
-        narration: s,
-        duration: Math.max(3.0, Math.min(7.0, Math.ceil(s.split(/\s+/).length / 2.5))),
+    if (analysis.scenes && analysis.scenes.length > 0) {
+      rawBeats = analysis.scenes.map((s) => ({
+        text: (s.imagePrompt || s.description || '').substring(0, 60),
+        narration: s.text,
+        duration: s.duration,
       }));
     } else {
-      // Create a 4-beat progressive sequence from prompt
       rawBeats = [
         {
           text: `Introduction: ${prompt.slice(0, 45)}`,
           narration: `Welcome. Today we're exploring ${prompt}.`,
           duration: 3.5,
-        },
-        {
-          text: `Core Insight & Mechanics`,
-          narration: `Here is the key principle that makes this concept work.`,
-          duration: 4.0,
-        },
-        {
-          text: `Application & Real-world Example`,
-          narration: `Notice how this principle applies across real-world situations.`,
-          duration: 4.5,
-        },
-        {
-          text: `Key Takeaway & Conclusion`,
-          narration: `Mastering this gives you a profound advantage.`,
-          duration: 3.5,
-        },
+        }
       ];
     }
 
