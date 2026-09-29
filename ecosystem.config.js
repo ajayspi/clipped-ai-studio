@@ -48,6 +48,18 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
       }
+    },
+    {
+      name: 'auto-pilot-scheduler',
+      script: 'scripts/auto-pilot-scheduler.ts',
+      interpreter: 'node',
+      interpreter_args: '--import tsx',
+      autorestart: true,
+      max_restarts: 10,
+      restart_delay: 5000,
+      env: {
+        NODE_ENV: 'production',
+      }
     }
   ]
 };

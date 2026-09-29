@@ -1,4 +1,5 @@
 import { getOmniRouteConfig } from '@/lib/keys';
+import { supabaseAdmin } from '@/lib/db';
 import {
   AutoPilotConfig,
   AutoPilotResponse,
@@ -53,27 +54,37 @@ export class AutoPilot {
     // 4. Synthesize trending topic and script for immediate execution / preview
     const { topic, script, hook } = await this.synthesizeTrendingContent(niche, sourceStrategy);
 
-    // 5. Trigger first run / provision job metadata
-    let initialJobResult: AIVideoGenerationResponse | null = null;
+    // 5. Persist to auto_pipelines instead of direct run
+    let returnedPipelineId = pipelineId;
     try {
-      if (visualPipeline === 'ai-videos') {
-        initialJobResult = await videoGenerator.generateAIVideo({
-          script: `${hook} ${script}`,
-          model: 'kling-v1',
-          aspectRatio,
-          voice,
-          style: visualStyle,
-          mock: !Boolean(process.env.KLING_API_KEY),
-        });
+      const { data, error } = await supabaseAdmin.from('auto_pipelines').insert({
+        pipeline_name: pipelineName,
+        niche: niche,
+        schedule: schedule,
+        next_run: nextRun,
+        source_strategy: sourceStrategy,
+        visual_pipeline: visualPipeline,
+        target_platforms: targetPlatforms,
+        voice: voice,
+        visual_style: visualStyle,
+        aspect_ratio: aspectRatio,
+        auto_publish: autoPublish,
+        is_active: true
+      }).select('id').single();
+
+      if (error) {
+        throw new Error(`Failed to persist pipeline: ${error.message}`);
       }
+      
+      returnedPipelineId = data?.id || pipelineId;
     } catch (err) {
-      console.warn(`[AutoPilot] Initial video generation dry run notice: ${err instanceof Error ? err.message : String(err)}`);
+      console.warn(`[AutoPilot] Database persistence failed: ${err instanceof Error ? err.message : String(err)}`);
     }
 
     // 6. Return response contract
     return {
       success: true,
-      pipelineId,
+      pipelineId: returnedPipelineId,
       nextRun,
       generatedJobId,
       status: 'active',
@@ -91,11 +102,6 @@ export class AutoPilot {
         generatedTopic: topic,
         previewScript: script,
         previewHook: hook,
-        initialJobResult: initialJobResult ? {
-          jobId: initialJobResult.jobId,
-          videoUrl: initialJobResult.videoUrl,
-          duration: initialJobResult.duration,
-        } : undefined,
         isDryRun: false, // OmniRoute always active
         configuredAt: new Date().toISOString(),
       },
@@ -171,7 +177,7 @@ export class AutoPilot {
   /**
    * Synthesizes trending content from specified niche and source strategy.
    */
-  private async synthesizeTrendingContent(
+  public async synthesizeTrendingContent(
     niche: string,
     sourceStrategy: string
   ): Promise<{ topic: string; script: string; hook: string }> {
