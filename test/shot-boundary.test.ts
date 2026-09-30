@@ -102,11 +102,13 @@ describe('render worker boundary (source)', () => {
     expect(worker).toMatch(/'push-in'/);
     expect(worker).toMatch(/'pull-out'/);
   });
+});
+
+describe('beat media resolver boundary (source)', () => {
+  const resolver = read('lib/engine/beat-media-resolver.ts');
 
   it('prefers the shot image prompt over the spoken-text fallback', () => {
-    // The old prompt led with the beat's SPOKEN text, which made the image
-    // model illustrate a caption. The shot prompt must win when present.
-    const m = worker.match(/b\.imagePrompt\?\.trim\(\)/);
+    const m = resolver.match(/beat\.imagePrompt/);
     expect(m).not.toBeNull();
   });
 });

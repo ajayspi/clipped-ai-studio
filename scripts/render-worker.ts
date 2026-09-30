@@ -525,7 +525,17 @@ async function pollAndProcess() {
       let mediaUrl = b?.selectedVideo?.url || b?.imageUrl || b?.videoUrl || b.clipUrl || b.urls?.[0] || b.candidates?.[0]?.url || '';
       
       if (!mediaUrl) {
-        const resolved = await resolveBeatMedia(b);
+        const intent = params.workflow === 'footage' ? 'video' : 'image';
+        const resolved = await resolveBeatMedia({
+          beat: b,
+          intent,
+          aspectRatio,
+          keys: {
+            pexels: findKey('pexels') || process.env.PEXELS_API_KEY,
+            pixabay: findKey('pixabay') || process.env.PIXABAY_API_KEY,
+          }
+        });
+
         if (resolved) {
           mediaUrl = resolved.url;
           logger.info(`Resolved beat media`, { jobId: job.id, beat: i + 1, provider: resolved.provider, query: resolved.query });
@@ -533,8 +543,8 @@ async function pollAndProcess() {
         } else {
           const fullPrompt = b.imagePrompt?.trim()
             || `${text}, educational tech style, paradox style, consistent character anchor, minimalist stick man character`;
-          const w = params.aspectRatio === '16:9' ? 1920 : params.aspectRatio === '1:1' ? 1080 : 1080;
-          const h = params.aspectRatio === '16:9' ? 1080 : params.aspectRatio === '1:1' ? 1080 : 1920;
+          const w = aspectRatio === '16:9' ? 1920 : aspectRatio === '1:1' ? 1024 : 1080;
+          const h = aspectRatio === '16:9' ? 1080 : aspectRatio === '1:1' ? 1024 : 1920;
           mediaUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=${w}&height=${h}&nologo=true`;
           
           logger.warn('No media resolved, falling back to Pollinations', {

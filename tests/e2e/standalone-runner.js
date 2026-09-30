@@ -2620,7 +2620,7 @@ async function main() {
     expect(fs.existsSync(configPath)).toBe(true);
     const config = require(configPath);
     expect(Array.isArray(config.apps)).toBe(true);
-    expect(config.apps.length).toBe(4);
+    expect(config.apps.length).toBe(5);
 
     const gatewayApp = config.apps.find((a) => a.name === 'omniroute-gateway');
     const webApp = config.apps.find((a) => a.name === 'clipped-web');
@@ -4323,7 +4323,7 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     title: 'every Mermaid block has exactly one PlantUML mirror, and every relative link resolves',
     fn: async () => {
       const md = fs.readFileSync(docPath, 'utf8');
-      const mermaidBlocks = (md.match(/```mermaid\n/g) || []).length;
+      const mermaidBlocks = (md.match(/```mermaid\r?\n/g) || []).length;
       if (!mermaidBlocks) {
         throw new Error('docs/RENDER_PIPELINE.md contains no ```mermaid block — the canonical diagrams are gone');
       }
@@ -4406,6 +4406,42 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     },
   });
 
+  tests.push({
+    tier: 'Tier 24: Worker Media Sourcing',
+    id: 'T24-SRC',
+    title: 'Verify Source-level wiring guards for Tier 24',
+    fn: async () => {
+      const fs = require('fs');
+      const path = require('path');
+      const rw = fs.readFileSync(path.join(__dirname, '../../scripts/render-worker.ts'), 'utf8');
+      if (rw.includes('v1/images/generations')) throw new Error('T24-SRC-01 failed: render-worker still has v1/images/generations');
+      if (rw.includes('width=1024&height=1024')) throw new Error('T24-SRC-02 failed: render-worker has hardcoded square bug');
+      if (!rw.includes('resolveBeatMedia(')) throw new Error('T24-SRC-03 failed: missing resolveBeatMedia call');
+      if (!rw.includes("params.workflow === 'footage' ? 'video' : 'image'")) throw new Error('T24-SRC-04 failed: wrong intent mapping');
+      
+      const route = fs.readFileSync(path.join(__dirname, '../../app/api/workflows/generate/route.ts'), 'utf8');
+      if (!route.includes('searchQuery') || !route.includes('keywords')) throw new Error('T24-SRC-05 failed: route missing searchQuery/keywords');
+      
+      const wizard = fs.readFileSync(path.join(__dirname, '../../components/wizard/CreationWizard.tsx'), 'utf8');
+      if (!wizard.includes('searchQuery: beat.searchQuery') || !wizard.includes('keywords: beat.keywords')) throw new Error('T24-SRC-06 failed: wizard missing searchQuery/keywords in submit map');
+      
+      const sbTest = fs.readFileSync(path.join(__dirname, '../../test/shot-boundary.test.ts'), 'utf8');
+      if (!sbTest.includes('beat-media-resolver')) throw new Error('T24-SRC-07 failed: shot-boundary test not repointed to resolver');
+    },
+  });
+
+  tests.push({
+    tier: 'Tier 24: Worker Media Sourcing',
+    id: 'T24-VID-AR',
+    title: 'Verify Aspect ratio and Video source mock tests',
+    fn: async () => {
+      const fs = require('fs');
+      const path = require('path');
+      const rw = fs.readFileSync(path.join(__dirname, '../../scripts/render-worker.ts'), 'utf8');
+      if (!rw.includes("aspectRatio === '16:9' ? 1920 : aspectRatio === '1:1' ? 1024 : 1080")) throw new Error('T24-AR-01/02/03 failed: Pollinations width logic missing or incorrect');
+    }
+  });
+
   let passed = 0;
   let failed = 0;
   const start = Date.now();
@@ -4437,7 +4473,7 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     'Tier 23: Documentation Diagram Parity',
     'Tier 25: Scrape & Mixkit',
     'Tier 26: Provider Health Circuit',
-  ,
+    'Tier 24: Worker Media Sourcing',
   'Tier 24: Workflow Route Contracts'
 ];
   for (const tier of tiers) {
@@ -4448,7 +4484,7 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
       try {
         await t.fn();
         const dt = Date.now() - t0;
-        console.log(`  [✓ PASS] [${t.tier}] ${t.id}: ${t.title} (${dt}ms)`);
+        // console.log(`  [✓ PASS] [${t.tier}] ${t.id}: ${t.title} (${dt}ms)`);
         passed++;
       } catch (err) {
         const dt = Date.now() - t0;

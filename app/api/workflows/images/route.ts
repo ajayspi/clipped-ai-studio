@@ -11,6 +11,8 @@ import { sceneMatcher } from "@/lib/engine/scene-matcher"
 import { imageGenerator } from "@/lib/engine/image-generator"
 import { AspectRatio } from "@/lib/engine/types"
 import { enqueueRenderJob } from "@/lib/jobs/enqueue"
+import { supabaseAdmin as supabase } from "@/lib/db"
+
 
 export async function POST(req: Request) {
   try {
@@ -23,6 +25,21 @@ export async function POST(req: Request) {
 
     // 1. Create a job ID in our database (Supabase)
     const jobId = crypto.randomUUID()
+
+    // 2. Insert the job immediately so the UI can navigate to it
+    // Using a terminal state because this workflow runs inline and never renders a video.
+    const insertPayload = {
+      id: jobId,
+      status: 'generating_plan',
+      progress: 0,
+      orchestration_state: 'completed',
+      logs: JSON.stringify({ message: "Job queued" })
+    }
+
+    const { error: insertErr } = await supabase.from('render_jobs').insert(insertPayload)
+    if (insertErr) {
+      console.warn(`[WorkflowImages] initial insert failed:`, insertErr)
+    }
     
     // Fire and forget the orchestrator
     setTimeout(async () => {
