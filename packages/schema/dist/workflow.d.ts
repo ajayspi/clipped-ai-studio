@@ -2,12 +2,12 @@ import { z } from 'zod';
 /**
  * Workflow 1: AI Video Generator Types
  */
-export declare const AIVideoModelSchema: z.ZodEnum<["kling-v1", "luma-dream", "fal-flux"]>;
+export declare const AIVideoModelSchema: z.ZodUnion<[z.ZodEnum<["kling-v1", "luma-dream", "fal-flux", "alibaba/wan-3.0/text-to-video"]>, z.ZodString]>;
 export declare const CameraMotionSchema: z.ZodEnum<["static", "zoom_in", "zoom_out", "pan_left", "pan_right", "orbit", "drone", "tilt_up", "tilt_down"]>;
 export declare const AIVideoGenerationRequestSchema: z.ZodObject<{
     script: z.ZodString;
     prompt: z.ZodOptional<z.ZodString>;
-    model: z.ZodOptional<z.ZodEnum<["kling-v1", "luma-dream", "fal-flux"]>>;
+    model: z.ZodOptional<z.ZodUnion<[z.ZodEnum<["kling-v1", "luma-dream", "fal-flux", "alibaba/wan-3.0/text-to-video"]>, z.ZodString]>>;
     aspectRatio: z.ZodOptional<z.ZodEnum<["16:9", "9:16", "1:1"]>>;
     duration: z.ZodOptional<z.ZodNumber>;
     cameraMotion: z.ZodOptional<z.ZodEnum<["static", "zoom_in", "zoom_out", "pan_left", "pan_right", "orbit", "drone", "tilt_up", "tilt_down"]>>;
@@ -24,7 +24,7 @@ export declare const AIVideoGenerationRequestSchema: z.ZodObject<{
     duration?: number | undefined;
     voice?: string | undefined;
     aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
-    model?: "kling-v1" | "luma-dream" | "fal-flux" | undefined;
+    model?: string | undefined;
     cameraMotion?: "static" | "zoom_in" | "zoom_out" | "pan_left" | "pan_right" | "orbit" | "drone" | "tilt_up" | "tilt_down" | undefined;
     style?: string | undefined;
     negativePrompt?: string | undefined;
@@ -37,7 +37,7 @@ export declare const AIVideoGenerationRequestSchema: z.ZodObject<{
     duration?: number | undefined;
     voice?: string | undefined;
     aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
-    model?: "kling-v1" | "luma-dream" | "fal-flux" | undefined;
+    model?: string | undefined;
     cameraMotion?: "static" | "zoom_in" | "zoom_out" | "pan_left" | "pan_right" | "orbit" | "drone" | "tilt_up" | "tilt_down" | undefined;
     style?: string | undefined;
     negativePrompt?: string | undefined;
@@ -2014,7 +2014,7 @@ export declare function validateAIVideoRequest(data: unknown): {
     duration?: number | undefined;
     voice?: string | undefined;
     aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
-    model?: "kling-v1" | "luma-dream" | "fal-flux" | undefined;
+    model?: string | undefined;
     cameraMotion?: "static" | "zoom_in" | "zoom_out" | "pan_left" | "pan_right" | "orbit" | "drone" | "tilt_up" | "tilt_down" | undefined;
     style?: string | undefined;
     negativePrompt?: string | undefined;

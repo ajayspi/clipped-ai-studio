@@ -78,7 +78,7 @@ export interface GenerationResponse {
 // Workflow 1: AI Video Generator Types
 // ==========================================
 
-export type AIVideoModel = 'kling-v1' | 'luma-dream' | 'fal-flux';
+export type AIVideoModel = string;
 
 export type AspectRatio = '16:9' | '9:16' | '1:1';
 

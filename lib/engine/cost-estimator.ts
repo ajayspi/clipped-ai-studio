@@ -6,6 +6,8 @@ export interface VideoCostParams {
   workflow?: string; // 'footage' | 'ai-videos' | 'whiteboard' | 'avatar' | 'stories' | 'micro-drama'
   clipCount?: number;
   durationSeconds?: number;
+  videoModel?: string;
+  videoResolution?: string;
 }
 
 export interface VideoCostBreakdown {
@@ -72,7 +74,6 @@ const TTS_RATES_PER_CHAR: Record<string, number> = {
 };
 
 const VIDEO_CLIP_RATES: Record<string, number> = {
-  'ai-videos': 0.15, // Kling / Luma AI ($0.15/clip)
   'micro-drama': 0.15,
   avatar: 0.08,
   whiteboard: 0.02,
@@ -108,8 +109,20 @@ export function calculateVideoCost(params: VideoCostParams = {}): VideoCostBreak
   const ttsCostUsd = Number((ttsCharacters * ttsRate).toFixed(5));
 
   // 3. Video Assets / AI Generation Cost
-  const clipRate = VIDEO_CLIP_RATES[workflowKey] ?? VIDEO_CLIP_RATES.default;
-  const videoAssetsCostUsd = Number((clipCount * clipRate).toFixed(4));
+  let videoAssetsCostUsd = 0;
+  if (workflowKey === 'ai-videos' && params.videoModel) {
+    const { estimateFalVideoCost } = require('../media/fal-video-models');
+    const estimated = estimateFalVideoCost(params.videoModel, durationSeconds, params.videoResolution || '1080p');
+    if (estimated !== null) {
+      videoAssetsCostUsd = Number((clipCount * estimated).toFixed(4));
+    } else {
+      const clipRate = VIDEO_CLIP_RATES[workflowKey] ?? VIDEO_CLIP_RATES.default;
+      videoAssetsCostUsd = Number((clipCount * clipRate).toFixed(4));
+    }
+  } else {
+    const clipRate = VIDEO_CLIP_RATES[workflowKey] ?? VIDEO_CLIP_RATES.default;
+    videoAssetsCostUsd = Number((clipCount * clipRate).toFixed(4));
+  }
 
   // 4. Compute / Render Cost
   const computeCostUsd = Number((durationSeconds * COMPUTE_RATE_PER_SECOND).toFixed(5));
@@ -185,6 +198,8 @@ export function calculateJobCost(job: RenderJobLike): VideoCostBreakdown {
     workflow,
     clipCount,
     durationSeconds,
+    videoModel: logs.model as string | undefined,
+    videoResolution: logs.resolution as string | undefined,
   });
 }
 

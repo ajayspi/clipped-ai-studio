@@ -3,7 +3,12 @@ import { AspectRatioSchema } from './common';
 /**
  * Workflow 1: AI Video Generator Types
  */
-export const AIVideoModelSchema = z.enum(['kling-v1', 'luma-dream', 'fal-flux']);
+export const AIVideoModelSchema = z.enum([
+    'kling-v1',
+    'luma-dream',
+    'fal-flux',
+    'alibaba/wan-3.0/text-to-video',
+]).or(z.string());
 export const CameraMotionSchema = z.enum([
     'static', 'zoom_in', 'zoom_out', 'pan_left', 'pan_right',
     'orbit', 'drone', 'tilt_up', 'tilt_down',

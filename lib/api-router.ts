@@ -7,6 +7,7 @@
  */
 
 import { supabaseAdmin } from '@/lib/db';
+import { FAL_VIDEO_MODELS } from './media/fal-video-models';
 
 // â”€â”€â”€ Provider Registry â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -473,7 +474,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     healthAuthHeader: (k) => `Key ${k}`,
     baseUrl: 'https://queue.fal.run',
     defaultPriority: 78,
-    models: ['fal-ai/kling-video', 'fal-ai/fast-svd'],
+    models: FAL_VIDEO_MODELS.map(m => m.id),
   },
   {
     id: 'huggingface_video',

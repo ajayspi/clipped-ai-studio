@@ -102,7 +102,12 @@ export const CameraMotionSchema = z.enum([
     'tilt_up',
     'tilt_down',
 ]);
-export const AIVideoModelSchema = z.enum(['kling-v1', 'luma-dream', 'fal-flux']);
+export const AIVideoModelSchema = z.enum([
+    'kling-v1',
+    'luma-dream',
+    'fal-flux',
+    'alibaba/wan-3.0/text-to-video',
+]).or(z.string());
 export const ShortsSourceTypeSchema = z.enum(['url', 'transcript', 'file']);
 /**
  * Base metadata attached to all responses

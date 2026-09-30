@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { AspectRatioSelector } from "@/components/create/ui/AspectRatioSelector"
+import { FAL_VIDEO_MODELS } from "@/lib/media/fal-video-models"
 
 import {
   Bot,
@@ -29,6 +30,7 @@ export default function AutoPilotPage() {
   const [sourceStrategy, setSourceStrategy] = useState("trending-rss")
   const [visualPipeline, setVisualPipeline] = useState("ai-videos")
   const [autoPublish, setAutoPublish] = useState(false)
+  const [model, setModel] = useState("alibaba/wan-3.0/text-to-video")
   const [platforms, setPlatforms] = useState<string[]>(["youtube", "tiktok"])
   const [voice, setVoice] = useState("alloy")
   const [visualStyle, setVisualStyle] = useState("modern cinematic, 4k ultra-detailed, vibrant dynamic lighting")
@@ -69,6 +71,7 @@ export default function AutoPilotPage() {
           voice,
           visualStyle,
           aspectRatio,
+          model,
           mock,
         }),
       })
@@ -201,7 +204,7 @@ export default function AutoPilotPage() {
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { id: "ai-videos", label: "AI Video (Kling / Luma)" },
+                  { id: "ai-videos", label: "AI Video (Fal Video Models)" },
                   { id: "ai-images", label: "Flux AI Images + Motion" },
                   { id: "stock-footage", label: "Stock Footage Matcher" },
                   { id: "stories", label: "Multi-Part Stories" },
@@ -225,6 +228,25 @@ export default function AutoPilotPage() {
                 })}
               </div>
             </div>
+
+            {visualPipeline === "ai-videos" && (
+              <div className="space-y-2 mt-4">
+                <label className="text-sm font-medium flex items-center gap-1.5">
+                  <Layers className="h-4 w-4 text-purple-500" /> Video Generation Model
+                </label>
+                <select
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                  className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm"
+                >
+                  {FAL_VIDEO_MODELS.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.displayName} {m.pricing ? `(${m.pricing['1080p'] || m.pricing['default'] || m.pricing['720p'] || '?'} / ${m.pricingUnit})` : '(Pricing TBD)'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center gap-1.5">

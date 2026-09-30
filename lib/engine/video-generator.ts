@@ -7,6 +7,7 @@ import {
 } from './types';
 import { buildAIVideoPrompt } from './prompts';
 import { getApiKey } from '@/lib/keys';
+import { getFalVideoModel } from '../media/fal-video-models';
 
 // Sample royalty-free fallback video clips for dry-run / mock modes
 const DRY_RUN_SAMPLE_VIDEOS: Record<string, string> = {
@@ -66,7 +67,7 @@ export class VideoGenerator {
         return await this.generateWithLuma(jobId, prompt, request, apiKey);
       }
 
-      if (model === 'fal-flux') {
+      if (model === 'fal-flux' || !!getFalVideoModel(model)) {
         const apiKey = await getApiKey('fal', 'FAL_API_KEY');
         if (!apiKey) {
           console.warn('[VideoGenerator] FAL_API_KEY is missing. Falling back to HF Space.');
@@ -245,9 +246,13 @@ export class VideoGenerator {
 
     try {
       const { submitAndWait } = await import('../media/fal-client');
+      const { DEFAULT_FAL_VIDEO_MODEL } = await import('../media/fal-video-models');
+
+      const model = request.model ? getFalVideoModel(request.model) : getFalVideoModel(DEFAULT_FAL_VIDEO_MODEL);
+      const modelId = model ? model.id : DEFAULT_FAL_VIDEO_MODEL;
 
       const falJob = await submitAndWait({
-        model: 'fal-ai/kling-video/v1/standard/text-to-video',
+        model: modelId,
         input: {
           prompt: prompt,
           aspect_ratio: request.aspectRatio === '9:16' ? '9:16' : request.aspectRatio === '1:1' ? '1:1' : '16:9',
@@ -262,7 +267,7 @@ export class VideoGenerator {
           jobId,
           videoUrl: falJob.asset.url,
           prompt,
-          modelUsed: 'fal-flux',
+          modelUsed: modelId,
           duration: request.duration || 5,
           metadata: {
             provider: 'fal-ai',
