@@ -28,7 +28,7 @@ export declare const WhiteboardStyleSchema: z.ZodEnum<["monoline_marker", "black
 export type WhiteboardStyle = z.infer<typeof WhiteboardStyleSchema>;
 export declare const CameraMotionSchema: z.ZodEnum<["static", "zoom_in", "zoom_out", "pan_left", "pan_right", "orbit", "drone", "tilt_up", "tilt_down"]>;
 export type CameraMotion = z.infer<typeof CameraMotionSchema>;
-export declare const AIVideoModelSchema: z.ZodUnion<[z.ZodEnum<["kling-v1", "luma-dream", "fal-flux", "alibaba/wan-3.0/text-to-video"]>, z.ZodString]>;
+export declare const AIVideoModelSchema: z.ZodUnion<[z.ZodEnum<["kling-v1", "luma-dream", "fal-flux", "alibaba/wan-3.0-prime/text-to-video"]>, z.ZodString]>;
 export type AIVideoModel = z.infer<typeof AIVideoModelSchema>;
 export declare const ShortsSourceTypeSchema: z.ZodEnum<["url", "transcript", "file"]>;
 export type ShortsSourceType = z.infer<typeof ShortsSourceTypeSchema>;
