@@ -4676,6 +4676,31 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     }
   });
 
+  tests.push({
+    tier: 'Tier 29: Podcast Workflow',
+    id: 'T29-PODCAST-01',
+    title: 'Podcast Orchestrator exposes generatePodcastVideo',
+    fn: async () => {
+      const tsNode = require('tsx/cjs/api');
+      const { podcastOrchestrator } = tsNode.require('../../lib/engine/podcast-orchestrator.ts', __filename);
+      expect(typeof podcastOrchestrator.generatePodcastVideo).toEqual('function');
+    }
+  });
+
+  tests.push({
+    tier: 'Tier 29: Podcast Workflow',
+    id: 'T29-PODCAST-02',
+    title: 'Podcast route returns jobId and sets orchestration_state planning',
+    fn: async () => {
+      const fs = require('fs');
+      const path = require('path');
+      const src = fs.readFileSync(path.resolve(__dirname, '../../app/api/workflows/podcast/route.ts'), 'utf8');
+      if (!src.includes("orchestration_state: 'planning'")) {
+        throw new Error("Podcast route missing orchestration_state: 'planning'");
+      }
+    }
+  });
+
   let passed = 0;
   let failed = 0;
   const start = Date.now();
@@ -4710,7 +4735,8 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     'Tier 24: Worker Media Sourcing',
     'Tier 24: Workflow Route Contracts',
     'Tier 27: Higgsfield Client',
-    'Tier 28: Stickman Workflow'
+    'Tier 28: Stickman Workflow',
+    'Tier 29: Podcast Workflow'
 ];
   for (const tier of tiers) {
     const tierTests = tests.filter(t => t.tier === tier);

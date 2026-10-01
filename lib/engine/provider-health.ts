@@ -1,4 +1,4 @@
-import { db } from '@/lib/db'
+import { supabaseAdmin as db } from '@/lib/db'
 
 export type HealthDomain = 'llm' | 'tts'
 
@@ -97,7 +97,7 @@ export async function recordProviderFailure(domain: HealthDomain, providerId: st
     health.cooldown_until = d.toISOString()
   }
   
-  db.rpc('record_provider_failure', { p_id: id, p_reason: reason }).catch(() => {})
+  db.rpc('record_provider_failure', { p_id: id, p_reason: reason }).then(() => {})
 }
 
 export async function recordProviderSuccess(domain: HealthDomain, providerId: string): Promise<void> {
@@ -114,5 +114,5 @@ export async function recordProviderSuccess(domain: HealthDomain, providerId: st
     map.set(id, health)
   }
   
-  db.rpc('record_provider_success', { p_id: id }).catch(() => {})
+  db.rpc('record_provider_success', { p_id: id }).then(() => {})
 }

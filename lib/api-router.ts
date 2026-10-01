@@ -401,7 +401,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     id: 'coverr_free',
     name: 'Coverr (Free Stock Video)',
     category: 'video',
-    healthEndpoint: undefined, // Requires API key
+    healthEndpoint: '', // Requires API key
     baseUrl: 'https://api.coverr.co',
     isFree: true,
     defaultPriority: 45,
@@ -410,7 +410,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     id: 'mixkit_free',
     name: 'Mixkit (Free HD Video)',
     category: 'video',
-    healthEndpoint: undefined, // No API
+    healthEndpoint: '', // No API
     baseUrl: 'https://mixkit.co',
     isFree: true,
     defaultPriority: 40,
@@ -419,7 +419,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     id: 'mazwai_free',
     name: 'Mazwai (Free Cinematic)',
     category: 'video',
-    healthEndpoint: undefined, // Blocks bots
+    healthEndpoint: '', // Blocks bots
     baseUrl: 'https://mazwai.com',
     isFree: true,
     defaultPriority: 35,
@@ -428,7 +428,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     id: 'videvo_free',
     name: 'Videvo (Free CC Video)',
     category: 'video',
-    healthEndpoint: undefined, // Requires API key
+    healthEndpoint: '', // Requires API key
 
     baseUrl: 'https://www.videvo.net/api/v1',
     isFree: true,

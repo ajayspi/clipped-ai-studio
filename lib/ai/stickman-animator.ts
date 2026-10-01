@@ -1,4 +1,4 @@
-import { POSE_DEFINITIONS, POSE_GRID_BBOXES } from './gemini-character-generator.ts';
+import { POSE_DEFINITIONS, POSE_GRID_BBOXES } from './gemini-character-generator';
 
 export interface PoseFrame {
   svgPath: string;

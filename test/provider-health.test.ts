@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { loadHealth, isProviderAvailable, recordProviderFailure, recordProviderSuccess, resetProviderHealthCache } from '../lib/engine/provider-health';
-import { db } from '../lib/db';
+import { supabaseAdmin as db } from '../lib/db';
 
 vi.mock('../lib/db', () => ({
-  db: {
+  supabaseAdmin: {
     rpc: vi.fn()
   }
 }));

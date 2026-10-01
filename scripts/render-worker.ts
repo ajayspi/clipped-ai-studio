@@ -192,13 +192,13 @@ export function buildSubtitleDrawtextFilter(text: string, settings?: SubtitleCon
       ? Math.round(s.subtitleOutlineWidth) 
       : (s.subtitleOutline === 'thick' ? 4 : 2);
     // Prefer the requested outline color, fallback to glow color, then black
-    bordercolor = normalizeColor(s.subtitleOutlineColor as string || (s.subtitleGlow ? s.subtitleGlowColor : 'black'), 'black');
+    bordercolor = normalizeColor((s as any).subtitleOutlineColor as string || (s.subtitleGlow ? (s as any).subtitleGlowColor : 'black'), 'black');
   } else if (s.subtitlePreset === 'Hormozi Pop') {
     borderw = 3;
-    bordercolor = normalizeColor(s.subtitleOutlineColor as string, 'black');
+    bordercolor = normalizeColor((s as any).subtitleOutlineColor as string, 'black');
   } else if (s.subtitlePreset === 'Bold Impact') {
     borderw = 4;
-    bordercolor = normalizeColor(s.subtitleOutlineColor as string, 'black');
+    bordercolor = normalizeColor((s as any).subtitleOutlineColor as string, 'black');
   }
 
   const isBox = s.subtitleBox === true || s.subtitlePreset === 'Cinematic Boxed' || s.subtitlePreset === 'Retro Karaoke';
@@ -258,13 +258,13 @@ export function buildKaraokeSubtitleFilter(
     borderw = typeof s.subtitleOutlineWidth === 'number' && s.subtitleOutlineWidth > 0 
       ? Math.round(s.subtitleOutlineWidth) 
       : (s.subtitleOutline === 'thick' ? 4 : 2);
-    bordercolor = normalizeColor(s.subtitleOutlineColor as string || (s.subtitleGlow ? s.subtitleGlowColor : 'black'), 'black');
+    bordercolor = normalizeColor((s as any).subtitleOutlineColor as string || (s.subtitleGlow ? (s as any).subtitleGlowColor : 'black'), 'black');
   } else if (s.subtitlePreset === 'Hormozi Pop') {
     borderw = 3;
-    bordercolor = normalizeColor(s.subtitleOutlineColor as string, 'black');
+    bordercolor = normalizeColor((s as any).subtitleOutlineColor as string, 'black');
   } else if (s.subtitlePreset === 'Bold Impact') {
     borderw = 4;
-    bordercolor = normalizeColor(s.subtitleOutlineColor as string, 'black');
+    bordercolor = normalizeColor((s as any).subtitleOutlineColor as string, 'black');
   }
 
   const isBox = s.subtitleBox === true || s.subtitlePreset === 'Cinematic Boxed' || s.subtitlePreset === 'Retro Karaoke';
@@ -525,7 +525,7 @@ async function pollAndProcess() {
       let mediaUrl = b?.selectedVideo?.url || b?.imageUrl || b?.videoUrl || b.clipUrl || b.urls?.[0] || b.candidates?.[0]?.url || '';
       
       if (!mediaUrl) {
-        const intent = params.workflow === 'footage' ? 'video' : 'image';
+        const intent = (params as any).workflow === 'footage' ? 'video' : 'image';
         const resolved = await resolveBeatMedia({
           beat: b,
           intent,

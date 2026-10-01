@@ -88,10 +88,12 @@ Return JSON in this format: { "script": "full text", "beats": [ { "text": "beat 
         if (!options.mock) {
           try {
             const asset = await selectSceneMedia({
+              id: `beat-${i}`,
               text: beatPlan.text,
+              description: beatPlan.text,
               keywords: [topic, 'paradox', beatPlan.emotion],
               duration
-            }, { allowGenerated: true, aspectRatio });
+            } as any, { allowGenerated: true, aspectRatio });
             imageUrl = asset.url;
           } catch (e) {
             console.warn('Media select failed for beat', i);
