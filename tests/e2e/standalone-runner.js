@@ -4701,6 +4701,34 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     }
   });
 
+  tests.push({
+    tier: 'Tier 30: Reddit & Trivia Workflows',
+    id: 'T30-REDDIT-01',
+    title: 'Reddit route sets orchestration_state planning',
+    fn: async () => {
+      const fs = require('fs');
+      const path = require('path');
+      const src = fs.readFileSync(path.resolve(__dirname, '../../app/api/workflows/reddit/route.ts'), 'utf8');
+      if (!src.includes("orchestration_state: 'planning'")) {
+        throw new Error("Reddit route missing orchestration_state: 'planning'");
+      }
+    }
+  });
+
+  tests.push({
+    tier: 'Tier 30: Reddit & Trivia Workflows',
+    id: 'T30-TRIVIA-01',
+    title: 'Trivia route sets orchestration_state planning',
+    fn: async () => {
+      const fs = require('fs');
+      const path = require('path');
+      const src = fs.readFileSync(path.resolve(__dirname, '../../app/api/workflows/trivia/route.ts'), 'utf8');
+      if (!src.includes("orchestration_state: 'planning'")) {
+        throw new Error("Trivia route missing orchestration_state: 'planning'");
+      }
+    }
+  });
+
   let passed = 0;
   let failed = 0;
   const start = Date.now();
@@ -4736,7 +4764,8 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     'Tier 24: Workflow Route Contracts',
     'Tier 27: Higgsfield Client',
     'Tier 28: Stickman Workflow',
-    'Tier 29: Podcast Workflow'
+    'Tier 29: Podcast Workflow',
+    'Tier 30: Reddit & Trivia Workflows'
 ];
   for (const tier of tiers) {
     const tierTests = tests.filter(t => t.tier === tier);

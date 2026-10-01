@@ -525,7 +525,8 @@ async function pollAndProcess() {
       let mediaUrl = b?.selectedVideo?.url || b?.imageUrl || b?.videoUrl || b.clipUrl || b.urls?.[0] || b.candidates?.[0]?.url || '';
       
       if (!mediaUrl) {
-        const intent = (params as any).workflow === 'footage' ? 'video' : 'image';
+        // @ts-expect-error - workflow intent mapping
+        const intent = params.workflow === 'footage' ? 'video' : 'image';
         const resolved = await resolveBeatMedia({
           beat: b,
           intent,
