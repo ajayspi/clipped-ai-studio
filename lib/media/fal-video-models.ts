@@ -464,7 +464,7 @@ export const FAL_VIDEO_MODELS: FalVideoModel[] = [
   }
 ];
 
-export const DEFAULT_FAL_VIDEO_MODEL = 'alibaba/wan-3.0/text-to-video';
+export const DEFAULT_FAL_VIDEO_MODEL = 'alibaba/wan-3.0-prime/text-to-video';
 
 export function getFalVideoModel(id: string): FalVideoModel | undefined {
   return FAL_VIDEO_MODELS.find(m => m.id === id);

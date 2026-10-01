@@ -8,7 +8,7 @@ export const AIVideoModelSchema = z.enum([
   'kling-v1',
   'luma-dream',
   'fal-flux',
-  'alibaba/wan-3.0/text-to-video',
+  'alibaba/wan-3.0-prime/text-to-video',
 ]).or(z.string());
 
 export const CameraMotionSchema = z.enum([
