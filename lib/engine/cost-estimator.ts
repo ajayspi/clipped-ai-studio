@@ -295,3 +295,13 @@ export function getAggregatedAnalytics(jobs: RenderJobLike[] = [], videos: Rende
     })),
   };
 }
+
+export async function estimateHiggsfieldCost(
+  endpointId: string,
+  input: Record<string, unknown>,
+  credentials: { keyId: string; keySecret: string }
+): Promise<number | null> {
+  const { estimate } = require('../media/higgsfield-client');
+  const result = await estimate(endpointId, input, credentials);
+  return result ? result.usd : null;
+}

@@ -21,6 +21,7 @@ export type MediaProvider =
   | 'pollinations'
   | 'aihorde'
   | 'fal-ai'
+  | 'higgsfield'
   | 'existing';
 
 export type MediaKind = 'image' | 'video';
@@ -92,7 +93,7 @@ export interface MediaJob {
   /** fal.ai request_id from the queue submission response header. */
   requestId: string;
 
-  provider: 'fal-ai';
+  provider: 'fal-ai' | 'higgsfield';
 
   /** fal model identifier, e.g. "fal-ai/flux/dev" or "fal-ai/kling-video/v1". */
   model: string;
@@ -137,6 +138,13 @@ export interface FalSubmitOptions {
    * Interval between status polls.
    * Defaults to 2000 ms (2 s) inside the client.
    */
+  pollIntervalMs?: number;
+}
+
+export interface HiggsfieldSubmitOptions {
+  endpointId: string;
+  input: Record<string, unknown>;
+  timeoutMs?: number;
   pollIntervalMs?: number;
 }
 

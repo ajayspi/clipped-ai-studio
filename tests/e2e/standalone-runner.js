@@ -3498,7 +3498,7 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
 
   tests.push({ tier: 'Tier 14: Media Pipeline Contracts', id: 'T14-MPC-07', title: 'All valid MediaProvider values accepted', fn: async () => {
     if (!mediaTypes) throw new Error('lib/media/types.js not found — implement lib/media/types.ts first');
-    const validProviders = ['openverse', 'pexels', 'pixabay', 'pollinations', 'aihorde', 'fal-ai'];
+    const validProviders = ['openverse', 'pexels', 'pixabay', 'pollinations', 'aihorde', 'fal-ai', 'higgsfield'];
     for (const p of validProviders) {
       const asset = { id: `${p}-1`, kind: 'image', provider: p, url: 'https://test.example/img.jpg', generated: false };
       expect(asset.provider).toBe(p);
@@ -4442,6 +4442,81 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     }
   });
 
+  tests.push({
+    tier: 'Tier 27: Higgsfield Client',
+    id: 'T30-SRC-01',
+    title: 'the legacy misspelled higgsfiled/ endpoint appears nowhere in the source',
+    fn: async () => {
+      const fs = require('fs');
+      const path = require('path');
+      const higgsfieldClientPath = path.join(__dirname, '../../lib/media/higgsfield-client.ts');
+      if (fs.existsSync(higgsfieldClientPath)) {
+        const src = fs.readFileSync(higgsfieldClientPath, 'utf8');
+        if (/higgsfiled\//.test(src)) {
+          throw new Error('Found misspelled "higgsfiled/" endpoint in higgsfield-client.ts');
+        }
+      }
+    }
+  });
+
+  tests.push({
+    tier: 'Tier 27: Higgsfield Client',
+    id: 'T30-SRC-02',
+    title: 'the client uses https://api.higgsfield.ai/ and never queue.fal.run',
+    fn: async () => {
+      const fs = require('fs');
+      const path = require('path');
+      const higgsfieldClientPath = path.join(__dirname, '../../lib/media/higgsfield-client.ts');
+      if (fs.existsSync(higgsfieldClientPath)) {
+        const src = fs.readFileSync(higgsfieldClientPath, 'utf8');
+        if (/queue\.fal\.run/.test(src)) {
+          throw new Error('Found "queue.fal.run" in higgsfield-client.ts, should use api.higgsfield.ai');
+        }
+        if (!/https:\/\/api\.higgsfield\.ai\//.test(src)) {
+          throw new Error('Did not find "https://api.higgsfield.ai/" in higgsfield-client.ts');
+        }
+      }
+    }
+  });
+
+  tests.push({
+    tier: 'Tier 27: Higgsfield Client',
+    id: 'T30-SRC-03',
+    title: 'Tier 27: Higgsfield Client is present in tiers array and tests',
+    fn: async () => {
+      const selfPath = require('path').join(__dirname, 'standalone-runner.js');
+      const content = require('fs').readFileSync(selfPath, 'utf-8');
+      expect(content).toContain("'Tier 27: Higgsfield Client'");
+    },
+  });
+
+  tests.push({
+    tier: 'Tier 27: Higgsfield Client',
+    id: 'T30-TYP-01',
+    title: 'MediaProvider includes higgsfield',
+    fn: async () => {
+      const mediaTypesPath = require('path').resolve(__dirname, '../../lib/media/types.ts');
+      const src = require('fs').readFileSync(mediaTypesPath, 'utf8');
+      expect(src).toContain("'higgsfield'");
+      expect(src).toContain("provider: 'fal-ai' | 'higgsfield'");
+    }
+  });
+
+  tests.push({
+    tier: 'Tier 27: Higgsfield Client',
+    id: 'T30-TYP-02',
+    title: 'HiggsfieldSubmitOptions mirrors FalSubmitOptions',
+    fn: async () => {
+      const mediaTypesPath = require('path').resolve(__dirname, '../../lib/media/types.ts');
+      const src = require('fs').readFileSync(mediaTypesPath, 'utf8');
+      expect(src).toContain('interface HiggsfieldSubmitOptions');
+      expect(src).toContain('endpointId: string;');
+      expect(src).toContain('input: Record<string, unknown>;');
+      expect(src).toContain('timeoutMs?: number;');
+      expect(src).toContain('pollIntervalMs?: number;');
+    }
+  });
+
   let passed = 0;
   let failed = 0;
   const start = Date.now();
@@ -4474,7 +4549,8 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     'Tier 25: Scrape & Mixkit',
     'Tier 26: Provider Health Circuit',
     'Tier 24: Worker Media Sourcing',
-  'Tier 24: Workflow Route Contracts'
+    'Tier 24: Workflow Route Contracts',
+    'Tier 27: Higgsfield Client'
 ];
   for (const tier of tiers) {
     const tierTests = tests.filter(t => t.tier === tier);
