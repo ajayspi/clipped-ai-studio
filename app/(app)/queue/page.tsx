@@ -12,6 +12,7 @@ import {
   RefreshCw,
   Download,
   Film,
+  Trash2,
 } from "lucide-react";
 
 interface RenderJob {
@@ -39,9 +40,11 @@ export default function QueuePage() {
   const [jobs, setJobs] = useState<RenderJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"active" | "completed" | "failed">("active");
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 
   const fetchJobs = useCallback(async () => {
-    setLoading(true);
+    // Only set loading if not deleting to avoid flashing
+    if (deletingIds.size === 0) setLoading(true);
     try {
       const res = await fetch("/api/jobs");
       const data = await res.json();
@@ -49,9 +52,30 @@ export default function QueuePage() {
     } catch {
       console.error("Failed to fetch jobs");
     } finally {
-      setLoading(false);
+      if (deletingIds.size === 0) setLoading(false);
     }
-  }, []);
+  }, [deletingIds.size]);
+
+  const handleDeleteJob = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this job?")) return;
+    setDeletingIds((prev) => new Set(prev).add(id));
+    try {
+      const res = await fetch(`/api/jobs/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setJobs((prev) => prev.filter((j) => j.id !== id));
+      } else {
+        alert("Failed to delete job.");
+      }
+    } catch {
+      alert("Error deleting job.");
+    } finally {
+      setDeletingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
 
   useEffect(() => {
     // Defer the initial fetch one macrotask so its setStates don't run
@@ -223,6 +247,18 @@ export default function QueuePage() {
                       Download
                     </a>
                   )}
+                  <button
+                    onClick={() => handleDeleteJob(job.id)}
+                    disabled={deletingIds.has(job.id)}
+                    className="inline-flex items-center justify-center p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors disabled:opacity-50"
+                    title="Remove job"
+                  >
+                    {deletingIds.has(job.id) ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </button>
                 </div>
               </div>
             );

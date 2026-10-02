@@ -208,7 +208,7 @@ export function buildSubtitleDrawtextFilter(text: string, settings?: SubtitleCon
     boxParam = `:box=1:boxcolor=${boxColor}:boxborderw=10`;
   }
 
-  let filter = `drawtext=text='${escaped}':fontsize=${fontSize}:fontcolor=${fontColor}:text_align=M:x=${xExpr}:y=${yExpr}`;
+  let filter = `drawtext=text='${escaped}':fontsize=${fontSize}:fontcolor=${fontColor}:x=${xExpr}:y=${yExpr}`;
   if (borderw > 0) {
     filter += `:borderw=${borderw}:bordercolor=${bordercolor}`;
   }
@@ -274,7 +274,7 @@ export function buildKaraokeSubtitleFilter(
     boxParam = `:box=1:boxcolor=${boxColor}:boxborderw=10`;
   }
 
-  let baseStyle = `fontsize=${fontSize}:fontcolor=${fontColor}:text_align=M:x=${xExpr}:y=${yExpr}`;
+  let baseStyle = `fontsize=${fontSize}:fontcolor=${fontColor}:x=${xExpr}:y=${yExpr}`;
   if (borderw > 0) {
     baseStyle += `:borderw=${borderw}:bordercolor=${bordercolor}`;
   }
