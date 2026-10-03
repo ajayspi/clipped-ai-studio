@@ -4766,7 +4766,8 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     'Tier 28: Stickman Workflow',
     'Tier 29: Podcast Workflow',
     'Tier 30: Reddit & Trivia Workflows',
-    'Tier 31: Epic 4 Brand Kits'
+    'Tier 31: Epic 4 Brand Kits',
+    'Tier 32: Epic 5 Multi-Language Dubbing'
 ];
 
 tests.push({
@@ -4785,6 +4786,18 @@ tests.push({
     const brandKitSource = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'brand-kit.ts'), 'utf8');
     expect(brandKitSource).toContain("is('user_id', null)");
     expect(brandKitSource).toContain("maybeSingle()");
+  }
+});
+tests.push({
+  tier: 'Tier 32: Epic 5 Multi-Language Dubbing',
+  id: 'T32-DUB-01',
+  title: 'Dubbing route correctly inserts cloned render_jobs with translated payload',
+  fn: async () => {
+    const routeSource = fs.readFileSync(path.join(process.cwd(), 'app', 'api', 'jobs', '[id]', 'dub', 'route.ts'), 'utf8');
+    expect(routeSource).toContain("complete(");
+    expect(routeSource).toContain("parseJson(");
+    expect(routeSource).toContain("supabase.from('render_jobs').insert");
+    expect(routeSource).toContain("orchestration_state: 'queued'");
   }
 });
   for (const tier of tiers) {

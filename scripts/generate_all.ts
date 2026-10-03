@@ -1,4 +1,4 @@
-
+export {}
 
 const BASE_URL = 'http://localhost:3000/api/workflows';
 
@@ -37,7 +37,7 @@ async function run() {
         const data = await res.json();
         console.log(`Success on ${wf.name}: Job ID ${data.jobId || data.id}`);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(`Failed to reach ${wf.name}:`, e.message);
     }
   }

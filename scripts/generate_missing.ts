@@ -1,6 +1,7 @@
+export {}
 const BASE_URL = 'http://localhost:3000/api/workflows';
 
-const delay = (ms) => new Promise(res => setTimeout(res, ms));
+const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 const workflows = [
   { name: 'generate', payload: { workflow: 'footage', script: "A beautiful day in the park", subject: "Nature", mock: true, beats: [{ text: "Hello", duration: 5, imageUrl: "test.jpg" }] } },
@@ -35,7 +36,7 @@ async function run() {
         const data = await res.json();
         console.log(`Success on ${wf.name}: Job ID ${data.jobId || data.id}`);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(`Failed to reach ${wf.name}:`, e.message);
     }
     // Wait 5 seconds between requests to avoid rate limiting

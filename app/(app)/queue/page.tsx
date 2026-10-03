@@ -13,6 +13,8 @@ import {
   Download,
   Film,
   Trash2,
+  Languages,
+  Globe,
 } from "lucide-react";
 
 interface RenderJob {
@@ -41,6 +43,9 @@ export default function QueuePage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"active" | "completed" | "failed">("active");
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  const [dubbingJobId, setDubbingJobId] = useState<string | null>(null);
+  const [dubLanguages, setDubLanguages] = useState<string[]>([]);
+  const [isDubbing, setIsDubbing] = useState(false);
 
   const fetchJobs = useCallback(async () => {
     // Only set loading if not deleting to avoid flashing
@@ -74,6 +79,29 @@ export default function QueuePage() {
         next.delete(id);
         return next;
       });
+    }
+  };
+
+  const handleDubSubmit = async () => {
+    if (!dubbingJobId || dubLanguages.length === 0) return;
+    setIsDubbing(true);
+    try {
+      const res = await fetch(`/api/jobs/${dubbingJobId}/dub`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ languages: dubLanguages }),
+      });
+      if (res.ok) {
+        setDubbingJobId(null);
+        setDubLanguages([]);
+        fetchJobs();
+      } else {
+        alert("Failed to queue dubbing jobs.");
+      }
+    } catch {
+      alert("Error dubbing job.");
+    } finally {
+      setIsDubbing(false);
     }
   };
 
@@ -247,6 +275,16 @@ export default function QueuePage() {
                       Download
                     </a>
                   )}
+                  {job.status === "completed" && (
+                    <button
+                      onClick={() => setDubbingJobId(job.id)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500/20 transition-colors"
+                      title="Translate Video"
+                    >
+                      <Languages className="w-3 h-3" />
+                      Translate
+                    </button>
+                  )}
                   <button
                     onClick={() => handleDeleteJob(job.id)}
                     disabled={deletingIds.has(job.id)}
@@ -265,6 +303,57 @@ export default function QueuePage() {
           })
         )}
       </div>
+
+      {/* Dubbing Modal */}
+      {dubbingJobId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+          <div className="bg-card border border-border/50 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative">
+            <h2 className="text-lg font-bold mb-2 flex items-center gap-2 text-foreground">
+              <Globe className="w-5 h-5 text-blue-500" />
+              Translate Video
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Select languages to translate this video into.
+            </p>
+            <div className="space-y-2 mb-6">
+              {['es', 'fr', 'de', 'hi-IN', 'ta-IN'].map(lang => (
+                <label key={lang} className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={dubLanguages.includes(lang)}
+                    onChange={(e) => {
+                      if (e.target.checked) setDubLanguages(p => [...p, lang]);
+                      else setDubLanguages(p => p.filter(l => l !== lang));
+                    }}
+                    className="rounded border-border/50 text-blue-500 focus:ring-blue-500/20"
+                  />
+                  <span className="text-sm font-medium">{lang.toUpperCase()}</span>
+                </label>
+              ))}
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setDubbingJobId(null);
+                  setDubLanguages([]);
+                }}
+                disabled={isDubbing}
+                className="px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDubSubmit}
+                disabled={isDubbing || dubLanguages.length === 0}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 transition-colors disabled:opacity-50"
+              >
+                {isDubbing && <Loader2 className="w-4 h-4 animate-spin" />}
+                Translate
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
