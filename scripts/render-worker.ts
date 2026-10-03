@@ -179,7 +179,7 @@ export function buildSubtitleDrawtextFilter(text: string, settings?: SubtitleCon
     return clean;
   };
 
-  const fontColor = normalizeColor(s.subtitleColor || (s.subtitlePreset === 'Hormozi Pop' ? '#FACC15' : '#FFFFFF'), 'white');
+  const fontColor = normalizeColor((s as any).brandKit?.customSubtitleColor || s.subtitleColor || (s.subtitlePreset === 'Hormozi Pop' ? '#FACC15' : '#FFFFFF'), 'white');
 
   const yPercent = typeof s.subtitleY === 'number' && s.subtitleY >= 0 ? s.subtitleY / 100 : 0.75;
   const xExpr = '(w-text_w)/2';
@@ -208,7 +208,12 @@ export function buildSubtitleDrawtextFilter(text: string, settings?: SubtitleCon
     boxParam = `:box=1:boxcolor=${boxColor}:boxborderw=10`;
   }
 
-  let filter = `drawtext=text='${escaped}':fontsize=${fontSize}:fontcolor=${fontColor}:x=${xExpr}:y=${yExpr}`;
+  let filter = '';
+  if ((s as any).customFontPath) {
+    filter = `drawtext=fontfile='${(s as any).customFontPath.replace(/\\/g, '/')}':text='${escaped}':fontsize=${fontSize}:fontcolor=${fontColor}:x=${xExpr}:y=${yExpr}`;
+  } else {
+    filter = `drawtext=text='${escaped}':fontsize=${fontSize}:fontcolor=${fontColor}:x=${xExpr}:y=${yExpr}`;
+  }
   if (borderw > 0) {
     filter += `:borderw=${borderw}:bordercolor=${bordercolor}`;
   }
@@ -246,7 +251,7 @@ export function buildKaraokeSubtitleFilter(
     fontSize = s.subtitleSize < 20 ? Math.round(s.subtitleSize * 10) : Math.round(s.subtitleSize);
   }
 
-  const fontColor = normalizeColor(s.subtitleColor || (s.subtitlePreset === 'Hormozi Pop' ? '#FACC15' : '#FFFFFF'), 'white');
+  const fontColor = normalizeColor((s as any).brandKit?.customSubtitleColor || s.subtitleColor || (s.subtitlePreset === 'Hormozi Pop' ? '#FACC15' : '#FFFFFF'), 'white');
   const highlightColor = normalizeColor(s.subtitleHighlightColor || '#FFFF00', 'yellow');
   const yPercent = typeof s.subtitleY === 'number' && s.subtitleY >= 0 ? s.subtitleY / 100 : 0.75;
   const xExpr = '(w-text_w)/2';
@@ -274,7 +279,12 @@ export function buildKaraokeSubtitleFilter(
     boxParam = `:box=1:boxcolor=${boxColor}:boxborderw=10`;
   }
 
-  let baseStyle = `fontsize=${fontSize}:fontcolor=${fontColor}:x=${xExpr}:y=${yExpr}`;
+  let baseStyle = '';
+  if ((s as any).customFontPath) {
+    baseStyle = `fontfile='${(s as any).customFontPath.replace(/\\/g, '/')}':fontsize=${fontSize}:fontcolor=${fontColor}:x=${xExpr}:y=${yExpr}`;
+  } else {
+    baseStyle = `fontsize=${fontSize}:fontcolor=${fontColor}:x=${xExpr}:y=${yExpr}`;
+  }
   if (borderw > 0) {
     baseStyle += `:borderw=${borderw}:bordercolor=${bordercolor}`;
   }
@@ -429,7 +439,8 @@ async function pollAndProcess() {
       subtitleSize: params.subtitleSize,
       subtitleY: params.subtitleY,
       subtitleUppercase: (params.subtitleSettings as SubtitleConfig | undefined)?.subtitleUppercase,
-    }
+    };
+    (subtitleSettings as any).brandKit = (params as any).brandKit;
     
     let keys: Array<{ provider: string | null; api_key: string | null }> | null = null
     try {
@@ -476,6 +487,17 @@ async function pollAndProcess() {
     const { width, height, label: compId } = AR
 
     console.log(`   -> Remotion composition binding: ${compId}`)
+    
+    if ((params as any).brandKit?.customFontUrl) {
+      console.log(`     -> Fetching custom font...`);
+      const fontPath = path.join(jobTempDir, 'custom_font.ttf');
+      try {
+        await downloadFile((params as any).brandKit.customFontUrl, fontPath);
+        (subtitleSettings as any).customFontPath = fontPath;
+      } catch (e) {
+        console.error("Failed to download custom font", e);
+      }
+    }
     console.log(`🎙️ Generating TTS for ${beatsList.length} beats...`)
     
     const beatClips: string[] = [];
@@ -738,27 +760,66 @@ async function pollAndProcess() {
       }
     }
 
-    if (bgmDownloaded) {
-      console.log(`     -> Mixing Audio with sidechain ducking...`);
-      const duckingVol = musicVolume / 100; // e.g. 20 -> 0.2
+    let watermarkPath = '';
+    if ((params as any).brandKit?.watermarkUrl) {
+      console.log(`     -> Fetching watermark...`);
+      watermarkPath = path.join(jobTempDir, 'watermark.png');
+      try {
+        await downloadFile((params as any).brandKit.watermarkUrl, watermarkPath);
+      } catch (e) {
+        console.error("Failed to download watermark", e);
+        watermarkPath = '';
+      }
+    }
+
+    if (bgmDownloaded || watermarkPath) {
+      console.log(`     -> Mixing final output (BGM/Watermark)...`);
+      const duckingVol = musicVolume / 100;
       await new Promise<void>((resolve, reject) => {
         const cmd = ffmpeg();
         cmd.input(concatTempPath);
-        cmd.input(bgmPath).inputOptions(['-stream_loop', '-1']);
-        cmd.complexFilter([
-            `[1:a]volume=${duckingVol}[bgm]`,
-            `[0:a]asplit[main1][main2]`,
-            `[bgm][main1]sidechaincompress=threshold=0.08:ratio=4:attack=5:release=50[bgm_ducked]`,
-            `[main2][bgm_ducked]amix=inputs=2:duration=first:dropout_transition=2[aout]`
-          ])
-          .outputOptions([
-            '-map 0:v',
-            '-map [aout]',
-            '-c:v copy',
-            '-c:a aac',
-            '-b:a 192k',
-            '-shortest'
-          ])
+
+        const complexFilters: string[] = [];
+        let aOut = '0:a';
+        let vOut = '0:v';
+        let inputIdx = 1;
+        
+        const outputOpts = [
+          '-c:v libx264',
+          '-c:a aac',
+          '-b:a 192k',
+          '-shortest'
+        ];
+
+        if (bgmDownloaded) {
+          cmd.input(bgmPath).inputOptions(['-stream_loop', '-1']);
+          const bgmIdx = inputIdx++;
+          complexFilters.push(`[${bgmIdx}:a]volume=${duckingVol}[bgm]`);
+          complexFilters.push(`[${aOut}]asplit[main1][main2]`);
+          complexFilters.push(`[bgm][main1]sidechaincompress=threshold=0.08:ratio=4:attack=5:release=50[bgm_ducked]`);
+          complexFilters.push(`[main2][bgm_ducked]amix=inputs=2:duration=first:dropout_transition=2[aout]`);
+          aOut = 'aout';
+        }
+
+        if (watermarkPath) {
+          cmd.input(watermarkPath);
+          const wmIdx = inputIdx++;
+          
+          let overlayPos = 'W-w-10:H-h-10'; // Bottom Right
+          const pos = (params as any).brandKit?.watermarkPosition;
+          if (pos === 'Top Left') overlayPos = '10:10';
+          else if (pos === 'Top Right') overlayPos = 'W-w-10:10';
+          else if (pos === 'Bottom Left') overlayPos = '10:H-h-10';
+          
+          complexFilters.push(`[${vOut}][${wmIdx}:v]overlay=${overlayPos}[vout]`);
+          vOut = 'vout';
+        }
+
+        outputOpts.unshift(`-map [${aOut}]`);
+        outputOpts.unshift(`-map [${vOut}]`);
+        
+        cmd.complexFilter(complexFilters)
+          .outputOptions(outputOpts)
           .save(outputPath)
           .on('end', () => resolve())
           .on('error', (err: Error) => reject(err));

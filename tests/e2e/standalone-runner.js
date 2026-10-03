@@ -4765,8 +4765,28 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     'Tier 27: Higgsfield Client',
     'Tier 28: Stickman Workflow',
     'Tier 29: Podcast Workflow',
-    'Tier 30: Reddit & Trivia Workflows'
+    'Tier 30: Reddit & Trivia Workflows',
+    'Tier 31: Epic 4 Brand Kits'
 ];
+
+tests.push({
+  tier: 'Tier 31: Epic 4 Brand Kits',
+  id: 'T31-BRAND-01',
+  title: 'Brand Kit settings are read and applied in rendering worker',
+  fn: async () => {
+    const routeSource = fs.readFileSync(path.join(process.cwd(), 'app', 'api', 'workflows', 'generate', 'route.ts'), 'utf8');
+    expect(routeSource).toContain('getBrandKit');
+
+    const workerSource = fs.readFileSync(path.join(process.cwd(), 'scripts', 'render-worker.ts'), 'utf8');
+    expect(workerSource).toContain('brandKit?.customSubtitleColor');
+    expect(workerSource).toContain('customFontUrl');
+    expect(workerSource).toContain('overlay=');
+
+    const brandKitSource = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'brand-kit.ts'), 'utf8');
+    expect(brandKitSource).toContain("is('user_id', null)");
+    expect(brandKitSource).toContain("maybeSingle()");
+  }
+});
   for (const tier of tiers) {
     const tierTests = tests.filter(t => t.tier === tier);
     console.log(`\n--- ${tier} (${tierTests.length} tests) ---`);

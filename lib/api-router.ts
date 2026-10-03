@@ -118,6 +118,16 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     models: ['deepseek-chat', 'deepseek-reasoner'],
   },
   {
+    id: 'moonshot',
+    name: 'Kimi (Moonshot AI)',
+    category: 'llm',
+    healthEndpoint: 'https://api.moonshot.ai/v1/models',
+    healthAuthHeader: (k) => `Bearer ${k}`,
+    baseUrl: 'https://api.moonshot.ai/v1',
+    defaultPriority: 69,
+    models: ['moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k', 'kimi-k2-0905-preview'],
+  },
+  {
     id: 'cerebras',
     name: 'Cerebras',
     category: 'llm',

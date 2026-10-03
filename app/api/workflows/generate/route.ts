@@ -130,7 +130,10 @@ export async function POST(req: Request) {
     // then 'queued' once beats exist and the worker may claim it. The settings belong
     // in `logs`, which the worker merges into its params (render-worker.ts:380-384).
     // The 'planning' -> 'queued' promotion is exactly what app/api/v1/generate does.
+    const { getBrandKit } = await import('@/lib/engine/brand-kit')
+    const brandKit = await getBrandKit(body.userId || 'default')
     const baseLogs = {
+      brandKit,
       message: "Job queued",
       workflow: workflow || 'footage',
       subject: subject || null,

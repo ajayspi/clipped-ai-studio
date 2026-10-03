@@ -51,6 +51,8 @@ const SUPPORTED_EXTERNAL_PROVIDERS = new Set([
   'heygen', 'did', 'deepgram', 'elevenlabs', 'google_tts', 'azure_speech',
   // Music
   'suno',
+  // Brand Kit
+  'brand_kit',
 ]);
 
 /**

@@ -314,11 +314,12 @@ export default function SettingsPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // ── Brand Kit & Watermark State ───────────────────────────────────────────
-  const [brandColor, setBrandColor] = useState("#8b5cf6");
+  const [customSubtitleColor, setCustomSubtitleColor] = useState("#8b5cf6");
+  const [customFontUrl, setCustomFontUrl] = useState("");
   const [subtitlePreset, setSubtitlePreset] = useState("Hormozi Pop");
   const [subtitlePosition, setSubtitlePosition] = useState("Bottom (Recommended)");
   const [watermarkEnabled, setWatermarkEnabled] = useState(true);
-  const [watermarkText, setWatermarkText] = useState("Clipped AI");
+  const [watermarkUrl, setWatermarkUrl] = useState("");
   const [watermarkPosition, setWatermarkPosition] = useState("Bottom Right");
   const [watermarkOpacity, setWatermarkOpacity] = useState(80);
   const [brandSavedFeedback, setBrandSavedFeedback] = useState(false);
@@ -421,12 +422,35 @@ export default function SettingsPage() {
     }
   }
 
+  async function loadBrandKit() {
+    try {
+      const res = await fetch("/api/settings/brand-kit");
+      const data = await res.json();
+      if (data.brandKit) {
+        if (data.brandKit.customSubtitleColor) setCustomSubtitleColor(data.brandKit.customSubtitleColor);
+        if (data.brandKit.customFontUrl) setCustomFontUrl(data.brandKit.customFontUrl);
+        if (data.brandKit.subtitlePreset) setSubtitlePreset(data.brandKit.subtitlePreset);
+        if (data.brandKit.subtitlePosition) setSubtitlePosition(data.brandKit.subtitlePosition);
+        if (data.brandKit.watermarkUrl) {
+          setWatermarkUrl(data.brandKit.watermarkUrl);
+          setWatermarkEnabled(true);
+        } else {
+          setWatermarkEnabled(false);
+        }
+        if (data.brandKit.watermarkPosition) setWatermarkPosition(data.brandKit.watermarkPosition);
+      }
+    } catch {
+      // Ignore
+    }
+  }
+
   useEffect(() => {
     // Defer the initial data load one macrotask so the fetch's setStates don't
     // run synchronously inside the effect body (set-state-in-effect).
     const bootTimer = setTimeout(() => {
       fetchOmniConfig();
       loadWorkspaces();
+      loadBrandKit();
     }, 0);
     return () => {
       clearTimeout(bootTimer);
@@ -718,9 +742,26 @@ export default function SettingsPage() {
   }
 
   // ── Brand Kit Action Handler ──────────────────────────────────────────────
-  function handleSaveBrandKit() {
-    setBrandSavedFeedback(true);
-    setTimeout(() => setBrandSavedFeedback(false), 2500);
+  async function handleSaveBrandKit() {
+    try {
+      const brandKit = {
+        customSubtitleColor,
+        customFontUrl,
+        subtitlePreset,
+        subtitlePosition,
+        watermarkUrl: watermarkEnabled ? watermarkUrl : '',
+        watermarkPosition
+      };
+      await fetch("/api/settings/brand-kit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brandKit })
+      });
+      setBrandSavedFeedback(true);
+      setTimeout(() => setBrandSavedFeedback(false), 2500);
+    } catch {
+      // Ignore
+    }
   }
 
   // ── Database Tab Actions ──────────────────────────────────────────────────
@@ -1344,21 +1385,34 @@ export default function SettingsPage() {
                     )}
 
                     <div className="space-y-6 max-w-2xl">
-                      {/* Brand Color */}
+                      {/* Subtitle Color */}
                       <div>
-                        <label className="text-sm font-medium text-foreground">Global Primary Color</label>
+                        <label className="text-sm font-medium text-foreground">Custom Subtitle Color</label>
                         <p className="text-xs text-muted-foreground mb-2">Used for subtitles, highlights, and UI branding.</p>
                         <div className="flex gap-4 items-center">
                           <input
                             type="color"
-                            value={brandColor}
-                            onChange={(e) => setBrandColor(e.target.value)}
+                            value={customSubtitleColor}
+                            onChange={(e) => setCustomSubtitleColor(e.target.value)}
                             className="w-12 h-12 rounded-lg border p-1 cursor-pointer bg-background"
                           />
                           <span className="font-mono text-sm border px-3 py-1.5 rounded-md bg-muted/20">
-                            {brandColor.toUpperCase()}
+                            {customSubtitleColor.toUpperCase()}
                           </span>
                         </div>
+                      </div>
+
+                      {/* Custom Font URL */}
+                      <div>
+                        <label className="text-sm font-medium text-foreground">Custom Font URL</label>
+                        <p className="text-xs text-muted-foreground mb-2">Direct link to a TTF or OTF font file to use for subtitles.</p>
+                        <input
+                          type="url"
+                          value={customFontUrl}
+                          onChange={(e) => setCustomFontUrl(e.target.value)}
+                          placeholder="https://example.com/font.ttf"
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                        />
                       </div>
 
                       {/* Subtitle Preset */}
@@ -1421,13 +1475,13 @@ export default function SettingsPage() {
                           <div className="space-y-4 p-4 rounded-xl border border-border/50 bg-muted/10">
                             <div>
                               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-1">
-                                Watermark Text / Handle
+                                Watermark Image URL
                               </label>
                               <input
-                                type="text"
-                                value={watermarkText}
-                                onChange={(e) => setWatermarkText(e.target.value)}
-                                placeholder="e.g. @yourbrand or BrandName"
+                                type="url"
+                                value={watermarkUrl}
+                                onChange={(e) => setWatermarkUrl(e.target.value)}
+                                placeholder="https://example.com/logo.png"
                                 className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm"
                               />
                             </div>

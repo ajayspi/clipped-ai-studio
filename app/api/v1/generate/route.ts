@@ -71,7 +71,10 @@ export async function POST(req: Request) {
       ttsCharacters: Math.round(prompt.length * 3.2),
     });
 
+    const { getBrandKit } = await import('@/lib/engine/brand-kit')
+    const brandKit = await getBrandKit(body.userId || 'default')
     const jobLogs = {
+      brandKit,
       subject: prompt.slice(0, 100),
       prompt,
       workflowType: selectedWorkflow,
