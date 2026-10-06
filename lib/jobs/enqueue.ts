@@ -6,7 +6,7 @@ export type RenderIntent =
   | 'terminal';   // unclaimable; this job will never render
 
 const STATE_FOR: Record<RenderIntent, string> = {
-  render: 'queued',
+  render: 'qc_pending',
   'plan-only': 'planning',
   terminal: 'completed',
 };

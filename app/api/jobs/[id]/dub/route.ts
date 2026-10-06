@@ -86,7 +86,7 @@ ${JSON.stringify(originalBeats.map((b: any) => ({ id: b.id, text: b.text })), nu
         title: translatedTitle,
         status: 'pending',
         progress: 0,
-        orchestration_state: 'queued',
+        orchestration_state: 'qc_pending',
         logs: JSON.stringify(newLogs)
       }
 

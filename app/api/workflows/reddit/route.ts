@@ -32,7 +32,7 @@ export async function POST(req: Request) {
         await supabase.from('render_jobs').update({
           status: 'completed',
           progress: 10,
-          orchestration_state: 'queued',
+          orchestration_state: 'qc_pending',
           logs: JSON.stringify({
             workflow: 'reddit',
             beats: result.beats,

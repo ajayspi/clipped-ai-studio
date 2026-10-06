@@ -2620,7 +2620,7 @@ async function main() {
     expect(fs.existsSync(configPath)).toBe(true);
     const config = require(configPath);
     expect(Array.isArray(config.apps)).toBe(true);
-    expect(config.apps.length).toBe(5);
+    expect(config.apps.length).toBe(6);
 
     const gatewayApp = config.apps.find((a) => a.name === 'omniroute-gateway');
     const webApp = config.apps.find((a) => a.name === 'clipped-web');
@@ -4128,7 +4128,7 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
 
       // The only states claim_render_job will ever act on.
       const ALLOWED = new Set([
-        'queued', 'planning', 'retryable', 'failed', 'completed', 'claimed', 'rendering', 'publishing',
+        'queued', 'qc_pending', 'planning', 'retryable', 'failed', 'completed', 'claimed', 'rendering', 'publishing',
       ]);
 
       // A bare identifier is acceptable ONLY if its own declaration in this file pins it
@@ -4798,7 +4798,7 @@ tests.push({
     expect(routeSource).toContain("complete(");
     expect(routeSource).toContain("parseJson(");
     expect(routeSource).toContain("supabase.from('render_jobs').insert");
-    expect(routeSource).toContain("orchestration_state: 'queued'");
+    expect(routeSource).toContain("orchestration_state: 'qc_pending'");
   }
 });
 tests.push({
@@ -4809,7 +4809,7 @@ tests.push({
     const routeSource = fs.readFileSync(path.join(process.cwd(), 'app', 'api', 'workflows', 'yaml', 'route.ts'), 'utf8');
     expect(routeSource).toContain("compileYamlWorkflow(");
     expect(routeSource).toContain("supabase.from('render_jobs').insert");
-    expect(routeSource).toContain("orchestration_state: 'queued'");
+    expect(routeSource).toContain("orchestration_state: 'qc_pending'");
     expect(routeSource).toContain("beats: compiled.beats");
   }
 });

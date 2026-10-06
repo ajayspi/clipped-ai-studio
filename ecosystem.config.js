@@ -60,6 +60,18 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
       }
+    },
+    {
+      name: 'quality-gate-worker',
+      script: 'scripts/quality-gate-worker.ts',
+      interpreter: 'node',
+      interpreter_args: '--import tsx',
+      autorestart: true,
+      max_restarts: 10,
+      restart_delay: 5000,
+      env: {
+        NODE_ENV: 'production',
+      }
     }
   ]
 };

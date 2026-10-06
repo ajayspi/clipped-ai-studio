@@ -155,7 +155,7 @@ export async function POST(req: Request) {
     // `orchestration_state` is a TEXT column that claim_render_job matches against a
     // literal allow-list, so it must carry a plain state string — never an object, and
     // never left to the column DEFAULT, which is the CLAIMABLE 'queued'.
-    const initialState: 'planning' | 'queued' = hasBeats ? 'queued' : 'planning'
+    const initialState: 'planning' | 'qc_pending' = hasBeats ? 'qc_pending' : 'planning'
 
     // 1. Create a job ID in our database (Supabase)
     const jobId = crypto.randomUUID()
@@ -252,7 +252,7 @@ export async function POST(req: Request) {
           updatePayload = {
             status: 'pending',
             progress: 10,
-            orchestration_state: 'queued',
+            orchestration_state: 'qc_pending',
             logs: JSON.stringify(mergedLogs),
             error_message: result?.error || null,
           }

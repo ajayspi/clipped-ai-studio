@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       video_id: videoId,
       status: 'processing',
       progress: 20,
-      orchestration_state: 'queued', // claim_render_job requires 'queued' to start processing
+      orchestration_state: 'qc_pending', // qc_pending so quality-gate-worker can pick it up
       beats: compiled.beats,
       script: compiled.script || '',
       logs: JSON.stringify(compiled),

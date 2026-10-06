@@ -167,7 +167,7 @@ export async function POST(req: Request) {
             .from('render_jobs')
             .update({
               logs: JSON.stringify(mergedLogs),
-              orchestration_state: 'queued',
+              orchestration_state: 'qc_pending',
               status: 'processing',
               progress: 20,
             })
