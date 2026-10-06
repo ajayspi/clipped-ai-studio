@@ -33,6 +33,8 @@ export type TTSProvider =
   | 'elevenlabs'
   | 'google'
   | 'coqui'
+  | 'sarvam'
+  | 'piper'
   | 'keyless'
   | 'mock'
   | 'auto';
@@ -351,6 +353,16 @@ export const COQUI_LANG_MAP: Record<SupportedLanguage, string> = {
   'bn-IN': 'bn',
   'mr-IN': 'mr',
 };
+
+export const SARVAM_VOICE_CATALOG: TTSVoiceOption[] = [
+  { id: 'sarvam-hi-IN', name: 'Sarvam Hindi', provider: 'sarvam', language: 'hi-IN', gender: 'neutral', description: 'Sarvam AI Hindi voice' },
+  { id: 'sarvam-ta-IN', name: 'Sarvam Tamil', provider: 'sarvam', language: 'ta-IN', gender: 'neutral', description: 'Sarvam AI Tamil voice' },
+  { id: 'sarvam-te-IN', name: 'Sarvam Telugu', provider: 'sarvam', language: 'te-IN', gender: 'neutral', description: 'Sarvam AI Telugu voice' },
+  { id: 'sarvam-kn-IN', name: 'Sarvam Kannada', provider: 'sarvam', language: 'kn-IN', gender: 'neutral', description: 'Sarvam AI Kannada voice' },
+  { id: 'sarvam-bn-IN', name: 'Sarvam Bengali', provider: 'sarvam', language: 'bn-IN', gender: 'neutral', description: 'Sarvam AI Bengali voice' },
+  { id: 'sarvam-mr-IN', name: 'Sarvam Marathi', provider: 'sarvam', language: 'mr-IN', gender: 'neutral', description: 'Sarvam AI Marathi voice' },
+  { id: 'sarvam-en-IN', name: 'Sarvam Indian English', provider: 'sarvam', language: 'en-IN', gender: 'neutral', description: 'Sarvam AI Indian English voice' }
+];
 
 export const FREE_KEYLESS_VOICES: TTSVoiceOption[] = [
   { id: 'free-en-us', name: 'Free English (US)', provider: 'keyless', language: 'en-US', gender: 'female', description: 'High-speed keyless voice' },
@@ -678,6 +690,14 @@ export async function resolveVoiceProviderApiKey(
     canonical = 'openai';
     dbAliases = ['openai', 'api_openai'];
     envVars = ['OPENAI_API_KEY'];
+  } else if (norm === 'sarvam') {
+    canonical = 'sarvam';
+    dbAliases = ['sarvam', 'api_sarvam'];
+    envVars = ['SARVAM_API_KEY'];
+  } else if (norm === 'piper') {
+    canonical = 'piper';
+    dbAliases = ['piper', 'api_piper'];
+    envVars = ['PIPER_API_KEY'];
   }
 
   // 1. Explicit key in request
@@ -762,6 +782,10 @@ export class TTSEngine {
         rawReqProvider = 'google_tts';
       } else if (voiceCandidate.includes('Neural')) {
         rawReqProvider = 'azure_speech';
+      } else if (voiceCandidate.includes('sarvam') || ['hi-IN', 'ta-IN', 'te-IN', 'kn-IN', 'bn-IN', 'mr-IN'].includes(language) && voiceCandidate.includes('meera')) {
+        rawReqProvider = 'sarvam';
+      } else if (voiceCandidate.includes('piper') || voiceCandidate.includes('-medium') || voiceCandidate.includes('-high') || voiceCandidate.includes('-low')) {
+        rawReqProvider = 'piper';
       } else if (Object.keys(ELEVENLABS_VOICES).includes(voiceCandidate.toLowerCase()) || (voiceCandidate.length > 15 && !voiceCandidate.includes('-'))) {
         rawReqProvider = 'elevenlabs';
       } else {
@@ -769,12 +793,14 @@ export class TTSEngine {
       }
     }
 
-    let primaryProvider: 'azure' | 'elevenlabs' | 'google' | 'openai' | 'omniroute' | 'keyless' = 'omniroute';
+    let primaryProvider: 'azure' | 'elevenlabs' | 'google' | 'openai' | 'omniroute' | 'keyless' | 'sarvam' | 'piper' = 'omniroute';
     if (rawReqProvider === 'keyless') primaryProvider = 'keyless';
     else if (rawReqProvider === 'azure' || rawReqProvider === 'azure_speech') primaryProvider = 'azure';
     else if (rawReqProvider === 'elevenlabs' || rawReqProvider === 'eleven_labs') primaryProvider = 'elevenlabs';
     else if (rawReqProvider === 'google' || rawReqProvider === 'google_tts') primaryProvider = 'google';
     else if (rawReqProvider === 'openai') primaryProvider = 'openai';
+    else if (rawReqProvider === 'sarvam') primaryProvider = 'sarvam';
+    else if (rawReqProvider === 'piper') primaryProvider = 'piper';
     else primaryProvider = 'omniroute';
 
     const providersToTry: TTSProvider[] = [];
@@ -856,6 +882,31 @@ export class TTSEngine {
           const res = await this.synthesizeWithOpenAI(jobId, rawText, language, request, apiKey, 'https://api.openai.com', 'openai');
           providerAttempts.push({
             provider: 'openai',
+            status: 'success',
+            latencyMs: Date.now() - startTime,
+          });
+          res.metadata.providerAttempts = providerAttempts;
+          return res;
+        }
+        if (provider === 'sarvam') {
+          const keyResult = await resolveVoiceProviderApiKey('sarvam', request.apiKey);
+          const apiKey = keyResult.apiKey;
+          if (!apiKey) throw new Error('Sarvam API key is not configured in settings or environment');
+          console.log(`[TTS] Synthesizing with Sarvam AI (key source: ${keyResult.source})...`);
+          const res = await this.synthesizeWithSarvam(jobId, rawText, language, request, apiKey);
+          providerAttempts.push({
+            provider: 'sarvam',
+            status: 'success',
+            latencyMs: Date.now() - startTime,
+          });
+          res.metadata.providerAttempts = providerAttempts;
+          return res;
+        }
+        if (provider === 'piper') {
+          console.log(`[TTS] Synthesizing with Piper TTS...`);
+          const res = await this.synthesizeWithPiper(jobId, rawText, language, request);
+          providerAttempts.push({
+            provider: 'piper',
             status: 'success',
             latencyMs: Date.now() - startTime,
           });
@@ -1298,6 +1349,130 @@ export class TTSEngine {
   }
 
   /**
+   * Sarvam AI TTS Integration
+   */
+  private async synthesizeWithSarvam(
+    jobId: string,
+    text: string,
+    language: SupportedLanguage,
+    request: TTSRequest,
+    apiKey: string
+  ): Promise<TTSResponse> {
+    const speed = request.speed || request.speakingRate || 1.0;
+    const voiceId = request.voiceId || request.voice || 'meera';
+    const url = 'https://api.sarvam.ai/text-to-speech';
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'api-subscription-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text: text,
+        language_code: language,
+        speaker: voiceId,
+        speech_sample_rate: 24000,
+        enable_preprocessing: true,
+        model: 'bulbul:v4-flash',
+        pace: speed
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Sarvam TTS HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = (await response.json()) as { audios?: string[]; [key: string]: unknown };
+    if (!data.audios || !data.audios[0]) {
+      throw new Error('Sarvam TTS returned no audio data');
+    }
+
+    const audioBase64 = data.audios[0];
+    const buffer = Buffer.from(audioBase64, 'base64');
+    const audioUrl = `data:audio/wav;base64,${audioBase64}`;
+    const duration = calculateEstimatedDuration(text, language, speed);
+
+    return {
+      success: true,
+      jobId,
+      audioBuffer: buffer,
+      audioUrl,
+      audioBase64,
+      mimeType: 'audio/wav',
+      duration,
+      providerUsed: 'sarvam',
+      language,
+      voiceId,
+      voiceUsed: voiceId,
+      format: 'wav',
+      characterCount: text.length,
+      metadata: {
+        isDryRun: false,
+        speakingRate: speed,
+        providerAttempts: [],
+        generatedAt: new Date().toISOString(),
+      },
+    };
+  }
+
+  /**
+   * Piper TTS (Local API) Integration
+   */
+  private async synthesizeWithPiper(
+    jobId: string,
+    text: string,
+    language: SupportedLanguage,
+    request: TTSRequest
+  ): Promise<TTSResponse> {
+    const speed = request.speed || request.speakingRate || 1.0;
+    const voiceId = request.voiceId || request.voice || 'en_US-lessac-medium';
+    const piperUrl = process.env.PIPER_TTS_URL || 'http://localhost:5000';
+    
+    const url = new URL(piperUrl);
+    url.pathname = url.pathname === '/' ? '/' : url.pathname; 
+    url.searchParams.append('text', text);
+    url.searchParams.append('voice', voiceId);
+    
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Piper TTS HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const audioBase64 = buffer.toString('base64');
+    const audioUrl = `data:audio/wav;base64,${audioBase64}`;
+    const duration = calculateEstimatedDuration(text, language, speed);
+
+    return {
+      success: true,
+      jobId,
+      audioBuffer: buffer,
+      audioUrl,
+      audioBase64,
+      mimeType: 'audio/wav',
+      duration,
+      providerUsed: 'piper',
+      language,
+      voiceId,
+      voiceUsed: voiceId,
+      format: 'wav',
+      characterCount: text.length,
+      metadata: {
+        isDryRun: false,
+        speakingRate: speed,
+        providerAttempts: [],
+        endpoint: piperUrl,
+        generatedAt: new Date().toISOString(),
+      },
+    };
+  }
+
+  /**
    * Keyless Voice Synthesis Integration
    * 1. Primary: Microsoft Edge TTS (high quality Neural voices with 5s timeout guard)
    * 2. Automatic Fallback: Google Translate TTS REST endpoint
@@ -1548,6 +1723,15 @@ export class TTSEngine {
     // 5. Free / Keyless voices
     if (!targetProvider || targetProvider === 'keyless') {
       FREE_KEYLESS_VOICES.forEach((v) => {
+        if (!targetLang || v.language === targetLang) {
+          voices.push(v);
+        }
+      });
+    }
+
+    // 6. Sarvam voices
+    if (!targetProvider || targetProvider === 'sarvam') {
+      SARVAM_VOICE_CATALOG.forEach((v) => {
         if (!targetLang || v.language === targetLang) {
           voices.push(v);
         }
