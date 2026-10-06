@@ -4767,7 +4767,8 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     'Tier 29: Podcast Workflow',
     'Tier 30: Reddit & Trivia Workflows',
     'Tier 31: Epic 4 Brand Kits',
-    'Tier 32: Epic 5 Multi-Language Dubbing'
+    'Tier 32: Epic 5 Multi-Language Dubbing',
+    'Tier 33: Declarative YAML Workflows'
 ];
 
 tests.push({
@@ -4798,6 +4799,18 @@ tests.push({
     expect(routeSource).toContain("parseJson(");
     expect(routeSource).toContain("supabase.from('render_jobs').insert");
     expect(routeSource).toContain("orchestration_state: 'queued'");
+  }
+});
+tests.push({
+  tier: 'Tier 33: Declarative YAML Workflows',
+  id: 'T33-YAML-01',
+  title: 'YAML route sets orchestration_state queued and includes beats',
+  fn: async () => {
+    const routeSource = fs.readFileSync(path.join(process.cwd(), 'app', 'api', 'workflows', 'yaml', 'route.ts'), 'utf8');
+    expect(routeSource).toContain("compileYamlWorkflow(");
+    expect(routeSource).toContain("supabase.from('render_jobs').insert");
+    expect(routeSource).toContain("orchestration_state: 'queued'");
+    expect(routeSource).toContain("beats: compiled.beats");
   }
 });
   for (const tier of tiers) {

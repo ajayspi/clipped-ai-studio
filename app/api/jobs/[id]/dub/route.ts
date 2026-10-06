@@ -61,7 +61,7 @@ ${JSON.stringify(originalBeats.map((b: any) => ({ id: b.id, text: b.text })), nu
         user: prompt,
         json: true
       }, 'anthropic', 'claude-3-5-sonnet-20241022')
-      const translated = parseJson<{ title?: string, script?: string, beats?: any[] }>(completion, {})
+      const translated = parseJson(completion, {}) as { title?: string, script?: string, beats?: any[] };
 
       const translatedTitle = translated?.title || originalTitle
       const translatedScript = translated?.script || originalScript
