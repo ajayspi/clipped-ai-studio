@@ -4,12 +4,16 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { useRouter } from 'next/navigation';
 import { useWizardStore } from '@/components/wizard/wizard-store';
 
-import AiVideosPage from '@/app/(app)/create/ai-videos/page';
-import FootagePage from '@/app/(app)/create/footage/page';
-import ImagesPage from '@/app/(app)/create/images/page';
-import StoriesPage from '@/app/(app)/create/stories/page';
+import CreateWorkflowPage from '@/app/(app)/create/[workflowType]/page';
 
-describe('Creation Wizard Routes (app/(app)/create/{ai-videos,footage,images,stories}/page.tsx)', () => {
+// The four thin wizard wrappers (ai-videos/footage/images/stories) collapsed into
+// the dynamic [workflowType] dispatch; render it with params instead.
+const AiVideosPage = () => <CreateWorkflowPage params={{ workflowType: 'ai-videos' }} />;
+const FootagePage = () => <CreateWorkflowPage params={{ workflowType: 'footage' }} />;
+const ImagesPage = () => <CreateWorkflowPage params={{ workflowType: 'images' }} />;
+const StoriesPage = () => <CreateWorkflowPage params={{ workflowType: 'stories' }} />;
+
+describe('Creation Wizard Routes (app/(app)/create/[workflowType]/page.tsx)', () => {
   let router: ReturnType<typeof useRouter>;
   const baseFetch = global.fetch;
 
