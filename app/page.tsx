@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Video, Zap, Play, Sparkles, Wand2, Rocket, Layers, Scissors, Clapperboard, Cpu, Languages, Database, Gauge } from "lucide-react";
-import { Particles } from "@/components/ui/particles";
 import { motion } from "framer-motion";
 
 export default function HomePage() {
@@ -23,7 +22,6 @@ export default function HomePage() {
           sizes="100vw"
           className="object-cover opacity-60"
         />
-        <Particles className="z-30 opacity-70" />
       </div>
 
       {/* Navbar */}

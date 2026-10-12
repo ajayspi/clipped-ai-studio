@@ -89,6 +89,137 @@ const renderJobRpc = {
   },
 }
 
+async function checkUrlReachable(url: string): Promise<boolean> {
+  if (!url || !url.startsWith('http')) return true;
+  try {
+    const res = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(5000) });
+    if (res.ok) return true;
+  } catch {
+    // Fall through to the GET retry below.
+  }
+  try {
+    const res = await fetch(url, { method: 'GET', signal: AbortSignal.timeout(5000) });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+interface QcBeat {
+  duration?: unknown;
+  text?: unknown;
+  imageUrl?: unknown;
+  videoUrl?: unknown;
+  clipUrl?: unknown;
+}
+
+function readBeatsFromLogs(logs: unknown): QcBeat[] {
+  if (!logs || typeof logs !== 'object') return [];
+  const record = logs as Record<string, unknown>;
+  if (Array.isArray(record.beats)) return record.beats as QcBeat[];
+  const analysis = record.analysis;
+  if (analysis && typeof analysis === 'object' && Array.isArray((analysis as Record<string, unknown>).scenes)) {
+    return (analysis as Record<string, unknown>).scenes as QcBeat[];
+  }
+  return [];
+}
+
+// Quality gate, folded in-process from the retired standalone QC worker PM2 app: each poll first promotes a batch of `qc_pending` jobs to `queued`
+// (or `failed`), so routes can keep enqueuing `qc_pending` with no second worker.
+// ponytail: URL reachability checks run inline and delay claiming while qc_pending jobs exist; split back out if QC latency matters.
+async function runQualityGatePass(): Promise<void> {
+  const { data: jobs, error } = await supabase
+    .from('render_jobs')
+    .select('*')
+    .eq('orchestration_state', 'qc_pending')
+    .order('created_at', { ascending: true })
+    .limit(10);
+
+  if (error || !jobs || jobs.length === 0) {
+    if (error) logger.warn('Quality gate fetch failed', { error: error.message });
+    return;
+  }
+
+  for (const job of jobs) {
+    const rawLogs: unknown = job.logs;
+    let logs: unknown = null;
+    if (typeof rawLogs === 'string') {
+      try { logs = JSON.parse(rawLogs); } catch { logs = null; }
+    } else if (rawLogs && typeof rawLogs === 'object') {
+      logs = rawLogs;
+    }
+
+    const beats = readBeatsFromLogs(logs);
+    let failed = false;
+    let errorMessage = '';
+
+    if (beats.length === 0) {
+      failed = true;
+      errorMessage = 'QC Failed: Beats array is empty or missing.';
+    } else {
+      for (let i = 0; i < beats.length; i++) {
+        const beat = beats[i];
+        if (beat.duration !== undefined && (typeof beat.duration !== 'number' || beat.duration <= 0)) {
+          failed = true;
+          errorMessage = `QC Failed: Beat ${i} has invalid duration.`;
+          break;
+        }
+        if (typeof beat.text === 'string' && beat.text.length > 2000) {
+          failed = true;
+          errorMessage = `QC Failed: Beat ${i} text exceeds 2000 characters.`;
+          break;
+        }
+        for (const key of ['imageUrl', 'videoUrl', 'clipUrl'] as const) {
+          const mediaUrl = beat[key];
+          if (typeof mediaUrl === 'string' && mediaUrl) {
+            const ok = await checkUrlReachable(mediaUrl);
+            if (!ok) {
+              failed = true;
+              errorMessage = `QC Failed: Beat ${i} ${key} is unreachable (${mediaUrl}).`;
+              break;
+            }
+          }
+        }
+        if (failed) break;
+      }
+    }
+
+    if (failed) {
+      logger.warn('Quality gate rejected job', { jobId: job.id, error: errorMessage });
+      console.log(`[quality-gate] Job ${job.id} failed QC: ${errorMessage}`);
+      const merged = logs && typeof logs === 'object'
+        ? { ...(logs as Record<string, unknown>), error: errorMessage }
+        : { error: errorMessage };
+      await supabase
+        .from('render_jobs')
+        .update({
+          orchestration_state: 'failed',
+          status: 'failed',
+          error_message: errorMessage,
+          last_error: errorMessage,
+          logs: typeof rawLogs === 'string' ? JSON.stringify(merged) : merged,
+        })
+        .eq('id', job.id);
+    } else {
+      console.log(`[quality-gate] Job ${job.id} passed QC.`);
+      await supabase
+        .from('render_jobs')
+        .update({ orchestration_state: 'queued' })
+        .eq('id', job.id);
+    }
+  }
+}
+
+function assertOutputValid(outputPath: string): void {
+  let size = 0;
+  try {
+    size = fs.statSync(outputPath).size;
+  } catch {
+    size = 0;
+  }
+  if (size <= 0) throw new Error(`Post-encode QC failed: output missing or empty at ${outputPath}`);
+}
+
 async function downloadFile(url: string, dest: string) {
   if (url.startsWith('data:')) {
     const commaIndex = url.indexOf(',');
@@ -351,6 +482,12 @@ async function startWorker() {
 }
 
 async function pollAndProcess() {
+  // Folded quality gate (was a separate PM2 app): promote qc_pending jobs first.
+  try {
+    await runQualityGatePass();
+  } catch (e) {
+    logger.warn('Quality gate pass failed; claiming anyway', { error: e });
+  }
   const leaseToken = crypto.randomUUID()
   const claim = await claimRenderJob(renderJobRpc, {
     workerId,
@@ -828,7 +965,9 @@ async function pollAndProcess() {
       // Just move the concat temp file to output
       fs.copyFileSync(concatTempPath, outputPath);
     }
-  
+
+    assertOutputValid(outputPath);
+
     logger.info('Render complete', {
       jobId: job.id,
       outputUrl: publicUrl,

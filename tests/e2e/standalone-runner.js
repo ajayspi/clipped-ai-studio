@@ -2620,7 +2620,7 @@ async function main() {
     expect(fs.existsSync(configPath)).toBe(true);
     const config = require(configPath);
     expect(Array.isArray(config.apps)).toBe(true);
-    expect(config.apps.length).toBe(6);
+    expect(config.apps.length).toBe(5);
 
     const gatewayApp = config.apps.find((a) => a.name === 'omniroute-gateway');
     const webApp = config.apps.find((a) => a.name === 'clipped-web');
