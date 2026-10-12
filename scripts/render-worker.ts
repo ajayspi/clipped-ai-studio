@@ -141,6 +141,7 @@ async function runQualityGatePass(): Promise<void> {
   }
 
   for (const job of jobs) {
+    try {
     const rawLogs: unknown = job.logs;
     let logs: unknown = null;
     if (typeof rawLogs === 'string') {
@@ -206,6 +207,11 @@ async function runQualityGatePass(): Promise<void> {
         .from('render_jobs')
         .update({ orchestration_state: 'queued' })
         .eq('id', job.id);
+    }
+    } catch (e) {
+      logger.warn('Quality gate job failed; continuing batch', { jobId: job.id, error: e });
+      console.error(`[quality-gate] Error processing job ${job.id}:`, e instanceof Error ? e.message : String(e));
+      continue;
     }
   }
 }
