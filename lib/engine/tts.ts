@@ -7,8 +7,7 @@
  * 3. ElevenLabs API (eleven_multilingual_v2 model with voice presets)
  * 4. Google Cloud Text-to-Speech (Neural2, Wavenet, Journey, Standard)
  * 5. Free & Keyless TTS (Google Translate TTS API + high-fidelity PCM WAV fallback)
- * 6. Coqui TTS API (self-hosted / remote endpoint with 2.5s fast timeout guard)
- * 7. Deterministic In-Memory Cost-Safe Mock Engine (RIFF/WAVE PCM generator)
+ * 6. Deterministic In-Memory Cost-Safe Mock Engine (RIFF/WAVE PCM generator)
  *
  * Supported Languages:
  * - English: en-US, en-IN
@@ -341,17 +340,6 @@ export const GOOGLE_DEFAULT_VOICES: Record<
   'kn-IN': { female: 'kn-IN-Wavenet-A', male: 'kn-IN-Wavenet-B', neutral: 'kn-IN-Standard-A' },
   'bn-IN': { female: 'bn-IN-Wavenet-A', male: 'bn-IN-Wavenet-B', neutral: 'bn-IN-Standard-A' },
   'mr-IN': { female: 'mr-IN-Wavenet-A', male: 'mr-IN-Wavenet-B', neutral: 'mr-IN-Standard-A' },
-};
-
-export const COQUI_LANG_MAP: Record<SupportedLanguage, string> = {
-  'en-US': 'en',
-  'en-IN': 'en',
-  'hi-IN': 'hi',
-  'ta-IN': 'ta',
-  'te-IN': 'te',
-  'kn-IN': 'kn',
-  'bn-IN': 'bn',
-  'mr-IN': 'mr',
 };
 
 export const SARVAM_VOICE_CATALOG: TTSVoiceOption[] = [
@@ -1277,75 +1265,6 @@ export class TTSEngine {
         generatedAt: new Date().toISOString(),
       },
     };
-  }
-
-  /**
-   * Coqui TTS (Local or Remote) Integration with 2.5s fast timeout guard
-   */
-  private async synthesizeWithCoqui(
-    jobId: string,
-    text: string,
-    language: SupportedLanguage,
-    request: TTSRequest,
-    coquiUrl: string
-  ): Promise<TTSResponse> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2500); // 2.5s fast timeout guard
-
-    const coquiLang = COQUI_LANG_MAP[language] || 'en';
-    const voiceSpeaker = request.voiceId || request.voice || 'p225';
-    const speed = request.speed || request.speakingRate || 1.0;
-
-    try {
-      const response = await fetch(`${coquiUrl.replace(/\/$/, '')}/api/tts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
-        body: JSON.stringify({
-          text,
-          speaker_id: voiceSpeaker,
-          language_id: coquiLang,
-        }),
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`Coqui TTS HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const arrayBuffer = await response.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      const audioBase64 = buffer.toString('base64');
-      const audioUrl = `data:audio/wav;base64,${audioBase64}`;
-      const duration = calculateEstimatedDuration(text, language, speed);
-
-      return {
-        success: true,
-        jobId,
-        audioBuffer: buffer,
-        audioUrl,
-        audioBase64,
-        mimeType: 'audio/wav',
-        duration,
-        providerUsed: 'coqui',
-        language,
-        voiceId: voiceSpeaker,
-        voiceUsed: voiceSpeaker,
-        format: 'wav',
-        characterCount: text.length,
-        metadata: {
-          isDryRun: false,
-          speakingRate: speed,
-          providerAttempts: [],
-          endpoint: coquiUrl,
-          generatedAt: new Date().toISOString(),
-        },
-      };
-    } catch (err) {
-      clearTimeout(timeoutId);
-      throw err;
-    }
   }
 
   /**

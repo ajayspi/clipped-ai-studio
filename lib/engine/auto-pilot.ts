@@ -4,10 +4,8 @@ import {
   AutoPilotConfig,
   AutoPilotResponse,
   AspectRatio,
-  AIVideoGenerationResponse,
 } from './types';
 import { SYSTEM_PROMPTS } from './prompts';
-import { videoGenerator } from './video-generator';
 
 /**
  * AutoPilot Autonomous Pipeline Engine.

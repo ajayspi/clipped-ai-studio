@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import PlannerPage from '@/app/(app)/planner/page';
 import { supabase } from '@/lib/db';
-import { format } from 'date-fns';
+
+const dayNumFmt = new Intl.DateTimeFormat('en-US', { day: 'numeric' });
 
 describe('Planner Route Headless Test (app/(app)/planner/page.tsx)', () => {
   beforeEach(() => {
@@ -22,7 +23,7 @@ describe('Planner Route Headless Test (app/(app)/planner/page.tsx)', () => {
     const emptySlots = screen.getAllByText('No posts scheduled');
     expect(emptySlots.length).toBe(7);
 
-    const todayDayNumber = format(new Date(), 'd');
+    const todayDayNumber = dayNumFmt.format(new Date());
     expect(screen.getByText(todayDayNumber)).toBeInTheDocument();
   });
 
@@ -88,7 +89,7 @@ describe('Planner Route Headless Test (app/(app)/planner/page.tsx)', () => {
       return {} as any;
     });
 
-    // Must execute cleanly without date-fns RangeError: Invalid time value
+    // Must execute cleanly without RangeError: Invalid time value
     const page = await PlannerPage();
     expect(() => render(page)).not.toThrow();
 

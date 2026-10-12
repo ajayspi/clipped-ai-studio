@@ -1,13 +1,30 @@
 import { Clock, CheckCircle2, XCircle } from "lucide-react";
 import { supabase } from "@/lib/db";
 import { ScheduleModal } from "@/components/planner/ScheduleModal";
-import { format, addDays, isSameDay } from "date-fns";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 function isValidDate(d: unknown): d is Date {
   return d instanceof Date && !isNaN(d.getTime());
+}
+
+const weekdayFmt = new Intl.DateTimeFormat('en-US', { weekday: 'short' });
+const dayNumFmt = new Intl.DateTimeFormat('en-US', { day: 'numeric' });
+const timeFmt = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
+
+function addDays(date: Date, days: number): Date {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function isSameDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
 }
 
 export default async function PlannerPage() {
@@ -46,9 +63,9 @@ export default async function PlannerPage() {
           return (
             <div key={i} className="flex flex-col border rounded-xl bg-card overflow-hidden min-h-[400px]">
               <div className="p-3 border-b font-medium text-sm flex justify-between items-center">
-                <span>{format(day, 'EEE')}</span>
+                <span>{weekdayFmt.format(day)}</span>
                 <span className="w-7 h-7 rounded-full flex items-center justify-center">
-                  {format(day, 'd')}
+                  {dayNumFmt.format(day)}
                 </span>
               </div>
               <div className="p-3 flex-1 flex flex-col gap-3 overflow-y-auto">
@@ -65,7 +82,7 @@ export default async function PlannerPage() {
                     
                     const isPublished = post.status === 'published';
                     const postDate = post.scheduled_for ? new Date(post.scheduled_for) : null;
-                    const formattedTime = isValidDate(postDate) ? format(postDate, 'h:mm a') : 'Time TBD';
+                    const formattedTime = isValidDate(postDate) ? timeFmt.format(postDate) : 'Time TBD';
                     
                     return (
                       <div key={post.id} className="group relative border rounded-lg p-3 bg-background shadow-sm hover:shadow-md transition-all">

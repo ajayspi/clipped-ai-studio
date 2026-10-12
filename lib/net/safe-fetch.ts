@@ -51,7 +51,7 @@ export async function safeFetch(urlStr: string, options: { maxBytes?: number, ti
       if (isPrivateIP(lookup.address)) {
         throw new SafeFetchError('Private or local address rejected');
       }
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof SafeFetchError) throw err;
       throw new SafeFetchError('DNS resolution failed');
     }
@@ -68,11 +68,13 @@ export async function safeFetch(urlStr: string, options: { maxBytes?: number, ti
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
       });
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
+    } catch (err) {
+      const name = err instanceof Error ? err.name : '';
+      const message = err instanceof Error ? err.message : String(err);
+      if (name === 'AbortError') {
         throw new SafeFetchError('Request timeout', 504);
       }
-      throw new SafeFetchError('Fetch failed: ' + err.message);
+      throw new SafeFetchError('Fetch failed: ' + message);
     } finally {
       clearTimeout(timeout);
     }
