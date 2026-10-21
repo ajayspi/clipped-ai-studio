@@ -1,0 +1,19 @@
+{
+  "name": "clipped-mcp",
+  "version": "1.0.0",
+  "description": "MCP Server for Clipped AI Video Generator",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc -w & node --watch dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

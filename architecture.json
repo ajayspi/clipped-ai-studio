@@ -1,0 +1,114 @@
+{
+    "schema_version":  1,
+    "diagram_type":  "architecture",
+    "meta":  {
+                 "title":  "Clipped AI Studio",
+                 "subtitle":  "Autonomous Video Pipeline Architecture",
+                 "output":  "clipped-ai-architecture.html"
+             },
+    "components":  [
+                       {
+                           "id":  "ui",
+                           "type":  "frontend",
+                           "label":  "Next.js 16 Web UI",
+                           "sublabel":  "Infinite Master Canvas \u0026 Dashboard",
+                           "pos":  [
+                                       100,
+                                       300
+                                   ],
+                           "size":  [
+                                        200,
+                                        60
+                                    ]
+                       },
+                       {
+                           "id":  "omniroute",
+                           "type":  "backend",
+                           "label":  "OmniRoute Gateway",
+                           "sublabel":  "Intelligent LLM Router (Circuit Breakers)",
+                           "pos":  [
+                                       400,
+                                       100
+                                   ],
+                           "size":  [
+                                        220,
+                                        60
+                                    ]
+                       },
+                       {
+                           "id":  "supabase",
+                           "type":  "database",
+                           "label":  "Supabase Database",
+                           "sublabel":  "render_jobs \u0026 asset management",
+                           "pos":  [
+                                       400,
+                                       500
+                                   ],
+                           "size":  [
+                                        220,
+                                        60
+                                    ]
+                       },
+                       {
+                           "id":  "worker",
+                           "type":  "backend",
+                           "label":  "PM2 Render Worker",
+                           "sublabel":  "FFmpeg + Puppeteer + TTS Cascade",
+                           "pos":  [
+                                       900,
+                                       500
+                                   ],
+                           "size":  [
+                                        240,
+                                        60
+                                    ]
+                       },
+                       {
+                           "id":  "quality",
+                           "type":  "security",
+                           "label":  "Quality Gate (PM2)",
+                           "sublabel":  "Script-to-Screen VLM Evaluation",
+                           "pos":  [
+                                       900,
+                                       100
+                                   ],
+                           "size":  [
+                                        240,
+                                        60
+                                    ]
+                       }
+                   ],
+    "connections":  [
+                        {
+                            "from":  "ui",
+                            "to":  "omniroute",
+                            "label":  "prompt / script"
+                        },
+                        {
+                            "from":  "omniroute",
+                            "to":  "supabase",
+                            "label":  "inserts planning job",
+                            "labelDy":  24
+                        },
+                        {
+                            "from":  "ui",
+                            "to":  "supabase",
+                            "label":  "enqueues / regens"
+                        },
+                        {
+                            "from":  "supabase",
+                            "to":  "quality",
+                            "label":  "claims qc_pending"
+                        },
+                        {
+                            "from":  "quality",
+                            "to":  "supabase",
+                            "label":  "promotes to queued"
+                        },
+                        {
+                            "from":  "supabase",
+                            "to":  "worker",
+                            "label":  "claims queued"
+                        }
+                    ]
+}

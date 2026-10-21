@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "6b13c65c-3448-43cb-8218-bec4a56063e9",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "C:\\Users\\vigilare\\.gemini\\antigravity\\scratch\\clipped\\architecture.json",
+  "output": "C:\\Users\\vigilare\\.gemini\\antigravity\\scratch\\clipped\\docs\\architecture.html",
+  "specification": {
+    "sha256": "66630f35d069fb2c6cff15e9ccfdda3cc84498dd224db0d0454e03f5faa22770",
+    "bytes": 4780
+  },
+  "artifact": {
+    "sha256": "976f5932a08be8bffce4a96688ab2734d3327fe3015bea6722aa7c15337a9573",
+    "bytes": 752855
+  }
+}

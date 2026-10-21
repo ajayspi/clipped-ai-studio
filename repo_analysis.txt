@@ -1,0 +1,79 @@
+jamesltr0701-cell/Framewright:
+- Description: Asset-aware storyboard, keyframe, and video prompt compiler for AI filmmaking
+- Topics: none
+
+wonderunit/storyboarder:
+- Description: ✏️ Storyboarder makes it easy to visualize a story as fast you can draw stick figures.
+- Topics: drawing, filmmaking, fountain, movies, story, storyboard, storyboarding
+
+taruma/SceneFlow:
+- Description: Sync screenplays with video. Evaluate AI-generated footage. Analyze script-to-screen fidelity.
+- Topics: ai, filmmaking, screenplay, screenwriting
+
+tt-a1i/archify:
+- Description: Turn any idea, plan, or codebase into a beautiful interactive diagram. An agent skill for Claude Code, Codex, and more.
+- Topics: agent-skills, ai-agents, architecture-diagram, claude-code, claude-skills, codex, coding-agents, deepseek-harness, developer-tools, diagrams, diagrams-as-code, dsh-plugin, flowchart, llm, mermaid, opencode, sequence-diagram, software-architecture, system-design, visualization
+
+mainza-ai/milimovideo:
+- Description: The AI-Native Cinematic Studio. A professional Non-Linear Editor (NLE) for filmmakers.
+- Topics: aiimagegenerator, aivideogenerator, filmmaking
+
+HBAI-Ltd/Toonflow-app:
+- Description: Toonflow 是开源 AI 创作平台，融合无限画布、AI Agent 与可视化工作流，支持图像生成、视频生成、智能分镜及短剧创作。支持本地部署、自由接入模型，提供跨平台桌面端，并可通过 MCP 与插件扩展创作能力。Open-source AI creative platform with an infinite canvas, AI agents and visual workflows for image generation, video generation and filmmaking, with a canvas-based approach similar to LibTV and TapNow.
+- Topics: ai, ai-agents, ai-content-creation, ai-filmmaking, generative-ai, image-generation, image-to-video, infinite-canvas, libtv, llm, node-based-editor, open-source, storyboarding, tapnow, text-to-image, text-to-video, video-generation, workflow-automation
+
+HITsz-TMG/VideoClaw:
+- Description: 🚀 AI 全自动化视频生成员工 | Your First AIGC Coworker. Chat an Idea. Get a Film. 🦞
+- Topics: agent, aigc, filmmaking, image-generation, multi-agent-system, openclaw, openclaw-skills, tts, video-generation
+
+SimileSystems/awesome-volumetric-filmmaking:
+- Description: A curated resource for all things pertaining to volumetric filmmaking.
+- Topics: none
+
+oli-z/awesome-filmmaking:
+- Description: A curated list of awesome ressources for making films.
+- Topics: none
+
+kangarooking/director-skills:
+- Description: 导演Skill：面向 AI 视频创作的开源 Agent Skills | Director Skills: Open-source Agent Skills for AI video creation.
+- Topics: agent-skills, ai-video, claude-code, codex, filmmaking, video-generation
+
+wassermanproductions/wassermans-filmmaker-suite:
+- Description: Wasserman's Filmmaker Suite — ScriptBreak, Cork Board, Master Canvas, Blockout, Motion Previs Studio, Storyboard Reference Studio, Circle Take, Stem Studio, and the Unofficial DaVinci MCP: AI-native filmmaking from script to final mix.uggested Donation of $30 if you you can to help me keep making these tools.https://ko-fi.com/samwasserman
+- Topics: none
+
+wassermanproductions/master-canvas:
+- Description: Open Source Desktop App for Local-first pre-production canvas for AI video planning, prompts, assets, and handoff packages.uggested Donation of $30 if you you can to help me keep making these tools.https://ko-fi.com/samwasserman
+- Topics: none
+
+wassermanproductions/blockout:
+- Description: Open Source Desktop App to help with Previs for AI-native filmmaking — stage grey-box scenes, choreograph camera & cast with marks, export motion-reference packages for Seedance/Veo/Kling/LTX/Wan. Apache-2.0.uggested Donation of $30 if you you can to help me keep making these tools.https://ko-fi.com/samwasserman
+- Topics: none
+
+wassermanproductions/motion-previs-studio:
+- Description: Open-source desktop app for AI-film motion, depth, pose, and camera-move previsualization.uggested Donation of $30 if you you can to help me keep making these tools.https://ko-fi.com/samwasserman
+- Topics: aiprevis, aivideocreation, previsualization
+
+wassermanproductions/slate:
+- Description: The prompt studio for AI filmmaking — plan shots, direct coverage, keep continuity, and compile production-ready prompts for any image, video, music, or voice generator. No API keys. Suggested Donation of $30 if you you can to help me keep making these tools.https://ko-fi.com/samwasserman 
+- Topics: none
+
+JohnTheTripper/moviegoer-prototype:
+- Description: Turning films into structured data to unlock the vast wealth of emotional knowledge within.
+- Topics: emotional-data, filmmaking, movies
+
+bkingfilm/lapian-notes:
+- Description: AI 辅助的电影拉片工具：AI 拆出剧情泳道时间轴、结构树、情绪曲线，边播边写拉片笔记，免费开源全本地 | AI-assisted film breakdown notebook: story-lane timeline, structure tree, emotion curve. Free, open source, fully local.
+- Topics: ai, film-analysis, filmmaking, react, screenwriting, vite
+
+lemomo-ai/lemo-opuscar:
+- Description: Claude Code skill for short films with no video model: 43 film styles, each a style prompt plus a demo film made entirely in code by Claude Opus 5.5 (incl. OPUSCAR 98). By Lemomo. | Opus5.5 x 43 种影片风格：风格提示词 + 纯代码样片 + 导演与技术指南
+- Topics: agent-skills, ai-agents, ai-short-film, ai-video, animation, canvas, claude, claude-code, claude-code-plugin, claude-code-skill, creative-coding, ffmpeg, filmmaking, motion-graphics, opus-5-5, prompt-library, text-to-speech, threejs, video-production, webgl
+
+c47-inc/mcp-film:
+- Description: Curated, agent-first directory of MCP servers for AI filmmaking.
+- Topics: none
+
+heygen-com/hyperframes:
+- Description: Write HTML. Render video. Built for agents.
+- Topics: ai, animation, ffmpeg, framework, gsap, html, mcp, puppeteer, rendering, typescript, video
