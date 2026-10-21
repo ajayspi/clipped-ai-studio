@@ -180,7 +180,7 @@ export interface ImageSourceQuery {
   imagePrompt?: string;
 
   /** Target aspect ratio -- used to bias width/height in results. */
-  aspectRatio: '16:9' | '9:16' | '1:1';
+  aspectRatio: '16:9' | '9:16' | '1:1' | 'volumetric';
 
   /**
    * Maximum number of results to return from each source.

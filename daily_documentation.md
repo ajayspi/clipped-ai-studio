@@ -1,38 +1,59 @@
-# Clipped AI Video Studio & OmniRoute — Daily Documentation & Changelog
+﻿# Clipped AI Video Studio & OmniRoute â€” Daily Documentation & Changelog
 
 > **Repository:** `clipped-omni-router`  
 > **Master Project Gist:** [`docs/PROJECT_GIST.md`](file:///c:/Users/vigilare/.gemini/antigravity/scratch/clipped-omni-router/docs/PROJECT_GIST.md)  
 > **Detailed Daily Logs:** [`docs/devlogs/`](file:///c:/Users/vigilare/.gemini/antigravity/scratch/clipped-omni-router/docs/devlogs/INDEX.md)  
 > **Protocol Rule:** [`.agents/rules/daily-documentation.md`](file:///c:/Users/vigilare/.gemini/antigravity/scratch/clipped-omni-router/.agents/rules/daily-documentation.md)
 
+
 ---
 
-## 📅 2026-09-26 (Today)
+## 🚀 2026-10-09
+- **Detailed Log:** docs/devlogs/2026-10-09.md
+- **Directives & Prompts:**
+  - Execute the massive 9-Phase Epic Filmmaking Masterplan based on 20+ cutting-edge open-source repositories (OpenMontage, SceneFlow, MilimoVideo, Wasserman Suite, etc.).
+  - Evolve the engine from a basic prompt-to-video batch queue into a professional, real-time spatial video studio.
+- **Key Changes & Features (The 9 Phases):**
+  - **Phase 1 (Master Canvas):** Built React Flow spatial workspace (/editor/canvas) for node-based scripting.
+  - **Phase 2 (3D Previs):** Built WebGL Blockout stage (/create/previs) using @react-three/fiber.
+  - **Phase 3 (Hyperframes):** Implemented code-native HTML/GSAP rendering via Puppeteer within the PM2 worker.
+  - **Phase 4 (Shotbuddy & SceneFlow):** Added VLM-powered Quality Gates for prompt-adherence evaluation and version-stacked assets.
+  - **Phase 5 (ScriptBreak):** Built screenplay parsing, SH001 extraction, and interactive Recharts Tension Score curves.
+  - **Phase 6 (Quality Gates & Recovery):** Deployed ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
+  - **Phase 7 (Volumetric & Stems):** Upgraded FFmpeg string to output side-by-side Depth Maps (ormat=yuv420p + hstack) and added Stem Studio (/stems) audio isolation API.
+  - **Phase 8 (Milimo NLE & SSE):** Refactored Timeline to use zustand + zundo (Undo/Redo) and built real-time EventSource streaming (/stream) bypassing HTTP timeouts.
+  - **Phase 9 (Director's Intelligence):** Built Framewright (Cinematography Prompt Enhancer), VideoClaw (Autonomous B-roll scraper), and dynamic FFmpeg Digital Slates.
+  - **Architecture Visualization:** Compiled live system architecture via the Archify MCP skill to docs/architecture.html.
+- **Gate Verdict:** Masterplan COMPLETED (All phases executed by DeepCoder subagents, verified via pnpm typecheck and 248 E2E test suite).
+
+---
+
+## ðŸ“… 2026-09-26 (Today)
 - **Detailed Log:** [`docs/devlogs/2026-09-24_to_2026-09-26.md`](file:///c:/Users/vigilare/.gemini/antigravity/scratch/clipped-omni-router/docs/devlogs/2026-09-24_to_2026-09-26.md)
 - **Directives & Prompts:**
   - Bring scoped lint/typecheck to zero (WP4) and prove the full acceptance chain green.
   - Write a master maintenance document covering all work carried out and all project aspects; push it to Notion as a new file.
   - Push to GitHub and maintain the repository; create a Notion project hub.
 - **Key Changes & Features:**
-  - **WP4 Toolchain**: `pnpm lint:scoped` → 0 across 197 files; `pnpm typecheck` (via new `tsconfig.check.json`) → 0 (21 errors fixed). Harness `then`-arrow `this`-binding runtime bug fixed in BOTH `tests/e2e/test-harness.ts` and `standalone-runner.js`. New `types/ambient.d.ts` (fluent-ffmpeg / node-edge-tts / youtube-transcript). `render-worker.ts` compId block re-restored (T8-WRK-02).
-  - **Acceptance chain green**: lint 0 → tsc 0 → vitest 189/189 → `pnpm test` 201/201 → build exit 0 (commit `62d2c7d4`).
-  - **Master maintenance doc**: `docs/MAINTENANCE.md` (292 lines) — architecture, commands/verify chain, quirks, environment, deployments, complete work history, maintenance procedures. Mirrored to Notion Files DB as a page (146 blocks, sync-engine property shape).
+  - **WP4 Toolchain**: `pnpm lint:scoped` â†’ 0 across 197 files; `pnpm typecheck` (via new `tsconfig.check.json`) â†’ 0 (21 errors fixed). Harness `then`-arrow `this`-binding runtime bug fixed in BOTH `tests/e2e/test-harness.ts` and `standalone-runner.js`. New `types/ambient.d.ts` (fluent-ffmpeg / node-edge-tts / youtube-transcript). `render-worker.ts` compId block re-restored (T8-WRK-02).
+  - **Acceptance chain green**: lint 0 â†’ tsc 0 â†’ vitest 189/189 â†’ `pnpm test` 201/201 â†’ build exit 0 (commit `62d2c7d4`).
+  - **Master maintenance doc**: `docs/MAINTENANCE.md` (292 lines) â€” architecture, commands/verify chain, quirks, environment, deployments, complete work history, maintenance procedures. Mirrored to Notion Files DB as a page (146 blocks, sync-engine property shape).
   - **GitHub sync**: `origin/main` fast-forwarded `a745a0d3..31191087`; `docs/agent-guide` also pushed (in sync).
-  - **Notion project hub**: "Clipped AI Studio — Project Documentation" with 9 subpages (Overview → Roadmap & Change Log) + quick-nav, under the workspace projects parent.
+  - **Notion project hub**: "Clipped AI Studio â€” Project Documentation" with 9 subpages (Overview â†’ Roadmap & Change Log) + quick-nav, under the workspace projects parent.
   - **AGENTS.md learning-loop updates**: Files DB not shared with Notion MCP integration; 2000-char code-block cap; `ntn pages create` first-heading title trap; `child_page` blocks rejected in append payloads.
 
-## 📅 2026-09-26 (Late session — Supabase migration agafust → xbneet + render dogfood)
+## ðŸ“… 2026-09-26 (Late session â€” Supabase migration agafust â†’ xbneet + render dogfood)
 - **Detailed Log:** [`docs/devlogs/2026-09-26.md`](file:///c:/Users/vigilare/.gemini/antigravity/scratch/clipped/docs/devlogs/2026-09-26.md)
 - **Directives & Prompts:**
-  - Migrate the app from Supabase `agafustlankeieewtvck` (other account, 403 on the user's PAT) to `xbneetfubybzleuwhbnx.supabase.co`; rebuild xbneet's ProstudioX-era legacy schema; copy live data; retarget `.env.local`; redeploy on `:3100`; finish the render dogfood (worker + `/api/v1/generate` → real mp4).
+  - Migrate the app from Supabase `agafustlankeieewtvck` (other account, 403 on the user's PAT) to `xbneetfubybzleuwhbnx.supabase.co`; rebuild xbneet's ProstudioX-era legacy schema; copy live data; retarget `.env.local`; redeploy on `:3100`; finish the render dogfood (worker + `/api/v1/generate` â†’ real mp4).
 - **Key Changes & Features:**
-  - **Schema rebuild (Management API, PAT-gated):** drop 4 legacy tables → `schema.sql` + 3 migrations → grants (incl. `GRANT EXECUTE ON ALL FUNCTIONS`). Success = **201 + `[]`** for DDL — a first applier misread 201 as failure.
-  - **Real SQL bug:** `claim_render_job`'s `RETURNS TABLE (… orchestration_state …)` out-param shadowed the same-named column → ERROR 42702. Qualifying with `render_jobs.` fixed it (comment in `20260905_render_job_leases.sql`).
+  - **Schema rebuild (Management API, PAT-gated):** drop 4 legacy tables â†’ `schema.sql` + 3 migrations â†’ grants (incl. `GRANT EXECUTE ON ALL FUNCTIONS`). Success = **201 + `[]`** for DDL â€” a first applier misread 201 as failure.
+  - **Real SQL bug:** `claim_render_job`'s `RETURNS TABLE (â€¦ orchestration_state â€¦)` out-param shadowed the same-named column â†’ ERROR 42702. Qualifying with `render_jobs.` fixed it (comment in `20260905_render_job_leases.sql`).
   - **Data:** settings 39 + users 2 copied, readback verified; pre-drop legacy snapshot archived; dead demo `render_jobs` not copied. `.env.local` retargeted to xbneet (JWT form).
-  - **Code fixes (uncommitted):** `app/api/v1/generate/route.ts` UUID job/video ids (old `job_…` strings silently failed uuid inserts) + planning→enrichment→queued; `scripts/render-worker.ts` lazy ffmpeg resolution (system ffmpeg 8.1.1, installer has no bundled exe).
-  - **Dogfood green:** `POST /api/v1/generate` → 202 → gateway LLM enrichment → queued → worker claim → Edge TTS + Pollinations fallbacks → ffmpeg concat → `complete_render_job` → **h264 1080×1920 AAC 9.6s mp4**, served `200 video/mp4`. Standalone gotcha: public dir is cached at boot — post-start mp4 needed a server restart.
+  - **Code fixes (uncommitted):** `app/api/v1/generate/route.ts` UUID job/video ids (old `job_â€¦` strings silently failed uuid inserts) + planningâ†’enrichmentâ†’queued; `scripts/render-worker.ts` lazy ffmpeg resolution (system ffmpeg 8.1.1, installer has no bundled exe).
+  - **Dogfood green:** `POST /api/v1/generate` â†’ 202 â†’ gateway LLM enrichment â†’ queued â†’ worker claim â†’ Edge TTS + Pollinations fallbacks â†’ ffmpeg concat â†’ `complete_render_job` â†’ **h264 1080Ã—1920 AAC 9.6s mp4**, served `200 video/mp4`. Standalone gotcha: public dir is cached at boot â€” post-start mp4 needed a server restart.
 
-## 📅 2026-09-08 (Today)
+## ðŸ“… 2026-09-08 (Today)
 - **Detailed Log:** [`docs/devlogs/2026-09-08.md`](file:///c:/Users/vigilare/.gemini/antigravity/scratch/clipped-omni-router/docs/devlogs/2026-09-08.md)
 - **Directives & Prompts:**
   - Enforce zero-scroll 1080p viewport in `/create` creation wizard.
@@ -46,9 +67,30 @@
   - **Subtitle Engine Fix**: Migrated from `-vf` option strings to `cmd.videoFilters()`, aggressive character escaping (`'`, `:`, `\`), and native FFmpeg boxcolor formats.
   - **Daily Documentation System**: Converted `daily_documentation.md` to UTF-8, created `docs/PROJECT_GIST.md`, built chronological daily devlogs in `docs/devlogs/`, and codified persistent rule `.agents/rules/daily-documentation.md`.
 
+
 ---
 
-## 📅 2026-09-07
+## 🚀 2026-10-09
+- **Detailed Log:** docs/devlogs/2026-10-09.md
+- **Directives & Prompts:**
+  - Execute the massive 9-Phase Epic Filmmaking Masterplan based on 20+ cutting-edge open-source repositories (OpenMontage, SceneFlow, MilimoVideo, Wasserman Suite, etc.).
+  - Evolve the engine from a basic prompt-to-video batch queue into a professional, real-time spatial video studio.
+- **Key Changes & Features (The 9 Phases):**
+  - **Phase 1 (Master Canvas):** Built React Flow spatial workspace (/editor/canvas) for node-based scripting.
+  - **Phase 2 (3D Previs):** Built WebGL Blockout stage (/create/previs) using @react-three/fiber.
+  - **Phase 3 (Hyperframes):** Implemented code-native HTML/GSAP rendering via Puppeteer within the PM2 worker.
+  - **Phase 4 (Shotbuddy & SceneFlow):** Added VLM-powered Quality Gates for prompt-adherence evaluation and version-stacked assets.
+  - **Phase 5 (ScriptBreak):** Built screenplay parsing, SH001 extraction, and interactive Recharts Tension Score curves.
+  - **Phase 6 (Quality Gates & Recovery):** Deployed ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
+  - **Phase 7 (Volumetric & Stems):** Upgraded FFmpeg string to output side-by-side Depth Maps (ormat=yuv420p + hstack) and added Stem Studio (/stems) audio isolation API.
+  - **Phase 8 (Milimo NLE & SSE):** Refactored Timeline to use zustand + zundo (Undo/Redo) and built real-time EventSource streaming (/stream) bypassing HTTP timeouts.
+  - **Phase 9 (Director's Intelligence):** Built Framewright (Cinematography Prompt Enhancer), VideoClaw (Autonomous B-roll scraper), and dynamic FFmpeg Digital Slates.
+  - **Architecture Visualization:** Compiled live system architecture via the Archify MCP skill to docs/architecture.html.
+- **Gate Verdict:** Masterplan COMPLETED (All phases executed by DeepCoder subagents, verified via pnpm typecheck and 248 E2E test suite).
+
+---
+
+## ðŸ“… 2026-09-07
 - **Detailed Log:** [`docs/devlogs/2026-09-07.md`](file:///c:/Users/vigilare/.gemini/antigravity/scratch/clipped-omni-router/docs/devlogs/2026-09-07.md)
 - **Directives & Prompts:**
   - Execute Milestone 1 of the media pipeline overhaul.
@@ -60,9 +102,30 @@
   - **Remotion Player Audio (`remotion/Composition.tsx`)**: Rendered `<Audio />` for all beats.
   - **Gate Verdict**: Milestone 1 PASSED (16/16 unit tests, all adversarial stress checks passed, 0 TypeScript errors).
 
+
 ---
 
-## 📅 2026-09-06
+## 🚀 2026-10-09
+- **Detailed Log:** docs/devlogs/2026-10-09.md
+- **Directives & Prompts:**
+  - Execute the massive 9-Phase Epic Filmmaking Masterplan based on 20+ cutting-edge open-source repositories (OpenMontage, SceneFlow, MilimoVideo, Wasserman Suite, etc.).
+  - Evolve the engine from a basic prompt-to-video batch queue into a professional, real-time spatial video studio.
+- **Key Changes & Features (The 9 Phases):**
+  - **Phase 1 (Master Canvas):** Built React Flow spatial workspace (/editor/canvas) for node-based scripting.
+  - **Phase 2 (3D Previs):** Built WebGL Blockout stage (/create/previs) using @react-three/fiber.
+  - **Phase 3 (Hyperframes):** Implemented code-native HTML/GSAP rendering via Puppeteer within the PM2 worker.
+  - **Phase 4 (Shotbuddy & SceneFlow):** Added VLM-powered Quality Gates for prompt-adherence evaluation and version-stacked assets.
+  - **Phase 5 (ScriptBreak):** Built screenplay parsing, SH001 extraction, and interactive Recharts Tension Score curves.
+  - **Phase 6 (Quality Gates & Recovery):** Deployed ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
+  - **Phase 7 (Volumetric & Stems):** Upgraded FFmpeg string to output side-by-side Depth Maps (ormat=yuv420p + hstack) and added Stem Studio (/stems) audio isolation API.
+  - **Phase 8 (Milimo NLE & SSE):** Refactored Timeline to use zustand + zundo (Undo/Redo) and built real-time EventSource streaming (/stream) bypassing HTTP timeouts.
+  - **Phase 9 (Director's Intelligence):** Built Framewright (Cinematography Prompt Enhancer), VideoClaw (Autonomous B-roll scraper), and dynamic FFmpeg Digital Slates.
+  - **Architecture Visualization:** Compiled live system architecture via the Archify MCP skill to docs/architecture.html.
+- **Gate Verdict:** Masterplan COMPLETED (All phases executed by DeepCoder subagents, verified via pnpm typecheck and 248 E2E test suite).
+
+---
+
+## ðŸ“… 2026-09-06
 - **Detailed Log:** [`docs/devlogs/2026-09-06.md`](file:///c:/Users/vigilare/.gemini/antigravity/scratch/clipped-omni-router/docs/devlogs/2026-09-06.md)
 - **Directives & Prompts:**
   - Survey entire application to identify breaking gaps in video creation, rendering, queueing, and UI viewports.
@@ -72,9 +135,30 @@
   - **Engineering Specifications**: Created `docs/superpowers/plans/2026-09-06-tts-voice-render-reliability.md` and `docs/superpowers/plans/2026-09-06-fal-image-video-pipeline.md`.
   - **Multi-Agent Swarm**: Initialized exploratory agents, sentinel monitors, and challenger test suites.
 
+
 ---
 
-## 📅 2026-09-05
+## 🚀 2026-10-09
+- **Detailed Log:** docs/devlogs/2026-10-09.md
+- **Directives & Prompts:**
+  - Execute the massive 9-Phase Epic Filmmaking Masterplan based on 20+ cutting-edge open-source repositories (OpenMontage, SceneFlow, MilimoVideo, Wasserman Suite, etc.).
+  - Evolve the engine from a basic prompt-to-video batch queue into a professional, real-time spatial video studio.
+- **Key Changes & Features (The 9 Phases):**
+  - **Phase 1 (Master Canvas):** Built React Flow spatial workspace (/editor/canvas) for node-based scripting.
+  - **Phase 2 (3D Previs):** Built WebGL Blockout stage (/create/previs) using @react-three/fiber.
+  - **Phase 3 (Hyperframes):** Implemented code-native HTML/GSAP rendering via Puppeteer within the PM2 worker.
+  - **Phase 4 (Shotbuddy & SceneFlow):** Added VLM-powered Quality Gates for prompt-adherence evaluation and version-stacked assets.
+  - **Phase 5 (ScriptBreak):** Built screenplay parsing, SH001 extraction, and interactive Recharts Tension Score curves.
+  - **Phase 6 (Quality Gates & Recovery):** Deployed ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
+  - **Phase 7 (Volumetric & Stems):** Upgraded FFmpeg string to output side-by-side Depth Maps (ormat=yuv420p + hstack) and added Stem Studio (/stems) audio isolation API.
+  - **Phase 8 (Milimo NLE & SSE):** Refactored Timeline to use zustand + zundo (Undo/Redo) and built real-time EventSource streaming (/stream) bypassing HTTP timeouts.
+  - **Phase 9 (Director's Intelligence):** Built Framewright (Cinematography Prompt Enhancer), VideoClaw (Autonomous B-roll scraper), and dynamic FFmpeg Digital Slates.
+  - **Architecture Visualization:** Compiled live system architecture via the Archify MCP skill to docs/architecture.html.
+- **Gate Verdict:** Masterplan COMPLETED (All phases executed by DeepCoder subagents, verified via pnpm typecheck and 248 E2E test suite).
+
+---
+
+## ðŸ“… 2026-09-05
 - **Detailed Log:** [`docs/devlogs/2026-09-05.md`](file:///c:/Users/vigilare/.gemini/antigravity/scratch/clipped-omni-router/docs/devlogs/2026-09-05.md)
 - **Directives & Prompts:**
   - Implement OmniRoute single-gateway architecture across the full application.
@@ -87,9 +171,30 @@
   - **Remotion Player Rebuild**: Rebuilt `remotion/Composition.tsx` (`MainComposition`) from scratch with beats timeline and dynamic subtitles.
   - **Distributed Leases**: Created SQL migration `supabase/migrations/20260905_render_job_leases.sql` adding `lease_holder` and `lease_expires_at` to prevent dual-worker race conditions.
 
+
 ---
 
-## 📅 2026-09-04
+## 🚀 2026-10-09
+- **Detailed Log:** docs/devlogs/2026-10-09.md
+- **Directives & Prompts:**
+  - Execute the massive 9-Phase Epic Filmmaking Masterplan based on 20+ cutting-edge open-source repositories (OpenMontage, SceneFlow, MilimoVideo, Wasserman Suite, etc.).
+  - Evolve the engine from a basic prompt-to-video batch queue into a professional, real-time spatial video studio.
+- **Key Changes & Features (The 9 Phases):**
+  - **Phase 1 (Master Canvas):** Built React Flow spatial workspace (/editor/canvas) for node-based scripting.
+  - **Phase 2 (3D Previs):** Built WebGL Blockout stage (/create/previs) using @react-three/fiber.
+  - **Phase 3 (Hyperframes):** Implemented code-native HTML/GSAP rendering via Puppeteer within the PM2 worker.
+  - **Phase 4 (Shotbuddy & SceneFlow):** Added VLM-powered Quality Gates for prompt-adherence evaluation and version-stacked assets.
+  - **Phase 5 (ScriptBreak):** Built screenplay parsing, SH001 extraction, and interactive Recharts Tension Score curves.
+  - **Phase 6 (Quality Gates & Recovery):** Deployed ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
+  - **Phase 7 (Volumetric & Stems):** Upgraded FFmpeg string to output side-by-side Depth Maps (ormat=yuv420p + hstack) and added Stem Studio (/stems) audio isolation API.
+  - **Phase 8 (Milimo NLE & SSE):** Refactored Timeline to use zustand + zundo (Undo/Redo) and built real-time EventSource streaming (/stream) bypassing HTTP timeouts.
+  - **Phase 9 (Director's Intelligence):** Built Framewright (Cinematography Prompt Enhancer), VideoClaw (Autonomous B-roll scraper), and dynamic FFmpeg Digital Slates.
+  - **Architecture Visualization:** Compiled live system architecture via the Archify MCP skill to docs/architecture.html.
+- **Gate Verdict:** Masterplan COMPLETED (All phases executed by DeepCoder subagents, verified via pnpm typecheck and 248 E2E test suite).
+
+---
+
+## ðŸ“… 2026-09-04
 - **Detailed Log:** [`docs/devlogs/2026-09-04.md`](file:///c:/Users/vigilare/.gemini/antigravity/scratch/clipped-omni-router/docs/devlogs/2026-09-04.md)
 - **Directives & Prompts:**
   - Can I add my local omnirouter API to this repo?
@@ -98,9 +203,30 @@
   - Investigated local OmniRoute server integration (`omniroute-server/`) to replace the fragmented 45-provider settings panel.
   - Located project assets, audited engine dependencies, and designed the single-gateway architecture migration plan.
 
+
 ---
 
-## 📅 2026-09-03
+## 🚀 2026-10-09
+- **Detailed Log:** docs/devlogs/2026-10-09.md
+- **Directives & Prompts:**
+  - Execute the massive 9-Phase Epic Filmmaking Masterplan based on 20+ cutting-edge open-source repositories (OpenMontage, SceneFlow, MilimoVideo, Wasserman Suite, etc.).
+  - Evolve the engine from a basic prompt-to-video batch queue into a professional, real-time spatial video studio.
+- **Key Changes & Features (The 9 Phases):**
+  - **Phase 1 (Master Canvas):** Built React Flow spatial workspace (/editor/canvas) for node-based scripting.
+  - **Phase 2 (3D Previs):** Built WebGL Blockout stage (/create/previs) using @react-three/fiber.
+  - **Phase 3 (Hyperframes):** Implemented code-native HTML/GSAP rendering via Puppeteer within the PM2 worker.
+  - **Phase 4 (Shotbuddy & SceneFlow):** Added VLM-powered Quality Gates for prompt-adherence evaluation and version-stacked assets.
+  - **Phase 5 (ScriptBreak):** Built screenplay parsing, SH001 extraction, and interactive Recharts Tension Score curves.
+  - **Phase 6 (Quality Gates & Recovery):** Deployed ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
+  - **Phase 7 (Volumetric & Stems):** Upgraded FFmpeg string to output side-by-side Depth Maps (ormat=yuv420p + hstack) and added Stem Studio (/stems) audio isolation API.
+  - **Phase 8 (Milimo NLE & SSE):** Refactored Timeline to use zustand + zundo (Undo/Redo) and built real-time EventSource streaming (/stream) bypassing HTTP timeouts.
+  - **Phase 9 (Director's Intelligence):** Built Framewright (Cinematography Prompt Enhancer), VideoClaw (Autonomous B-roll scraper), and dynamic FFmpeg Digital Slates.
+  - **Architecture Visualization:** Compiled live system architecture via the Archify MCP skill to docs/architecture.html.
+- **Gate Verdict:** Masterplan COMPLETED (All phases executed by DeepCoder subagents, verified via pnpm typecheck and 248 E2E test suite).
+
+---
+
+## ðŸ“… 2026-09-03
 - **Detailed Log:** [`docs/devlogs/2026-09-03.md`](file:///c:/Users/vigilare/.gemini/antigravity/scratch/clipped-omni-router/docs/devlogs/2026-09-03.md)
 - **Directives & Prompts:**
   - Supabase admin login SQL script; Fix settings page not loading API keys.
@@ -111,9 +237,30 @@
   - **Security Scrub**: Purged all plaintext API keys and scratch files (`a745a0d`).
   - **Oracle VM Optimization**: Removed heavy analytics charting packages to fit within 952MB RAM (`78f8dd2`), disabled standalone build output (`1b575d1`).
 
+
 ---
 
-## 📅 2026-09-02
+## 🚀 2026-10-09
+- **Detailed Log:** docs/devlogs/2026-10-09.md
+- **Directives & Prompts:**
+  - Execute the massive 9-Phase Epic Filmmaking Masterplan based on 20+ cutting-edge open-source repositories (OpenMontage, SceneFlow, MilimoVideo, Wasserman Suite, etc.).
+  - Evolve the engine from a basic prompt-to-video batch queue into a professional, real-time spatial video studio.
+- **Key Changes & Features (The 9 Phases):**
+  - **Phase 1 (Master Canvas):** Built React Flow spatial workspace (/editor/canvas) for node-based scripting.
+  - **Phase 2 (3D Previs):** Built WebGL Blockout stage (/create/previs) using @react-three/fiber.
+  - **Phase 3 (Hyperframes):** Implemented code-native HTML/GSAP rendering via Puppeteer within the PM2 worker.
+  - **Phase 4 (Shotbuddy & SceneFlow):** Added VLM-powered Quality Gates for prompt-adherence evaluation and version-stacked assets.
+  - **Phase 5 (ScriptBreak):** Built screenplay parsing, SH001 extraction, and interactive Recharts Tension Score curves.
+  - **Phase 6 (Quality Gates & Recovery):** Deployed ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
+  - **Phase 7 (Volumetric & Stems):** Upgraded FFmpeg string to output side-by-side Depth Maps (ormat=yuv420p + hstack) and added Stem Studio (/stems) audio isolation API.
+  - **Phase 8 (Milimo NLE & SSE):** Refactored Timeline to use zustand + zundo (Undo/Redo) and built real-time EventSource streaming (/stream) bypassing HTTP timeouts.
+  - **Phase 9 (Director's Intelligence):** Built Framewright (Cinematography Prompt Enhancer), VideoClaw (Autonomous B-roll scraper), and dynamic FFmpeg Digital Slates.
+  - **Architecture Visualization:** Compiled live system architecture via the Archify MCP skill to docs/architecture.html.
+- **Gate Verdict:** Masterplan COMPLETED (All phases executed by DeepCoder subagents, verified via pnpm typecheck and 248 E2E test suite).
+
+---
+
+## ðŸ“… 2026-09-02
 - **Detailed Log:** [`docs/devlogs/2026-09-02.md`](file:///c:/Users/vigilare/.gemini/antigravity/scratch/clipped-omni-router/docs/devlogs/2026-09-02.md)
 - **Directives & Prompts:**
   - Expand to free/keyless API providers (Azure, Edge TTS, Pollinations).
@@ -125,9 +272,30 @@
   - **6 Subtitle Presets**: Designed Hormozi Pop, Cyber Neon, Minimalist Clean, Cinematic Boxed, Bold Impact, and Retro Karaoke.
   - **Workflow Cover Graphics**: Added thematic cover illustrations for all 10 video creation workflows.
 
+
 ---
 
-## 📅 2026-09-01
+## 🚀 2026-10-09
+- **Detailed Log:** docs/devlogs/2026-10-09.md
+- **Directives & Prompts:**
+  - Execute the massive 9-Phase Epic Filmmaking Masterplan based on 20+ cutting-edge open-source repositories (OpenMontage, SceneFlow, MilimoVideo, Wasserman Suite, etc.).
+  - Evolve the engine from a basic prompt-to-video batch queue into a professional, real-time spatial video studio.
+- **Key Changes & Features (The 9 Phases):**
+  - **Phase 1 (Master Canvas):** Built React Flow spatial workspace (/editor/canvas) for node-based scripting.
+  - **Phase 2 (3D Previs):** Built WebGL Blockout stage (/create/previs) using @react-three/fiber.
+  - **Phase 3 (Hyperframes):** Implemented code-native HTML/GSAP rendering via Puppeteer within the PM2 worker.
+  - **Phase 4 (Shotbuddy & SceneFlow):** Added VLM-powered Quality Gates for prompt-adherence evaluation and version-stacked assets.
+  - **Phase 5 (ScriptBreak):** Built screenplay parsing, SH001 extraction, and interactive Recharts Tension Score curves.
+  - **Phase 6 (Quality Gates & Recovery):** Deployed ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
+  - **Phase 7 (Volumetric & Stems):** Upgraded FFmpeg string to output side-by-side Depth Maps (ormat=yuv420p + hstack) and added Stem Studio (/stems) audio isolation API.
+  - **Phase 8 (Milimo NLE & SSE):** Refactored Timeline to use zustand + zundo (Undo/Redo) and built real-time EventSource streaming (/stream) bypassing HTTP timeouts.
+  - **Phase 9 (Director's Intelligence):** Built Framewright (Cinematography Prompt Enhancer), VideoClaw (Autonomous B-roll scraper), and dynamic FFmpeg Digital Slates.
+  - **Architecture Visualization:** Compiled live system architecture via the Archify MCP skill to docs/architecture.html.
+- **Gate Verdict:** Masterplan COMPLETED (All phases executed by DeepCoder subagents, verified via pnpm typecheck and 248 E2E test suite).
+
+---
+
+## ðŸ“… 2026-09-01
 - **Detailed Log:** [`docs/devlogs/2026-09-01.md`](file:///c:/Users/vigilare/.gemini/antigravity/scratch/clipped-omni-router/docs/devlogs/2026-09-01.md)
 - **Directives & Prompts:**
   - Fix blank/morphing platforms state glitch in creation wizard.
@@ -139,9 +307,30 @@
   - **Worker Race Condition Fix**: Ensured background workers wait for script beats before Remotion bundling.
   - **Oracle Deployment Guidelines**: Codified deployment safety rules in `.agents/rules/oracle-deployment.md` and patched `zip_fast.py`.
 
+
 ---
 
-## 📅 2026-08-25 – 2026-08-29
+## 🚀 2026-10-09
+- **Detailed Log:** docs/devlogs/2026-10-09.md
+- **Directives & Prompts:**
+  - Execute the massive 9-Phase Epic Filmmaking Masterplan based on 20+ cutting-edge open-source repositories (OpenMontage, SceneFlow, MilimoVideo, Wasserman Suite, etc.).
+  - Evolve the engine from a basic prompt-to-video batch queue into a professional, real-time spatial video studio.
+- **Key Changes & Features (The 9 Phases):**
+  - **Phase 1 (Master Canvas):** Built React Flow spatial workspace (/editor/canvas) for node-based scripting.
+  - **Phase 2 (3D Previs):** Built WebGL Blockout stage (/create/previs) using @react-three/fiber.
+  - **Phase 3 (Hyperframes):** Implemented code-native HTML/GSAP rendering via Puppeteer within the PM2 worker.
+  - **Phase 4 (Shotbuddy & SceneFlow):** Added VLM-powered Quality Gates for prompt-adherence evaluation and version-stacked assets.
+  - **Phase 5 (ScriptBreak):** Built screenplay parsing, SH001 extraction, and interactive Recharts Tension Score curves.
+  - **Phase 6 (Quality Gates & Recovery):** Deployed ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
+  - **Phase 7 (Volumetric & Stems):** Upgraded FFmpeg string to output side-by-side Depth Maps (ormat=yuv420p + hstack) and added Stem Studio (/stems) audio isolation API.
+  - **Phase 8 (Milimo NLE & SSE):** Refactored Timeline to use zustand + zundo (Undo/Redo) and built real-time EventSource streaming (/stream) bypassing HTTP timeouts.
+  - **Phase 9 (Director's Intelligence):** Built Framewright (Cinematography Prompt Enhancer), VideoClaw (Autonomous B-roll scraper), and dynamic FFmpeg Digital Slates.
+  - **Architecture Visualization:** Compiled live system architecture via the Archify MCP skill to docs/architecture.html.
+- **Gate Verdict:** Masterplan COMPLETED (All phases executed by DeepCoder subagents, verified via pnpm typecheck and 248 E2E test suite).
+
+---
+
+## ðŸ“… 2026-08-25 â€“ 2026-08-29
 - **Detailed Log:** [`docs/devlogs/2026-08-25_to_2026-08-29.md`](file:///c:/Users/vigilare/.gemini/antigravity/scratch/clipped-omni-router/docs/devlogs/2026-08-25_to_2026-08-29.md)
 - **Directives & Prompts:**
   - Review ProstudioX to Clipped AI Studio handover brief.
@@ -151,3 +340,4 @@
   - Audited codebase and verified 195+ automated tests in `tests/e2e/standalone-runner.js`.
   - Configured PM2 ecosystem for low-memory execution.
   - Planned dynamic library hydration and multi-step background processing.
+

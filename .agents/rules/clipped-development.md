@@ -24,3 +24,15 @@ description: Core architectural and environmental guidelines for the Clipped AI 
   interpreter: 'node',
   interpreter_args: '--import tsx',
   ```
+
+## 5. Supabase claim_render_job Locking
+**Trigger:** When writing background sweepers or recovery workers that revert stuck jobs.
+**Behavior to Learn:** Never just set status: 'queued'. The claim_render_job RPC strictly locks based on orchestration_state. You MUST set orchestration_state: 'retryable' or 'queued', otherwise the job becomes permanently unclaimable by the render worker.
+
+## 6. FFmpeg hstack Pixel Format Crashes
+**Trigger:** When using hstack or stack to combine multiple video streams (e.g., side-by-side volumetric exports).
+**Behavior to Learn:** FFmpeg's hstack strictly requires all inputs to share the exact same pixel format. If combining an RGB video with a grayscale depth map, you MUST explicitly normalize the formats (e.g., ,format=yuv420p) on both streams immediately before the hstack filter, or FFmpeg will crash.
+
+## 7. Zustand + Zundo Timeline Initialization
+**Trigger:** When initializing a Timeline or NLE editor state that uses zundo for Undo/Redo time travel.
+**Behavior to Learn:** Ensure the initial data load from the database is NOT recorded in the zundo history stack. If the initial hydration is pushed to the stack, the user's first Cmd+Z will revert the timeline to an empty array []. Also, custom Cmd+Z keyboard handlers MUST call e.preventDefault() to stop native browser input collisions.

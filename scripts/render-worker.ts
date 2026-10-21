@@ -547,6 +547,70 @@ async function pollAndProcess() {
   if (!fs.existsSync(jobTempDir)) fs.mkdirSync(jobTempDir, { recursive: true });
 
   try {
+    if (job.workflow_type === 'code-video') {
+      console.log(`🎥 Processing code-video (Hyperframes) job ${job.id}`);
+      let html = '';
+      if (typeof job.beats === 'string') {
+        const parsed = JSON.parse(job.beats);
+        html = parsed[0]?.html;
+      } else if (Array.isArray(job.beats) && job.beats[0]?.html) {
+        html = job.beats[0].html;
+      }
+
+      if (!html) {
+        throw new Error("No HTML found in code-video job beats");
+      }
+
+      const htmlPath = path.join(jobTempDir, 'index.html');
+      fs.writeFileSync(htmlPath, html);
+
+      const puppeteer = (await import('puppeteer')).default || await import('puppeteer');
+      const browser = await puppeteer.launch();
+      const page = await browser.newPage();
+      await page.setViewport({ width: 1920, height: 1080 });
+      await page.goto(`file://${htmlPath}`, { waitUntil: 'networkidle0' });
+
+      const fps = 30;
+      const durationSec = 5;
+      const frames = fps * durationSec;
+      
+      console.log(`📸 Taking ${frames} screenshots...`);
+      for (let f = 1; f <= frames; f++) {
+        await page.screenshot({ path: path.join(jobTempDir, `frame_${f.toString().padStart(4, '0')}.png`) });
+        // small delay to let animation tick
+        await new Promise(r => setTimeout(r, 10));
+      }
+      
+      await browser.close();
+
+      const outputPath = path.join(RENDER_DIR, `${job.id}.mp4`);
+      const publicUrl = `/renders/${job.id}.mp4`;
+
+      console.log(`🎬 Compiling frames to MP4...`);
+      await new Promise<void>((resolve, reject) => {
+        ffmpeg()
+          .input(path.join(jobTempDir, 'frame_%04d.png'))
+          .inputOptions(['-framerate 30'])
+          .outputOptions([
+            '-c:v libx264',
+            '-pix_fmt yuv420p',
+          ])
+          .save(outputPath)
+          .on('end', () => resolve())
+          .on('error', (err: Error) => reject(err));
+      });
+
+      console.log(`✅ Code-video render complete: ${outputPath}`);
+      await completeRenderJob(renderJobRpc, {
+        jobId: job.id,
+        workerId,
+        leaseToken,
+        outputUrl: publicUrl,
+        logs: { finalVideoUrl: publicUrl },
+      });
+      return;
+    }
+
     let params: RenderParams = {
       voiceSpeed: 1.0,
       voiceVolume: 100,
@@ -624,6 +688,7 @@ async function pollAndProcess() {
       '9:16': { width: 1080, height: 1920, label: 'MainRender-9x16', orientation: 'vertical' },
       '16:9': { width: 1920, height: 1080, label: 'MainRender-16x9', orientation: 'horizontal' },
       '1:1': { width: 1080, height: 1080, label: 'MainRender-1x1', orientation: 'square' },
+      'volumetric': { width: 960, height: 1080, label: 'MainRender-Volumetric', orientation: 'horizontal' },
     }
     const aspectRatio = (params.aspectRatio ?? '9:16') as keyof typeof aspectRatios
     const AR = aspectRatios[aspectRatio]
@@ -646,10 +711,24 @@ async function pollAndProcess() {
     const beatClips: string[] = [];
     let totalDurationSeconds = 0;
 
+    const updateProgress = async (progress: number, statusText: string) => {
+      try {
+        await supabase
+          .from('render_jobs')
+          .update({ progress, updated_at: new Date().toISOString(), logs: { ...params, status_text: statusText } })
+          .eq('id', job.id);
+      } catch (e) {
+        logger.warn('Failed to update progress', { jobId: job.id, error: e });
+      }
+    };
+
+    await updateProgress(10, `Generating TTS for ${beatsList.length} beats...`);
+
     for (let i = 0; i < beatsList.length; i++) {
       const b = beatsList[i];
       const text = b?.text || b?.prompt || 'Clipped Video Beat'
       console.log(`   - Beat ${i+1}: "${text.slice(0, 30)}..."`)
+      await updateProgress(10 + Math.floor((i / beatsList.length) * 40), `Rendering beat ${i+1}/${beatsList.length}: ${text.slice(0, 30)}...`);
       
       let audioUrl = '';
       let duration = b.duration || 3;
@@ -779,7 +858,20 @@ async function pollAndProcess() {
       // Store exact duration on beat for later use
       b.exactDuration = finalDuration;
 
-      let baseFilter = `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height}`;
+      const autoFrame = (params as any).autoFrame === true || (params as any).autoFrame === 'true';
+
+      let baseFilter = '';
+      if (isVideo && autoFrame && width < height) {
+        // MrBeast / OpenShorts Auto-Framer:
+        // Instead of a static center crop, we use a dynamic panning crop that simulates a camera operator tracking the subject.
+        // By applying a smooth sine-wave oscillation on the X-axis, it creates a highly dynamic and engaging "tracking" feel 
+        // without needing a heavy 100MB local ONNX model for face detection.
+        baseFilter = `scale='max(ih*(${width}/${height}),iw)':-2,crop=${width}:${height}:x='(in_w-out_w)/2+((in_w-out_w)/4)*sin(t*1.5)':y='(in_h-out_h)/2'`;
+      } else {
+        // Standard center crop
+        baseFilter = `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height}`;
+      }
+      
       // Use finalDuration (exact from ffprobe) for all timing
       const fps = 25;
       
@@ -831,7 +923,9 @@ async function pollAndProcess() {
           ];
           if (!isVideo) outputOpts.push('-tune stillimage');
           
-          cmd.outputOptions(outputOpts).videoFilters(videoFilter);
+          cmd.outputOptions(outputOpts)
+             .videoFilters(videoFilter)
+             .audioFilters([`afade=t=in:ss=0:d=0.1,afade=t=out:st=${Math.max(0, finalDuration - 0.1).toFixed(3)}:d=0.1`]);
         } else {
           // Keep audio stream active and consistent across all clips
           cmd = cmd.input('anullsrc=r=44100:cl=stereo').inputOptions(['-f lavfi', `-t ${finalDuration}`]);
@@ -847,7 +941,9 @@ async function pollAndProcess() {
           ];
           if (!isVideo) outputOpts.push('-tune stillimage');
           
-          cmd.outputOptions(outputOpts).videoFilters(videoFilter);
+          cmd.outputOptions(outputOpts)
+             .videoFilters(videoFilter)
+             .audioFilters([`afade=t=in:ss=0:d=0.1,afade=t=out:st=${Math.max(0, finalDuration - 0.1).toFixed(3)}:d=0.1`]);
         }
 
         cmd.save(clipPath)
@@ -860,9 +956,41 @@ async function pollAndProcess() {
     }
 
     console.log(`🎬 Concatenating ${beatClips.length} clips into final video...`)
+    await updateProgress(60, 'Concatenating clips...');
     
     const outputPath = path.join(RENDER_DIR, `${job.id}.mp4`)
     const publicUrl = `/renders/${job.id}.mp4`
+
+    if ((params as any).showSlate) {
+      console.log(`🎬 Generating Digital Slate...`);
+      const slatePath = path.join(jobTempDir, 'slate.mp4');
+      const slateTxtPath = path.join(jobTempDir, 'slate.txt');
+      const slateText = `Job: ${job.id}\nCreated: ${job.created_at || new Date().toISOString()}\nWorkflow: ${job.workflow_type || 'default'}`;
+      fs.writeFileSync(slateTxtPath, slateText);
+      
+      const drawtextPath = slateTxtPath.replace(/\\/g, '/').replace(/:/g, '\\:');
+      const slateFilter = `drawtext=textfile='${drawtextPath}':fontsize=48:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2`;
+      
+      await new Promise<void>((resolve, reject) => {
+        ffmpeg()
+          .input(`color=black:s=${width}x${height}:d=1:r=30`)
+          .inputOptions(['-f lavfi'])
+          .input('anullsrc=r=44100:cl=stereo')
+          .inputOptions(['-f lavfi', '-t 1'])
+          .videoFilters(slateFilter)
+          .outputOptions([
+            '-c:v libx264',
+            '-pix_fmt yuv420p',
+            '-c:a aac',
+            '-b:a 192k',
+            '-shortest'
+          ])
+          .save(slatePath)
+          .on('end', () => resolve())
+          .on('error', (err: Error) => reject(err));
+      });
+      beatClips.unshift(slatePath);
+    }
 
     const concatListPath = path.join(jobTempDir, 'concat.txt');
     const concatContent = beatClips.map(clip => `file '${clip}'`).join('\n');
@@ -915,8 +1043,11 @@ async function pollAndProcess() {
       }
     }
 
-    if (bgmDownloaded || watermarkPath) {
-      console.log(`     -> Mixing final output (BGM/Watermark)...`);
+    const useVisualizer = (params as any).audioVisualizer === 'waveform' || (params as any).audioVisualizer === 'bars';
+
+    if (bgmDownloaded || watermarkPath || useVisualizer || aspectRatio === 'volumetric') {
+      console.log(`     -> Mixing final output (BGM/Watermark/Visualizer/Volumetric)...`);
+      await updateProgress(80, 'Mixing final output...');
       const duckingVol = musicVolume / 100;
       await new Promise<void>((resolve, reject) => {
         const cmd = ffmpeg();
@@ -944,6 +1075,24 @@ async function pollAndProcess() {
           aOut = 'aout';
         }
 
+        if (useVisualizer) {
+          const visType = (params as any).audioVisualizer;
+          // Split the final audio stream so one goes to the visualizer and the other goes to output
+          complexFilters.push(`[${aOut}]asplit[a_out][a_vis]`);
+          aOut = 'a_out';
+          
+          if (visType === 'waveform') {
+            complexFilters.push(`[a_vis]showwaves=s=1080x400:colors=0x00FFFF|0xFF00FF:mode=cline:rate=30[vis_layer]`);
+            complexFilters.push(`[vis_layer]format=rgba,colorchannelmixer=aa=0.8[vis_alpha]`);
+            complexFilters.push(`[${vOut}][vis_alpha]overlay=x=(W-w)/2:y=H-h-200[vout]`);
+          } else {
+            complexFilters.push(`[a_vis]showfreqs=s=1080x400:mode=bar:colors=0xFF00FF|0x00FFFF:rate=30[vis_layer]`);
+            complexFilters.push(`[vis_layer]format=rgba,colorchannelmixer=aa=0.8[vis_alpha]`);
+            complexFilters.push(`[${vOut}][vis_alpha]overlay=x=(W-w)/2:y=H-h-200[vout]`);
+          }
+          vOut = 'vout';
+        }
+
         if (watermarkPath) {
           cmd.input(watermarkPath);
           const wmIdx = inputIdx++;
@@ -954,8 +1103,15 @@ async function pollAndProcess() {
           else if (pos === 'Top Right') overlayPos = 'W-w-10:10';
           else if (pos === 'Bottom Left') overlayPos = '10:H-h-10';
           
-          complexFilters.push(`[${vOut}][${wmIdx}:v]overlay=${overlayPos}[vout]`);
-          vOut = 'vout';
+          complexFilters.push(`[${vOut}][${wmIdx}:v]overlay=${overlayPos}[vout_wm]`);
+          vOut = 'vout_wm';
+        }
+
+        if (aspectRatio === 'volumetric') {
+          complexFilters.push(`[${vOut}]format=yuv420p,split[v_rgb][v_depth_base]`);
+          complexFilters.push(`[v_depth_base]edgedetect=low=0.1:high=0.4,format=gray,format=yuv420p[v_depth]`);
+          complexFilters.push(`[v_rgb][v_depth]hstack=inputs=2[vout_volumetric]`);
+          vOut = 'vout_volumetric';
         }
 
         outputOpts.unshift(`-map [${aOut}]`);
@@ -980,6 +1136,7 @@ async function pollAndProcess() {
       durationSeconds: totalDurationSeconds,
     })
     console.log(`🎬 Render complete: ${outputPath}`)
+    await updateProgress(100, 'Render complete');
 
     await completeRenderJob(renderJobRpc, {
       jobId: job.id,

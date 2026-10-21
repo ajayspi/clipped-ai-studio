@@ -4,5 +4,6 @@ packages:
 allowBuilds:
   '@ffmpeg-installer/linux-x64': set this to true or false
   esbuild: true
+  puppeteer: false
   sharp: false
   unrs-resolver: false

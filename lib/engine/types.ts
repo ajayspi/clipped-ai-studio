@@ -309,7 +309,10 @@ export type WorkflowType =
   | 'auto'
   | 'avatar'
   | 'whiteboard'
-  | 'mission';
+  | 'mission'
+  | 'character'
+  | 'v2v'
+  | 'outpaint';
 
 export type RenderJobStatus = 'pending' | 'processing' | 'completed' | 'failed';
 

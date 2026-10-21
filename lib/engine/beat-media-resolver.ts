@@ -1,5 +1,6 @@
 import { searchVideos } from '../media/video-sources';
 import { searchImages } from '../media/image-sources';
+import { huntForMedia } from './videoclaw';
 
 export interface ResolvedBeatMedia {
   url: string;
@@ -21,7 +22,7 @@ export async function resolveBeatMedia({
 }: {
   beat: { text?: string; imagePrompt?: string; searchQuery?: string; keywords?: string[] };
   intent: 'video' | 'image';
-  aspectRatio: '16:9' | '9:16' | '1:1';
+  aspectRatio: '16:9' | '9:16' | '1:1' | 'volumetric';
   keys?: { pexels?: string; pixabay?: string };
 }): Promise<ResolvedBeatMedia | null> {
   const query = beat.searchQuery || (beat.keywords && beat.keywords.length > 0 ? beat.keywords.join(' ') : beat.text);
@@ -85,5 +86,18 @@ export async function resolveBeatMedia({
     attempts.push(`searchImages error: ${err}`);
   }
 
-  return null;
+  // Fallback to VideoClaw if both search attempts failed or intent was video and it failed
+  attempts.push(`search failed, falling back to VideoClaw`);
+  const clawUrl = await huntForMedia(query);
+  return {
+    url: clawUrl,
+    kind: 'video',
+    provider: 'videoclaw',
+    license: 'fallback',
+    attribution: 'VideoClaw Autonomous Fallback',
+    sourceUrl: clawUrl,
+    query,
+    attempts,
+    generated: true,
+  };
 }

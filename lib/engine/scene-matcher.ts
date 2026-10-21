@@ -2,6 +2,7 @@ import { getOmniRouteConfig } from '@/lib/keys';
 import { complete, parseJson } from '@/lib/engine/llm';
 import { Scene, ScriptAnalysis } from "./types";
 import { CAMERA_MOVES, SHOT_TYPES, shotFromScene } from './shot-planner';
+import { enhanceFraming } from './framewright';
 
 const SYSTEM_PROMPT =
   'You break video narration into visual scenes for stock-footage sourcing, and direct each ' +
@@ -99,51 +100,61 @@ Return ONLY valid JSON, no markdown:
         continue;
       }
 
-      for (const scene of parsed.scenes ?? []) {
-        if (!scene?.text) continue;
-        
-        const sceneText = String(scene.text);
-        const words = sceneText.trim().split(/\s+/).length;
-        // Assume speaking rate of ~2.5 words per second
-        const spokenDuration = words / 2.5; 
-        
-        let dur = Number(scene.duration) || 4;
-        
-        // Duration clamps
-        if (dur > spokenDuration) dur = spokenDuration;
-        if (dur > 3.5) dur = 3.5;
-        if (dur < 1.8) dur = 1.8;
-        
-        // First beat must be <= 2.5s
-        if (scenes.length === 0 && dur > 2.5) {
-          dur = 2.5;
-        }
+      const enhancedPrompts = await Promise.all(
+        (parsed.scenes ?? []).map(async (scene, idx) => {
+          if (!scene?.text) return null;
 
-        // The model proposes; the planner decides. \`shotFromScene\` enforces the
-        // closed vocabulary and supplies the deterministic rhythm when the
-        // fields are missing or the model invented a move, so a scene can never
-        // reach the renderer with an unrenderable camera instruction.
-        const shot = shotFromScene(
-          {
+          const sceneText = String(scene.text);
+          const words = sceneText.trim().split(/\s+/).length;
+          const spokenDuration = words / 2.5;
+
+          let dur = Number(scene.duration) || 4;
+
+          // Duration clamps
+          if (dur > spokenDuration) dur = spokenDuration;
+          if (dur > 3.5) dur = 3.5;
+          if (dur < 1.8) dur = 1.8;
+
+          // First beat must be <= 2.5s
+          if (scenes.length + idx === 0 && dur > 2.5) {
+            dur = 2.5;
+          }
+
+          const shot = shotFromScene(
+            {
+              text: sceneText,
+              description: String(scene.description ?? sceneText),
+              keywords: Array.isArray(scene.keywords) ? scene.keywords.map(String) : [],
+              shotType: scene.shotType,
+              cameraMove: scene.cameraMove,
+            },
+            scenes.length + idx
+          );
+
+          let imagePrompt = shot.imagePrompt;
+          if (imagePrompt) {
+            imagePrompt = await enhanceFraming(imagePrompt);
+          }
+
+          return {
             text: sceneText,
-            description: String(scene.description ?? sceneText),
             keywords: Array.isArray(scene.keywords) ? scene.keywords.map(String) : [],
-            shotType: scene.shotType,
-            cameraMove: scene.cameraMove,
-          },
-          scenes.length
-        );
+            description: String(scene.description ?? sceneText),
+            duration: dur,
+            emotion: scene.emotion ? String(scene.emotion) : undefined,
+            shotType: shot.shotType,
+            cameraMove: shot.cameraMove,
+            imagePrompt: imagePrompt,
+            searchQuery: shot.searchQuery,
+          };
+        })
+      );
+
+      for (const enhanced of enhancedPrompts) {
+        if (!enhanced) continue;
         scenes.push({
           id: `scene-${scenes.length}`,
-          text: sceneText,
-          keywords: Array.isArray(scene.keywords) ? scene.keywords.map(String) : [],
-          description: String(scene.description ?? sceneText),
-          duration: dur,
-          emotion: scene.emotion ? String(scene.emotion) : undefined,
-          shotType: shot.shotType,
-          cameraMove: shot.cameraMove,
-          imagePrompt: shot.imagePrompt,
-          searchQuery: shot.searchQuery,
+          ...enhanced,
         });
       }
     }

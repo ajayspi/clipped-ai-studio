@@ -15,9 +15,10 @@ import {
   LogOut,
   Sparkles,
   Wand2,
-  Zap,
   ListVideo,
-  RadioTower
+  RadioTower,
+  Database,
+  Zap
 } from "lucide-react"
 
 interface NavItem {
@@ -30,6 +31,9 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Visual Pipeline", href: "/editor/workflow", icon: Wand2, badge: "New", badgeColor: "from-blue-500 to-cyan-500" },
+  { name: "Generative Assets", href: "/assets", icon: Library, badge: "Vault", badgeColor: "from-fuchsia-500 to-pink-500" },
+  { name: "Model Manager", href: "/models", icon: Database, badge: "Local", badgeColor: "from-indigo-500 to-violet-500" },
   { name: "Bulk Planner", href: "/create/bulk", icon: RadioTower, badge: "Trending", badgeColor: "from-orange-500 to-red-500" },
   { name: "Create AI Video", href: "/create", icon: Wand2, badge: "AI", badgeColor: "from-violet-500 to-fuchsia-500" },
   { name: "Calendar", href: "/planner", icon: CalendarDays },

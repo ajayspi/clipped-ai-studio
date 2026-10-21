@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -21,6 +21,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
 import { Loader2, Save } from 'lucide-react';
 import { Scene } from '@/lib/engine/types';
+import { useTimelineStore } from '@/lib/store/timeline-store';
 
 interface Beat extends Scene {
   id: string;
@@ -80,9 +81,62 @@ function SortableBeat({ beat }: { beat: Beat }) {
 }
 
 export function TimelineEditor({ initialBeats, jobId }: TimelineEditorProps) {
-  const [beats, setBeats] = useState<Beat[]>(initialBeats);
+  const beats = useTimelineStore((state) => state.beats);
+  const setBeats = useTimelineStore((state) => state.setBeats);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (initialBeats && initialBeats.length > 0) {
+      setBeats(initialBeats);
+    }
+  }, [initialBeats, setBeats]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const isCmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
+      
+      if (isCmdOrCtrl && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          useTimelineStore.getState().redo();
+        } else {
+          useTimelineStore.getState().undo();
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    const eventSource = new EventSource(`/api/jobs/${jobId}/stream`);
+    
+    const handleData = (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (typeof data.progress === 'number') {
+          setProgress(data.progress);
+        }
+      } catch (err) {
+        // Handle JSON parse error or other stream errors silently
+      }
+    };
+
+    eventSource.addEventListener('init', handleData);
+    eventSource.addEventListener('update', handleData);
+    
+    eventSource.onerror = () => {
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, [jobId]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -139,6 +193,14 @@ export function TimelineEditor({ initialBeats, jobId }: TimelineEditorProps) {
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold tracking-tight">Timeline Editor</h2>
         <div className="flex items-center gap-4">
+          {progress !== null && (
+            <div className="w-32 h-2 bg-muted rounded overflow-hidden">
+              <div 
+                className="h-full bg-primary transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          )}
           {error && <span className="text-destructive text-sm">{error}</span>}
           <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
