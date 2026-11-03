@@ -16,6 +16,7 @@ export async function GET(req: Request) {
       elevenlabs: [],
       google: [],
       keyless: [],
+      voicestudio: [],
     };
 
     voices.forEach((v) => {
@@ -31,7 +32,7 @@ export async function GET(req: Request) {
       totalCount: voices.length,
       voices,
       grouped,
-      supportedProviders: ['azure', 'openai', 'elevenlabs', 'google', 'keyless'],
+      supportedProviders: ['azure', 'openai', 'elevenlabs', 'google', 'keyless', 'voicestudio'],
       supportedLanguages: ['en-US', 'en-IN', 'hi-IN', 'ta-IN', 'te-IN', 'kn-IN', 'bn-IN', 'mr-IN'],
     });
   } catch (error) {

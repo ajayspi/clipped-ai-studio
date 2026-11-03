@@ -42,6 +42,7 @@ import { useTimelineStore } from '@/lib/store/timeline-store';
 import { renderClientSideMp4, triggerBlobDownload } from '@/lib/media/client-export';
 import { DebouncedSyncQueue } from '@/lib/engine/optimistic-mutations';
 import { motion, AnimatePresence } from 'framer-motion';
+import { TimelineScrubberCanvas } from './TimelineScrubberCanvas';
 
 interface Beat extends Scene {
   id: string;
@@ -81,6 +82,7 @@ function SortableBeat({ beat, onUpdateDuration, onOpenSwapModal }: SortableBeatP
   return (
     <div
       ref={setNodeRef}
+      id={`beat-${beat.id}`}
       style={style}
       {...attributes}
       {...listeners}
@@ -570,6 +572,15 @@ export function TimelineEditor({ initialBeats, jobId }: TimelineEditorProps) {
           {error}
         </div>
       )}
+
+      {/* Hardware-Accelerated 60fps Scrubber Track */}
+      <TimelineScrubberCanvas
+        beats={beats}
+        onSelectBeat={(idx) => {
+          const el = document.getElementById(`beat-${beats[idx]?.id}`);
+          el?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }}
+      />
 
       {/* Horizontal Drag & Drop Timeline Tracks */}
       <div className="flex-1 overflow-x-auto pb-4">

@@ -4789,7 +4789,8 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     'Tier 51: Native View Transitions & Optimistic Studio Mutations Engine',
     'Tier 52: XIAS UI/UX Design Doctrine & Component Model',
     'Tier 53: Multi-Channel Content Planner & Social Publishing Engine',
-    'Tier 54: VoiceStudio 48kHz Broadcast Engine & Commercial Safety Gate'
+    'Tier 54: VoiceStudio 48kHz Broadcast Engine & Commercial Safety Gate',
+    'Tier 55: Hardware-Accelerated 60fps NLE Canvas Scrubber & VoiceStudio API Hub'
 ];
 
 tests.push({
@@ -6466,6 +6467,42 @@ tests.push({
     const schemaTts = fs.readFileSync(path.join(process.cwd(), 'packages', 'schema', 'src', 'tts.ts'), 'utf8');
     expect(schemaTts).toContain('sampleRate: z.number().optional()');
     expect(schemaTts).toContain('commercialSafe: z.boolean().optional()');
+  }
+});
+
+tests.push({
+  tier: 'Tier 55: Hardware-Accelerated 60fps NLE Canvas Scrubber & VoiceStudio API Hub',
+  id: 'T55-CANVAS-01',
+  title: 'TimelineScrubberCanvas exports hardware-accelerated 2D canvas scrubber component',
+  fn: async () => {
+    const canvasSource = fs.readFileSync(path.join(process.cwd(), 'components', 'timeline', 'TimelineScrubberCanvas.tsx'), 'utf8');
+    expect(canvasSource).toContain('export function TimelineScrubberCanvas');
+    expect(canvasSource).toContain("canvas.getContext('2d')");
+    expect(canvasSource).toContain('formatTimecode');
+    expect(canvasSource).toContain('handleSeekFromEvent');
+  }
+});
+
+tests.push({
+  tier: 'Tier 55: Hardware-Accelerated 60fps NLE Canvas Scrubber & VoiceStudio API Hub',
+  id: 'T55-CANVAS-02',
+  title: 'TimelineEditor integrates TimelineScrubberCanvas with beat seek and scroll navigation',
+  fn: async () => {
+    const editorSource = fs.readFileSync(path.join(process.cwd(), 'components', 'timeline', 'TimelineEditor.tsx'), 'utf8');
+    expect(editorSource).toContain('TimelineScrubberCanvas');
+    expect(editorSource).toContain('<TimelineScrubberCanvas');
+    expect(editorSource).toContain('scrollIntoView');
+  }
+});
+
+tests.push({
+  tier: 'Tier 55: Hardware-Accelerated 60fps NLE Canvas Scrubber & VoiceStudio API Hub',
+  id: 'T55-VOICES-API-01',
+  title: 'app/api/tts/voices includes voicestudio in supportedProviders and grouped response',
+  fn: async () => {
+    const apiSource = fs.readFileSync(path.join(process.cwd(), 'app', 'api', 'tts', 'voices', 'route.ts'), 'utf8');
+    expect(apiSource).toContain("'voicestudio'");
+    expect(apiSource).toContain("voicestudio: []");
   }
 });
 
