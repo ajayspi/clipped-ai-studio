@@ -4790,7 +4790,8 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     'Tier 52: XIAS UI/UX Design Doctrine & Component Model',
     'Tier 53: Multi-Channel Content Planner & Social Publishing Engine',
     'Tier 54: VoiceStudio 48kHz Broadcast Engine & Commercial Safety Gate',
-    'Tier 55: Hardware-Accelerated 60fps NLE Canvas Scrubber & VoiceStudio API Hub'
+    'Tier 55: Hardware-Accelerated 60fps NLE Canvas Scrubber & VoiceStudio API Hub',
+    'Tier 56: 3DTexel PBR Shaders & Utkarsh Pathrabe Vehicle Engine'
 ];
 
 tests.push({
@@ -6503,6 +6504,70 @@ tests.push({
     const apiSource = fs.readFileSync(path.join(process.cwd(), 'app', 'api', 'tts', 'voices', 'route.ts'), 'utf8');
     expect(apiSource).toContain("'voicestudio'");
     expect(apiSource).toContain("voicestudio: []");
+  }
+});
+
+tests.push({
+  tier: 'Tier 56: 3DTexel PBR Shaders & Utkarsh Pathrabe Vehicle Engine',
+  id: 'T56-PBR-01',
+  title: 'lib/engine/pbr-materials exports Cook-Torrance shaders, 4-point studio rig, and biomechanical spring',
+  fn: async () => {
+    const pbrSource = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'pbr-materials.tsx'), 'utf8');
+    expect(pbrSource).toContain('export function computeFresnelSchlick');
+    expect(pbrSource).toContain('export function computeCookTorranceSpecular');
+    expect(pbrSource).toContain('export function createTitaniumTorsionSpring');
+    expect(pbrSource).toContain('export function createPBRMaterial');
+    expect(pbrSource).toContain('export function setupStudioLightingConfig');
+    expect(pbrSource).toContain('export const PBRStudioViewer');
+    expect(pbrSource).toContain('car_paint');
+    expect(pbrSource).toContain('titanium');
+    expect(pbrSource).toContain('bone');
+  }
+});
+
+tests.push({
+  tier: 'Tier 56: 3DTexel PBR Shaders & Utkarsh Pathrabe Vehicle Engine',
+  id: 'T56-VEHICLE-01',
+  title: 'lib/engine/vehicle-models exports Stradale 1967 and Porsche 930 Turbo with telemetry',
+  fn: async () => {
+    const vehicleSource = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'vehicle-models.ts'), 'utf8');
+    expect(vehicleSource).toContain('export const VEHICLE_PRESETS');
+    expect(vehicleSource).toContain('Alfa Romeo 33 Stradale');
+    expect(vehicleSource).toContain('Porsche 911 (930) Turbo');
+    expect(vehicleSource).toContain('export function createStradaleGeometry');
+    expect(vehicleSource).toContain('export function createPorsche930Geometry');
+    expect(vehicleSource).toContain('export function projectPoint3D');
+    expect(vehicleSource).toContain('export function renderVehicle3D');
+    expect(vehicleSource).toContain('renderTelemetryHUD');
+  }
+});
+
+tests.push({
+  tier: 'Tier 56: 3DTexel PBR Shaders & Utkarsh Pathrabe Vehicle Engine',
+  id: 'T56-PREVIS-01',
+  title: 'app/(app)/create/previs/page.tsx integrates 3D automotive models, color picker, and real-time orbit loop',
+  fn: async () => {
+    const previsSource = fs.readFileSync(path.join(process.cwd(), 'app', '(app)', 'create', 'previs', 'page.tsx'), 'utf8');
+    expect(previsSource).toContain('import { renderVehicle3D, VEHICLE_PRESETS } from "@/lib/engine/vehicle-models"');
+    expect(previsSource).toContain('stagingModel');
+    expect(previsSource).toContain('vehicleColor');
+    expect(previsSource).toContain('renderVehicle3D(ctx, width, height');
+    expect(previsSource).toContain('1967 Alfa Romeo 33 Stradale');
+    expect(previsSource).toContain('1975 Porsche 911 (930) Turbo');
+    expect(previsSource).toContain('Automotive Clearcoat Paint Color');
+  }
+});
+
+tests.push({
+  tier: 'Tier 56: 3DTexel PBR Shaders & Utkarsh Pathrabe Vehicle Engine',
+  id: 'T56-REMOTION-PBR-01',
+  title: 'remotion/Composition.tsx declares pbrProp contract and renders PBRStudioViewer overlay',
+  fn: async () => {
+    const compSource = fs.readFileSync(path.join(process.cwd(), 'remotion', 'Composition.tsx'), 'utf8');
+    expect(compSource).toContain('PBRStudioViewer');
+    expect(compSource).toContain('type PBRPropConfig');
+    expect(compSource).toContain('pbrProp?: PBRPropConfig');
+    expect(compSource).toContain('<PBRStudioViewer');
   }
 });
 

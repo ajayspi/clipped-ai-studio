@@ -35,6 +35,10 @@ import {
   type BarChartRaceSpec,
 } from '@/lib/engine/bar-chart-race';
 import {
+  PBRStudioViewer,
+  type PBRPropConfig,
+} from '@/lib/engine/pbr-materials';
+import {
   AbsoluteFill,
   Sequence,
   useCurrentFrame,
@@ -61,6 +65,7 @@ interface Beat {
   visotalkBeat?: VisoBeat;
   codeMorph?: CodeMorphSpec;
   chartRace?: BarChartRaceSpec;
+  pbrProp?: PBRPropConfig;
   hormoziCaptions?: boolean;
 }
 
@@ -333,6 +338,29 @@ export const MainComposition: React.FC<MainCompositionProps> = ({
                     spec={beat.chartRace}
                     progress={progress}
                     width={920}
+                  />
+                </div>
+              )}
+
+              {/* 3DTexel Procedural PBR Material & Studio Lighting Overlay */}
+              {beat.pbrProp && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 23,
+                    padding: '40px',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  <PBRStudioViewer
+                    config={beat.pbrProp}
+                    progress={progress}
+                    width={880}
+                    height={460}
                   />
                 </div>
               )}

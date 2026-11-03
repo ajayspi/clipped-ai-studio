@@ -1,14 +1,24 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Sparkles, Clapperboard, Compass, ArrowRight } from "lucide-react";
+import { Sparkles, Clapperboard, Compass, ArrowRight, Car } from "lucide-react";
+import { renderVehicle3D, VEHICLE_PRESETS } from "@/lib/engine/vehicle-models";
 
 export default function PrevisPage() {
   const [script, setScript] = useState("");
   const [aspectRatio, setAspectRatio] = useState("16:9");
+  const [stagingModel, setStagingModel] = useState<"actors" | "stradale" | "porsche_930" | "match_cut">("stradale");
+  const [vehicleColor, setVehicleColor] = useState("#c8102e");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const stagingModelRef = useRef(stagingModel);
+  const vehicleColorRef = useRef(vehicleColor);
+
+  useEffect(() => {
+    stagingModelRef.current = stagingModel;
+    vehicleColorRef.current = vehicleColor;
+  }, [stagingModel, vehicleColor]);
 
   // Native 3D Perspective Projection Engine (Zero-dependency WebGL/Canvas Blockout)
   useEffect(() => {
@@ -112,65 +122,77 @@ export default function PrevisPage() {
         }
       }
 
-      // 2. Draw Stand-in Actor 3D Cubes
-      const drawBox = (cx: number, cy: number, cz: number, w: number, h: number, d: number, color: string) => {
-        const hw = w / 2;
-        const hh = h;
-        const hd = d / 2;
+      // 2. Draw Stand-in Geometry or 3D Automotive Rig
+      const currentModel = stagingModelRef.current;
+      const currentColor = vehicleColorRef.current;
 
-        const vertices = [
-          [-hw, 0, -hd],
-          [hw, 0, -hd],
-          [hw, hh, -hd],
-          [-hw, hh, -hd],
-          [-hw, 0, hd],
-          [hw, 0, hd],
-          [hw, hh, hd],
-          [-hw, hh, hd],
-        ].map(([vx, vy, vz]) => project(cx + vx, cy + vy, cz + vz, camX, camY, camZ, width, height));
+      if (currentModel === "actors") {
+        const drawBox = (cx: number, cy: number, cz: number, w: number, h: number, d: number, color: string) => {
+          const hw = w / 2;
+          const hh = h;
+          const hd = d / 2;
 
-        if (vertices.some((v) => v === null)) return;
+          const vertices = [
+            [-hw, 0, -hd],
+            [hw, 0, -hd],
+            [hw, hh, -hd],
+            [-hw, hh, -hd],
+            [-hw, 0, hd],
+            [hw, 0, hd],
+            [hw, hh, hd],
+            [-hw, hh, hd],
+          ].map(([vx, vy, vz]) => project(cx + vx, cy + vy, cz + vz, camX, camY, camZ, width, height));
 
-        // Draw wireframe + translucent faces
-        ctx.fillStyle = color;
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
-        ctx.lineWidth = 1.5;
+          if (vertices.some((v) => v === null)) return;
 
-        // Front face (4, 5, 6, 7)
-        ctx.beginPath();
-        ctx.moveTo(vertices[4]!.x, vertices[4]!.y);
-        ctx.lineTo(vertices[5]!.x, vertices[5]!.y);
-        ctx.lineTo(vertices[6]!.x, vertices[6]!.y);
-        ctx.lineTo(vertices[7]!.x, vertices[7]!.y);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
+          // Draw wireframe + translucent faces
+          ctx.fillStyle = color;
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+          ctx.lineWidth = 1.5;
 
-        // Top face (3, 2, 6, 7)
-        ctx.beginPath();
-        ctx.moveTo(vertices[3]!.x, vertices[3]!.y);
-        ctx.lineTo(vertices[2]!.x, vertices[2]!.y);
-        ctx.lineTo(vertices[6]!.x, vertices[6]!.y);
-        ctx.lineTo(vertices[7]!.x, vertices[7]!.y);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
+          // Front face (4, 5, 6, 7)
+          ctx.beginPath();
+          ctx.moveTo(vertices[4]!.x, vertices[4]!.y);
+          ctx.lineTo(vertices[5]!.x, vertices[5]!.y);
+          ctx.lineTo(vertices[6]!.x, vertices[6]!.y);
+          ctx.lineTo(vertices[7]!.x, vertices[7]!.y);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
 
-        // Connect back pillars
-        ctx.beginPath();
-        ctx.moveTo(vertices[0]!.x, vertices[0]!.y);
-        ctx.lineTo(vertices[1]!.x, vertices[1]!.y);
-        ctx.lineTo(vertices[2]!.x, vertices[2]!.y);
-        ctx.lineTo(vertices[3]!.x, vertices[3]!.y);
-        ctx.closePath();
-        ctx.stroke();
-      };
+          // Top face (3, 2, 6, 7)
+          ctx.beginPath();
+          ctx.moveTo(vertices[3]!.x, vertices[3]!.y);
+          ctx.lineTo(vertices[2]!.x, vertices[2]!.y);
+          ctx.lineTo(vertices[6]!.x, vertices[6]!.y);
+          ctx.lineTo(vertices[7]!.x, vertices[7]!.y);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
 
-      // Stand-in Actor 1: Lead (Violet/Hotpink)
-      drawBox(-1.8, 0, 0, 0.9, 1.8, 0.9, "rgba(236, 72, 153, 0.25)");
+          // Connect back pillars
+          ctx.beginPath();
+          ctx.moveTo(vertices[0]!.x, vertices[0]!.y);
+          ctx.lineTo(vertices[1]!.x, vertices[1]!.y);
+          ctx.lineTo(vertices[2]!.x, vertices[2]!.y);
+          ctx.lineTo(vertices[3]!.x, vertices[3]!.y);
+          ctx.closePath();
+          ctx.stroke();
+        };
 
-      // Stand-in Actor 2: Counterpart (Cyan)
-      drawBox(1.8, 0, 0, 0.9, 1.8, 0.9, "rgba(6, 182, 212, 0.25)");
+        // Stand-in Actor 1: Lead (Violet/Hotpink)
+        drawBox(-1.8, 0, 0, 0.9, 1.8, 0.9, "rgba(236, 72, 153, 0.25)");
+
+        // Stand-in Actor 2: Counterpart (Cyan)
+        drawBox(1.8, 0, 0, 0.9, 1.8, 0.9, "rgba(6, 182, 212, 0.25)");
+      } else {
+        renderVehicle3D(ctx, width, height, {
+          model: currentModel,
+          color: currentColor,
+          time,
+          showTelemetry: true,
+        });
+      }
 
       // 3. Viewport HUD Overlays
       ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
@@ -259,6 +281,66 @@ export default function PrevisPage() {
                 required
               />
             </div>
+
+            <div>
+              <label className="block mb-1.5 text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Car className="w-3.5 h-3.5 text-primary" />
+                Spatial Rig / 3D Asset
+              </label>
+              <select
+                className="w-full p-2.5 bg-background text-foreground text-xs rounded-xl border border-border/40 focus:outline-none focus:ring-1 focus:ring-primary"
+                value={stagingModel}
+                onChange={(e) => {
+                  const val = e.target.value as "actors" | "stradale" | "porsche_930" | "match_cut";
+                  setStagingModel(val);
+                  if (val === "stradale") setVehicleColor(VEHICLE_PRESETS.stradale.defaultColor);
+                  else if (val === "porsche_930") setVehicleColor(VEHICLE_PRESETS.porsche_930.defaultColor);
+                }}
+              >
+                <option value="stradale">1967 Alfa Romeo 33 Stradale (Utkarsh Pathrabe 3D)</option>
+                <option value="porsche_930">1975 Porsche 911 (930) Turbo (Utkarsh Pathrabe 3D)</option>
+                <option value="match_cut">Symmetrical Match-Cut: Stradale vs 930 Turbo</option>
+                <option value="actors">Actors: Standard Graybox Cubes</option>
+              </select>
+            </div>
+
+            {stagingModel !== "actors" && (
+              <div>
+                <label className="block mb-1.5 text-xs font-semibold text-foreground">
+                  Automotive Clearcoat Paint Color
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={vehicleColor}
+                    onChange={(e) => setVehicleColor(e.target.value)}
+                    className="w-8 h-8 rounded-lg border border-border/40 cursor-pointer bg-transparent"
+                  />
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {[
+                      { name: "Rosso Corsa", color: "#c8102e" },
+                      { name: "Guards Red", color: "#e11d48" },
+                      { name: "Grand Prix White", color: "#f8fafc" },
+                      { name: "Campagnolo Gold", color: "#d4af37" },
+                      { name: "Nero Deep", color: "#18181b" },
+                    ].map((p) => (
+                      <button
+                        type="button"
+                        key={p.name}
+                        onClick={() => setVehicleColor(p.color)}
+                        className={`text-[10px] px-2 py-0.5 rounded-md border transition-all cursor-pointer ${
+                          vehicleColor.toLowerCase() === p.color.toLowerCase()
+                            ? "border-primary bg-primary/10 text-primary font-semibold"
+                            : "border-border/40 text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {p.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="block mb-1.5 text-xs font-semibold text-foreground">
