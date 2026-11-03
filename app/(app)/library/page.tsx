@@ -29,7 +29,111 @@ interface LibraryVideo {
   workspace_name?: string;
   created_at?: string;
   output_url?: string;
+  outputUrl?: string;
+  logs?: Record<string, unknown>;
 }
+
+const SHOWCASE_PRESETS: LibraryVideo[] = [
+  {
+    id: "c1a70000-0000-4000-8000-000000000001",
+    title: "The Tactile Miracle of Clay Animation",
+    workflow_type: "claymation",
+    workflowType: "claymation",
+    output_url: "/renders/claymation-showcase.mp4",
+    outputUrl: "/renders/claymation-showcase.mp4",
+    thumbnail: "/images/workflows/auto_cover.jpg",
+    created_at: "2026-11-04T00:00:00Z",
+    logs: {
+      workflow: "claymation",
+      title: "The Tactile Miracle of Clay Animation",
+      outputUrl: "/renders/claymation-showcase.mp4",
+      finalVideoUrl: "/renders/claymation-showcase.mp4",
+      duration: 8.0,
+      aspectRatio: "9:16",
+    }
+  },
+  {
+    id: "01719a00-0000-4000-8000-000000000002",
+    title: "Computational 3D Origami and Papercraft",
+    workflow_type: "origami",
+    workflowType: "origami",
+    output_url: "/renders/origami-papercraft-showcase.mp4",
+    outputUrl: "/renders/origami-papercraft-showcase.mp4",
+    thumbnail: "/images/workflows/whiteboard_cover.jpg",
+    created_at: "2026-11-04T00:00:00Z",
+    logs: {
+      workflow: "origami",
+      title: "Computational 3D Origami and Papercraft",
+      outputUrl: "/renders/origami-papercraft-showcase.mp4",
+      finalVideoUrl: "/renders/origami-papercraft-showcase.mp4",
+      duration: 8.0,
+      aspectRatio: "9:16",
+    }
+  },
+  {
+    id: "571c0000-0000-4000-8000-000000000003",
+    title: "Celestial Stickman: Paradox of Choice",
+    workflow_type: "stickman",
+    workflowType: "stickman",
+    output_url: "/renders/celestial-stickman.mp4",
+    outputUrl: "/renders/celestial-stickman.mp4",
+    thumbnail: "/images/workflows/whiteboard_cover.jpg",
+    created_at: "2026-11-04T00:00:00Z",
+    logs: {
+      workflow: "stickman",
+      title: "Celestial Stickman: Paradox of Choice",
+      outputUrl: "/renders/celestial-stickman.mp4",
+      finalVideoUrl: "/renders/celestial-stickman.mp4",
+      duration: 22.5,
+      aspectRatio: "9:16",
+    }
+  },
+  {
+    id: "50c1a100-0000-4000-8000-000000000004",
+    title: "The Universe Inside Us (Fast-Paced)",
+    workflow_type: "shorts",
+    workflowType: "shorts",
+    output_url: "/renders/universe-inside-us-fast-paced.mp4",
+    outputUrl: "/renders/universe-inside-us-fast-paced.mp4",
+    thumbnail: "/images/workflows/shorts_cover.jpg",
+    created_at: "2026-11-04T00:00:00Z",
+    logs: {
+      workflow: "shorts",
+      title: "The Universe Inside Us (Fast-Paced)",
+      outputUrl: "/renders/universe-inside-us-fast-paced.mp4",
+      finalVideoUrl: "/renders/universe-inside-us-fast-paced.mp4",
+      duration: 271.0,
+      aspectRatio: "16:9",
+    }
+  },
+  {
+    id: "3ae3cad2-8175-4470-b245-8ee8157b4ff6",
+    title: "A Time Traveling Cat (Micro-Drama)",
+    workflow_type: "micro-drama",
+    workflowType: "micro-drama",
+    output_url: "/renders/3ae3cad2-8175-4470-b245-8ee8157b4ff6.mp4",
+    outputUrl: "/renders/3ae3cad2-8175-4470-b245-8ee8157b4ff6.mp4",
+    thumbnail: "/images/workflows/drama_cover.jpg",
+    created_at: "2026-11-04T00:00:00Z",
+    logs: {
+      workflow: "micro-drama",
+      title: "A Time Traveling Cat (Micro-Drama)",
+      outputUrl: "/renders/3ae3cad2-8175-4470-b245-8ee8157b4ff6.mp4",
+      finalVideoUrl: "/renders/3ae3cad2-8175-4470-b245-8ee8157b4ff6.mp4",
+      duration: 9.1,
+      aspectRatio: "16:9",
+    }
+  }
+];
+
+const STYLE_FILTERS = [
+  { id: 'all', label: 'All Styles', icon: '✨' },
+  { id: 'clay', label: 'Clay Animation', icon: '🎨' },
+  { id: 'origami', label: '3D Origami', icon: '📰' },
+  { id: '2d', label: '2D Explainer', icon: '✏️' },
+  { id: 'shorts', label: 'Social Shorts', icon: '⚡' },
+  { id: 'drama', label: 'Micro-Drama', icon: '🎬' },
+];
 
 interface WorkspaceSummary {
   id: string;
@@ -43,6 +147,7 @@ export default function LibraryPage() {
   const [videos, setVideos] = useState<LibraryVideo[]>([]);
   const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([]);
   const [activeWorkspace, setActiveWorkspace] = useState<string>("all");
+  const [activeStyle, setActiveStyle] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [selectedVideoIds, setSelectedVideoIds] = useState<Set<string>>(new Set());
@@ -58,8 +163,13 @@ export default function LibraryPage() {
       const res = await fetch("/api/jobs");
       const data = await res.json();
 
-      if (data.success) {
-        setVideos(data.completed || []);
+      if (data.success && Array.isArray(data.completed)) {
+        const seenIds = new Set(data.completed.map((j: { id: string }) => j.id));
+        const missing = SHOWCASE_PRESETS.filter(p => !seenIds.has(p.id));
+        setVideos([...data.completed, ...missing]);
+        setLastRefreshed(new Date());
+      } else {
+        setVideos(SHOWCASE_PRESETS);
         setLastRefreshed(new Date());
       }
     } catch (e) {
@@ -140,6 +250,17 @@ export default function LibraryPage() {
         if (activeWorkspace !== "all" && v.workspace_id !== activeWorkspace) {
           return false;
         }
+        // Style filter
+        if (activeStyle !== "all") {
+          const wf = (v.workflow_type || v.workflowType || "").toLowerCase();
+          const t = (v.title || "").toLowerCase();
+          if (activeStyle === "clay" && !wf.includes("clay") && !t.includes("clay")) return false;
+          if (activeStyle === "origami" && !wf.includes("origami") && !wf.includes("papercraft") && !t.includes("origami")) return false;
+          if (activeStyle === "2d" && !wf.includes("stick") && !wf.includes("2d") && !wf.includes("whiteboard") && !t.includes("stick")) return false;
+          if (activeStyle === "shorts" && !wf.includes("short") && !wf.includes("social") && !t.includes("short")) return false;
+          if (activeStyle === "drama" && !wf.includes("drama") && !wf.includes("cinema") && !wf.includes("story") && !t.includes("drama")) return false;
+        }
+
         // Search query filter
         if (searchQuery.trim()) {
           const query = searchQuery.toLowerCase();
@@ -159,7 +280,7 @@ export default function LibraryPage() {
         // "newest" default
         return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
       });
-  }, [videos, activeWorkspace, searchQuery, sortBy]);
+  }, [videos, activeWorkspace, activeStyle, searchQuery, sortBy]);
 
   // Batch actions
   const toggleSelectAll = () => {
@@ -282,6 +403,28 @@ export default function LibraryPage() {
           <Plus className="w-3.5 h-3.5" />
           <span>New Workspace</span>
         </button>
+      </div>
+
+      {/* Style Filter Chips */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 select-none">
+        {STYLE_FILTERS.map((s) => {
+          const isActive = activeStyle === s.id;
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => setActiveStyle(s.id)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer ${
+                isActive
+                  ? "bg-violet-600 text-white shadow-xs"
+                  : "bg-card hover:bg-muted text-muted-foreground hover:text-foreground border border-border/50"
+              }`}
+            >
+              <span>{s.icon}</span>
+              <span>{s.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Search, Filter & Sort Toolbar */}

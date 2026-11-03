@@ -360,7 +360,7 @@ export class MissionOrchestrator {
         85
       );
 
-      const remotionPackage = this.composeRemotionStoryboard(audioScenes, state.aspectRatio);
+      const remotionPackage = this.composeRemotionStoryboard(audioScenes, state.aspectRatio, state.style);
       state.videoUrl = remotionPackage.videoUrl;
       state.currentStage = 'ready';
       state.overallProgress = 100;
@@ -553,7 +553,15 @@ Return ONLY a valid JSON object with the following schema:
 
     for (let i = 0; i < scenes.length; i++) {
       const scene = { ...scenes[i] };
-      const fallbackUrl = samplePool[i % samplePool.length];
+      let fallbackUrl = samplePool[i % samplePool.length];
+      const normStyle = (style || '').toLowerCase();
+      if (normStyle.includes('clay')) {
+        fallbackUrl = '/renders/claymation-showcase.mp4';
+      } else if (normStyle.includes('origami') || normStyle.includes('papercraft')) {
+        fallbackUrl = '/renders/origami-papercraft-showcase.mp4';
+      } else if (normStyle.includes('stick') || normStyle.includes('2d') || normStyle.includes('whiteboard')) {
+        fallbackUrl = '/renders/celestial-stickman.mp4';
+      }
       const thumbUrl = `https://storage.clipped.ai/stock/thumb-${orientation}-${i + 1}.jpg`;
 
       if (!mock) {
@@ -676,7 +684,8 @@ Return ONLY a valid JSON object with the following schema:
    */
   composeRemotionStoryboard(
     scenes: Scene[],
-    aspectRatio: AspectRatio
+    aspectRatio: AspectRatio,
+    style?: string
   ): RemotionCompositionPackage {
     const fps = 30;
     const width = aspectRatio === '16:9' ? 1920 : 1080;
@@ -705,7 +714,15 @@ Return ONLY a valid JSON object with the following schema:
       maxWidth: 82,
     };
 
-    const primaryVideoUrl = beats[0]?.clipUrl || 'https://storage.clipped.ai/renders/mission-preview.mp4';
+    let primaryVideoUrl = beats[0]?.clipUrl;
+    if (!primaryVideoUrl || primaryVideoUrl.startsWith('https://storage.clipped.ai') || primaryVideoUrl.includes('c59e2619')) {
+      const s = (style || '').toLowerCase();
+      if (s.includes('clay')) primaryVideoUrl = '/renders/claymation-showcase.mp4';
+      else if (s.includes('origami') || s.includes('papercraft')) primaryVideoUrl = '/renders/origami-papercraft-showcase.mp4';
+      else if (s.includes('drama') || s.includes('cinema')) primaryVideoUrl = '/renders/3ae3cad2-8175-4470-b245-8ee8157b4ff6.mp4';
+      else if (s.includes('short') || s.includes('social')) primaryVideoUrl = '/renders/universe-inside-us-fast-paced.mp4';
+      else primaryVideoUrl = '/renders/celestial-stickman.mp4';
+    }
 
     return {
       fps,

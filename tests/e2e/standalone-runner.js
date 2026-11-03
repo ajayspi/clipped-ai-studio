@@ -4791,7 +4791,8 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     'Tier 53: Multi-Channel Content Planner & Social Publishing Engine',
     'Tier 54: VoiceStudio 48kHz Broadcast Engine & Commercial Safety Gate',
     'Tier 55: Hardware-Accelerated 60fps NLE Canvas Scrubber & VoiceStudio API Hub',
-    'Tier 56: 3DTexel PBR Shaders & Utkarsh Pathrabe Vehicle Engine'
+    'Tier 56: 3DTexel PBR Shaders & Utkarsh Pathrabe Vehicle Engine',
+    'Tier 57: Autonomous Agentic Video Director, Dynamic Style Video Resolvers & Optimized Library'
 ];
 
 tests.push({
@@ -6568,6 +6569,96 @@ tests.push({
     expect(compSource).toContain('type PBRPropConfig');
     expect(compSource).toContain('pbrProp?: PBRPropConfig');
     expect(compSource).toContain('<PBRStudioViewer');
+  }
+});
+
+
+tests.push({
+  tier: 'Tier 57: Autonomous Agentic Video Director, Dynamic Style Video Resolvers & Optimized Library',
+  id: 'T57-DYNAMIC-VIDEO-01',
+  title: 'resolveShowcaseVideo in lib/engine/job-presentation.ts maps styles and bans Volvo fallback',
+  fn: async () => {
+    const jobPresSource = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'job-presentation.ts'), 'utf8');
+    expect(jobPresSource).toContain('export function resolveShowcaseVideo');
+    expect(jobPresSource).toContain('/renders/claymation-showcase.mp4');
+    expect(jobPresSource).toContain('/renders/origami-papercraft-showcase.mp4');
+    expect(jobPresSource).toContain('/renders/celestial-stickman.mp4');
+    expect(jobPresSource).toContain('/renders/universe-inside-us-fast-paced.mp4');
+    expect(jobPresSource).toContain('c59e2619-997f-4544-9167-e3f740592298.mp4');
+    expect(jobPresSource).toContain('BANNED_FALLBACK');
+  }
+});
+
+tests.push({
+  tier: 'Tier 57: Autonomous Agentic Video Director, Dynamic Style Video Resolvers & Optimized Library',
+  id: 'T57-DASHBOARD-PREVIEW-02',
+  title: 'DashboardCard and VideoPreviewModal eliminate hardcoded fallback and call resolveShowcaseVideo',
+  fn: async () => {
+    const cardSource = fs.readFileSync(path.join(process.cwd(), 'components', 'dashboard', 'DashboardCard.tsx'), 'utf8');
+    expect(cardSource).toContain('resolveShowcaseVideo');
+    expect(cardSource).not.toContain('c59e2619-997f-4544-9167-e3f740592298.mp4');
+
+    const modalSource = fs.readFileSync(path.join(process.cwd(), 'components', 'dashboard', 'VideoPreviewModal.tsx'), 'utf8');
+    expect(modalSource).toContain('resolveShowcaseVideo');
+    expect(modalSource).not.toContain('c59e2619-997f-4544-9167-e3f740592298.mp4');
+  }
+});
+
+tests.push({
+  tier: 'Tier 57: Autonomous Agentic Video Director, Dynamic Style Video Resolvers & Optimized Library',
+  id: 'T57-AGENTIC-DIRECTOR-03',
+  title: 'AgenticDirector provides multi-agent swarm pipeline visualization and is mounted in create page',
+  fn: async () => {
+    const directorSource = fs.readFileSync(path.join(process.cwd(), 'components', 'create', 'AgenticDirector.tsx'), 'utf8');
+    expect(directorSource).toContain('export function AgenticDirector');
+    expect(directorSource).toContain('STYLE_OPTIONS');
+    expect(directorSource).toContain('Clay Animation');
+    expect(directorSource).toContain('3D Origami');
+    expect(directorSource).toContain('2D Stick Explainer');
+    expect(directorSource).toContain('Autonomous Video Director');
+    expect(directorSource).toContain('Multi-Agent Swarm');
+    expect(directorSource).toContain('Scriptwriter Agent');
+    expect(directorSource).toContain('Voice Synthesis Agent');
+    expect(directorSource).toContain('Visual Director Agent');
+
+    const createPageSource = fs.readFileSync(path.join(process.cwd(), 'app', '(app)', 'create', 'page.tsx'), 'utf8');
+    expect(createPageSource).toContain('AgenticDirector');
+    expect(createPageSource).toContain('<AgenticDirector />');
+  }
+});
+
+tests.push({
+  tier: 'Tier 57: Autonomous Agentic Video Director, Dynamic Style Video Resolvers & Optimized Library',
+  id: 'T57-LIBRARY-OPTIMIZATION-04',
+  title: 'Library page provides STYLE_FILTERS, style filter chips, and verified showcase presets',
+  fn: async () => {
+    const librarySource = fs.readFileSync(path.join(process.cwd(), 'app', '(app)', 'library', 'page.tsx'), 'utf8');
+    expect(librarySource).toContain('STYLE_FILTERS');
+    expect(librarySource).toContain('activeStyle');
+    expect(librarySource).toContain('SHOWCASE_PRESETS');
+    expect(librarySource).toContain('claymation-showcase.mp4');
+    expect(librarySource).toContain('origami-papercraft-showcase.mp4');
+    expect(librarySource).toContain('celestial-stickman.mp4');
+    expect(librarySource).toContain('Style Filter Chips');
+  }
+});
+
+tests.push({
+  tier: 'Tier 57: Autonomous Agentic Video Director, Dynamic Style Video Resolvers & Optimized Library',
+  id: 'T57-WORKFLOW-SCRIPT-SYNTHESIS-05',
+  title: 'Dedicated claymation and origami workflows enforce 2-stage script writing and synthesis with real MP4s',
+  fn: async () => {
+    const clayRoute = fs.readFileSync(path.join(process.cwd(), 'app', 'api', 'workflows', 'claymation', 'route.ts'), 'utf8');
+    expect(clayRoute).toContain("workflow: 'claymation'");
+    expect(clayRoute).toContain('/renders/claymation-showcase.mp4');
+
+    const origamiRoute = fs.readFileSync(path.join(process.cwd(), 'app', 'api', 'workflows', 'origami', 'route.ts'), 'utf8');
+    expect(origamiRoute).toContain("workflow: 'origami'");
+    expect(origamiRoute).toContain('/renders/origami-papercraft-showcase.mp4');
+
+    expect(fs.existsSync(path.join(process.cwd(), 'public', 'renders', 'claymation-showcase.mp4'))).toBe(true);
+    expect(fs.existsSync(path.join(process.cwd(), 'public', 'renders', 'origami-papercraft-showcase.mp4'))).toBe(true);
+    expect(fs.existsSync(path.join(process.cwd(), 'public', 'renders', 'celestial-stickman.mp4'))).toBe(true);
   }
 });
 

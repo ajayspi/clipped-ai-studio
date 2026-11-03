@@ -1,15 +1,26 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { Sparkles, RefreshCw, Key, ListVideo } from "lucide-react";
+import {
+  Sparkles,
+  RefreshCw,
+  Key,
+  ListVideo,
+  ChevronDown,
+  ChevronUp,
+  Layers,
+  Wand2
+} from "lucide-react";
 import { useApiKeys } from "@/components/create/useApiKeys";
 import { WORKFLOWS } from "@/components/create/workflow-definitions";
-import { MissionPromptBar } from "@/components/create/MissionPromptBar";
+import { AgenticDirector } from "@/components/create/AgenticDirector";
 import { SignatureStudios } from "@/components/create/SignatureStudios";
 import { WorkflowGrid } from "@/components/create/WorkflowGrid";
 
 export default function CreateHubPage() {
   const { keys, loading, refresh } = useApiKeys();
+  const [showAdvancedCatalog, setShowAdvancedCatalog] = useState(false);
 
   return (
     <div className="flex flex-1 flex-col gap-8 p-6 md:p-8 max-w-7xl mx-auto w-full">
@@ -22,11 +33,11 @@ export default function CreateHubPage() {
             </h1>
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20">
               <Sparkles className="w-3 h-3" />
-              {WORKFLOWS.length} Workflows
+              AI Director
             </span>
           </div>
           <p className="text-sm text-muted-foreground mt-1.5">
-            Choose an AI generation workflow or use 1-click Auto Pilot to produce viral videos in seconds.
+            Direct autonomous AI video stories with script synthesis, multi-agent execution, and verified rendering.
           </p>
         </div>
 
@@ -60,24 +71,56 @@ export default function CreateHubPage() {
         </div>
       </div>
 
-      {/* Hero 1-Click Automatic Mission Prompt Bar */}
-      <MissionPromptBar />
+      {/* Hero Autonomous Multi-Agent Video Director */}
+      <AgenticDirector />
 
-      {/* 4 Signature Studios Hero Section */}
-      <SignatureStudios />
-
-      {/* Video Generation Pipelines with Filtering */}
+      {/* Signature Studios Section */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold tracking-tight text-foreground">
-            Video Generation Pipelines
+          <h2 className="text-lg font-semibold tracking-tight text-foreground flex items-center gap-2">
+            <Layers className="w-4 h-4 text-violet-400" />
+            Signature Creative Studios
           </h2>
           <span className="text-xs text-muted-foreground">
-            Dynamic status based on your API configuration
+            Specialized engines for Claymation, 3D Origami, Explainers & Cinema
           </span>
         </div>
+        <SignatureStudios />
+      </div>
 
-        <WorkflowGrid workflows={WORKFLOWS} keyStatusMap={keys} />
+      {/* Collapsible Advanced Pipelines Catalog */}
+      <div className="border border-border/60 rounded-2xl bg-card/40 p-4 transition-all">
+        <button
+          type="button"
+          onClick={() => setShowAdvancedCatalog(!showAdvancedCatalog)}
+          className="w-full flex items-center justify-between text-left cursor-pointer group"
+        >
+          <div className="flex items-center gap-2.5">
+            <Wand2 className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+            <div>
+              <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                Advanced Generation Pipelines ({WORKFLOWS.length})
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Custom API pipelines, manual schedulers & batch scripts
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+            <span>{showAdvancedCatalog ? "Hide Pipelines" : "Browse All Pipelines"}</span>
+            {showAdvancedCatalog ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+          </div>
+        </button>
+
+        {showAdvancedCatalog && (
+          <div className="pt-6 border-t border-border/40 mt-4">
+            <WorkflowGrid workflows={WORKFLOWS} keyStatusMap={keys} />
+          </div>
+        )}
       </div>
     </div>
   );

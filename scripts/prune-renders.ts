@@ -9,6 +9,8 @@ const PROTECTED_FILES = new Set([
   'universe-inside-us-fast-paced.mp4',
   'awesome-recipes-showcase.mp4',
   'celestial-stickman.mp4',
+  'claymation-showcase.mp4',
+  'origami-papercraft-showcase.mp4',
   'studio-pipeline.html',
   '.gitkeep',
 ])

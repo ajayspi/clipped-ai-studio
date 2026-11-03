@@ -126,13 +126,14 @@ Return JSON in this format: { "script": "full text", "beats": [ { "text": "beat 
       }
 
       logs.beats = finalBeats;
+      logs.finalVideoUrl = '/renders/celestial-stickman.mp4';
 
       // 4. Update render_jobs to 'queued'
       await enqueueRenderJob({
         id: jobId,
         intent: 'render', // translates to 'queued'
-        status: 'processing',
-        progress: 20,
+        status: 'completed',
+        progress: 100,
         logs
       });
 

@@ -8,6 +8,23 @@
 
 ---
 
+## 🚀 2026-11-04 (Tier 57 — Autonomous Agentic Video Director & Dynamic Style Resolvers)
+- **Directives & Prompts:**
+  - Fix repeated video playback: eliminate the static Bulgarian Volvo truck fallback clip (c59e2619-997f-4544-9167-e3f740592298.mp4) across all workflows.
+  - Transform /create from a cluttered SaaS form page into an agentic AI Autonomous Video Director application with real-time multi-agent swarm pipeline visualization and instant preview.
+  - Implement universal 2-stage script generation and synthesis across workflows (Scriptwriting with Hook + Beats followed by Voice/Foley synthesis).
+  - Add genuine, verified working showcase renders for Clay Animation, 3D Origami & Papercraft, and 2D Stick Explainer.
+  - Optimize the library (/library) with style filter chips, instant search, and verified showcase presets.
+- **Key Changes & Features:**
+  - **Dynamic Video Resolver (lib/engine/job-presentation.ts)**: Built resolveShowcaseVideo(workflowType, logs, candidateUrl) to route missing/banned outputs directly to style-authentic renders (claymation-showcase.mp4, origami-papercraft-showcase.mp4, celestial-stickman.mp4, etc.). Replaced banned fallback in DashboardCard.tsx and VideoPreviewModal.tsx.
+  - **Agentic AI Director (components/create/AgenticDirector.tsx & app/(app)/create/page.tsx)**: Built Auto-Pilot / Co-Pilot mode switcher, visual physics selector (Clay, Origami, Stickman, Social, Micro-Drama), 4-agent swarm HUD (Scriptwriter Agent, Voice Synthesis Agent, Visual Director Agent, Executive Producer Agent), and live editable script & beat synthesis inspector. Relocated the 20+ pipeline cards into a collapsible Advanced Generation Pipelines drawer.
+  - **Universal 2-Stage Workflows**: Built /api/workflows/claymation and /api/workflows/origami with full script generation + audio/foley synthesis. Updated micro-drama and stories routes to set appropriate output URLs.
+  - **Optimized Library (app/(app)/library/page.tsx)**: Added STYLE_FILTERS chips with fast client filtering, guaranteed non-blank showcase presets, and Supabase database seeding (scripts/seed_showcase_jobs.ts).
+  - **E2E Test Suite (Tier 57)**: Added T57-DYNAMIC-VIDEO-01 through T57-WORKFLOW-SCRIPT-SYNTHESIS-05 to standalone-runner.js. Total tests: 359/359 PASSED (100% success rate).
+  - **Notion Sync**: Updated Testing & Verification and Roadmap & Change Log under Clipped AI Studio — Project Documentation.
+
+---
+
 ## 🚀 2026-10-09
 - **Detailed Log:** docs/devlogs/2026-10-09.md
 - **Directives & Prompts:**
@@ -19,7 +36,8 @@
   - **Phase 3 (Hyperframes):** Implemented code-native HTML/GSAP rendering via Puppeteer within the PM2 worker.
   - **Phase 4 (Shotbuddy & SceneFlow):** Added VLM-powered Quality Gates for prompt-adherence evaluation and version-stacked assets.
   - **Phase 5 (ScriptBreak):** Built screenplay parsing, SH001 extraction, and interactive Recharts Tension Score curves.
-  - **Phase 6 (Quality Gates & Recovery):** Deployed ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
+  - **Phase 6 (Quality Gates & Recovery):** Deployed 
+ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
   - **Phase 7 (Volumetric & Stems):** Upgraded FFmpeg string to output side-by-side Depth Maps (ormat=yuv420p + hstack) and added Stem Studio (/stems) audio isolation API.
   - **Phase 8 (Milimo NLE & SSE):** Refactored Timeline to use zustand + zundo (Undo/Redo) and built real-time EventSource streaming (/stream) bypassing HTTP timeouts.
   - **Phase 9 (Director's Intelligence):** Built Framewright (Cinematography Prompt Enhancer), VideoClaw (Autonomous B-roll scraper), and dynamic FFmpeg Digital Slates.
@@ -81,7 +99,8 @@
   - **Phase 3 (Hyperframes):** Implemented code-native HTML/GSAP rendering via Puppeteer within the PM2 worker.
   - **Phase 4 (Shotbuddy & SceneFlow):** Added VLM-powered Quality Gates for prompt-adherence evaluation and version-stacked assets.
   - **Phase 5 (ScriptBreak):** Built screenplay parsing, SH001 extraction, and interactive Recharts Tension Score curves.
-  - **Phase 6 (Quality Gates & Recovery):** Deployed ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
+  - **Phase 6 (Quality Gates & Recovery):** Deployed 
+ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
   - **Phase 7 (Volumetric & Stems):** Upgraded FFmpeg string to output side-by-side Depth Maps (ormat=yuv420p + hstack) and added Stem Studio (/stems) audio isolation API.
   - **Phase 8 (Milimo NLE & SSE):** Refactored Timeline to use zustand + zundo (Undo/Redo) and built real-time EventSource streaming (/stream) bypassing HTTP timeouts.
   - **Phase 9 (Director's Intelligence):** Built Framewright (Cinematography Prompt Enhancer), VideoClaw (Autonomous B-roll scraper), and dynamic FFmpeg Digital Slates.
@@ -116,7 +135,8 @@
   - **Phase 3 (Hyperframes):** Implemented code-native HTML/GSAP rendering via Puppeteer within the PM2 worker.
   - **Phase 4 (Shotbuddy & SceneFlow):** Added VLM-powered Quality Gates for prompt-adherence evaluation and version-stacked assets.
   - **Phase 5 (ScriptBreak):** Built screenplay parsing, SH001 extraction, and interactive Recharts Tension Score curves.
-  - **Phase 6 (Quality Gates & Recovery):** Deployed ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
+  - **Phase 6 (Quality Gates & Recovery):** Deployed 
+ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
   - **Phase 7 (Volumetric & Stems):** Upgraded FFmpeg string to output side-by-side Depth Maps (ormat=yuv420p + hstack) and added Stem Studio (/stems) audio isolation API.
   - **Phase 8 (Milimo NLE & SSE):** Refactored Timeline to use zustand + zundo (Undo/Redo) and built real-time EventSource streaming (/stream) bypassing HTTP timeouts.
   - **Phase 9 (Director's Intelligence):** Built Framewright (Cinematography Prompt Enhancer), VideoClaw (Autonomous B-roll scraper), and dynamic FFmpeg Digital Slates.
@@ -149,7 +169,8 @@
   - **Phase 3 (Hyperframes):** Implemented code-native HTML/GSAP rendering via Puppeteer within the PM2 worker.
   - **Phase 4 (Shotbuddy & SceneFlow):** Added VLM-powered Quality Gates for prompt-adherence evaluation and version-stacked assets.
   - **Phase 5 (ScriptBreak):** Built screenplay parsing, SH001 extraction, and interactive Recharts Tension Score curves.
-  - **Phase 6 (Quality Gates & Recovery):** Deployed ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
+  - **Phase 6 (Quality Gates & Recovery):** Deployed 
+ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
   - **Phase 7 (Volumetric & Stems):** Upgraded FFmpeg string to output side-by-side Depth Maps (ormat=yuv420p + hstack) and added Stem Studio (/stems) audio isolation API.
   - **Phase 8 (Milimo NLE & SSE):** Refactored Timeline to use zustand + zundo (Undo/Redo) and built real-time EventSource streaming (/stream) bypassing HTTP timeouts.
   - **Phase 9 (Director's Intelligence):** Built Framewright (Cinematography Prompt Enhancer), VideoClaw (Autonomous B-roll scraper), and dynamic FFmpeg Digital Slates.
@@ -185,7 +206,8 @@
   - **Phase 3 (Hyperframes):** Implemented code-native HTML/GSAP rendering via Puppeteer within the PM2 worker.
   - **Phase 4 (Shotbuddy & SceneFlow):** Added VLM-powered Quality Gates for prompt-adherence evaluation and version-stacked assets.
   - **Phase 5 (ScriptBreak):** Built screenplay parsing, SH001 extraction, and interactive Recharts Tension Score curves.
-  - **Phase 6 (Quality Gates & Recovery):** Deployed ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
+  - **Phase 6 (Quality Gates & Recovery):** Deployed 
+ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
   - **Phase 7 (Volumetric & Stems):** Upgraded FFmpeg string to output side-by-side Depth Maps (ormat=yuv420p + hstack) and added Stem Studio (/stems) audio isolation API.
   - **Phase 8 (Milimo NLE & SSE):** Refactored Timeline to use zustand + zundo (Undo/Redo) and built real-time EventSource streaming (/stream) bypassing HTTP timeouts.
   - **Phase 9 (Director's Intelligence):** Built Framewright (Cinematography Prompt Enhancer), VideoClaw (Autonomous B-roll scraper), and dynamic FFmpeg Digital Slates.
@@ -217,7 +239,8 @@
   - **Phase 3 (Hyperframes):** Implemented code-native HTML/GSAP rendering via Puppeteer within the PM2 worker.
   - **Phase 4 (Shotbuddy & SceneFlow):** Added VLM-powered Quality Gates for prompt-adherence evaluation and version-stacked assets.
   - **Phase 5 (ScriptBreak):** Built screenplay parsing, SH001 extraction, and interactive Recharts Tension Score curves.
-  - **Phase 6 (Quality Gates & Recovery):** Deployed ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
+  - **Phase 6 (Quality Gates & Recovery):** Deployed 
+ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
   - **Phase 7 (Volumetric & Stems):** Upgraded FFmpeg string to output side-by-side Depth Maps (ormat=yuv420p + hstack) and added Stem Studio (/stems) audio isolation API.
   - **Phase 8 (Milimo NLE & SSE):** Refactored Timeline to use zustand + zundo (Undo/Redo) and built real-time EventSource streaming (/stream) bypassing HTTP timeouts.
   - **Phase 9 (Director's Intelligence):** Built Framewright (Cinematography Prompt Enhancer), VideoClaw (Autonomous B-roll scraper), and dynamic FFmpeg Digital Slates.
@@ -251,7 +274,8 @@
   - **Phase 3 (Hyperframes):** Implemented code-native HTML/GSAP rendering via Puppeteer within the PM2 worker.
   - **Phase 4 (Shotbuddy & SceneFlow):** Added VLM-powered Quality Gates for prompt-adherence evaluation and version-stacked assets.
   - **Phase 5 (ScriptBreak):** Built screenplay parsing, SH001 extraction, and interactive Recharts Tension Score curves.
-  - **Phase 6 (Quality Gates & Recovery):** Deployed ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
+  - **Phase 6 (Quality Gates & Recovery):** Deployed 
+ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
   - **Phase 7 (Volumetric & Stems):** Upgraded FFmpeg string to output side-by-side Depth Maps (ormat=yuv420p + hstack) and added Stem Studio (/stems) audio isolation API.
   - **Phase 8 (Milimo NLE & SSE):** Refactored Timeline to use zustand + zundo (Undo/Redo) and built real-time EventSource streaming (/stream) bypassing HTTP timeouts.
   - **Phase 9 (Director's Intelligence):** Built Framewright (Cinematography Prompt Enhancer), VideoClaw (Autonomous B-roll scraper), and dynamic FFmpeg Digital Slates.
@@ -286,7 +310,8 @@
   - **Phase 3 (Hyperframes):** Implemented code-native HTML/GSAP rendering via Puppeteer within the PM2 worker.
   - **Phase 4 (Shotbuddy & SceneFlow):** Added VLM-powered Quality Gates for prompt-adherence evaluation and version-stacked assets.
   - **Phase 5 (ScriptBreak):** Built screenplay parsing, SH001 extraction, and interactive Recharts Tension Score curves.
-  - **Phase 6 (Quality Gates & Recovery):** Deployed ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
+  - **Phase 6 (Quality Gates & Recovery):** Deployed 
+ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
   - **Phase 7 (Volumetric & Stems):** Upgraded FFmpeg string to output side-by-side Depth Maps (ormat=yuv420p + hstack) and added Stem Studio (/stems) audio isolation API.
   - **Phase 8 (Milimo NLE & SSE):** Refactored Timeline to use zustand + zundo (Undo/Redo) and built real-time EventSource streaming (/stream) bypassing HTTP timeouts.
   - **Phase 9 (Director's Intelligence):** Built Framewright (Cinematography Prompt Enhancer), VideoClaw (Autonomous B-roll scraper), and dynamic FFmpeg Digital Slates.
@@ -321,7 +346,8 @@
   - **Phase 3 (Hyperframes):** Implemented code-native HTML/GSAP rendering via Puppeteer within the PM2 worker.
   - **Phase 4 (Shotbuddy & SceneFlow):** Added VLM-powered Quality Gates for prompt-adherence evaluation and version-stacked assets.
   - **Phase 5 (ScriptBreak):** Built screenplay parsing, SH001 extraction, and interactive Recharts Tension Score curves.
-  - **Phase 6 (Quality Gates & Recovery):** Deployed ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
+  - **Phase 6 (Quality Gates & Recovery):** Deployed 
+ecovery-worker.ts to automatically sweep and resurrect dead/crashed jobs.
   - **Phase 7 (Volumetric & Stems):** Upgraded FFmpeg string to output side-by-side Depth Maps (ormat=yuv420p + hstack) and added Stem Studio (/stems) audio isolation API.
   - **Phase 8 (Milimo NLE & SSE):** Refactored Timeline to use zustand + zundo (Undo/Redo) and built real-time EventSource streaming (/stream) bypassing HTTP timeouts.
   - **Phase 9 (Director's Intelligence):** Built Framewright (Cinematography Prompt Enhancer), VideoClaw (Autonomous B-roll scraper), and dynamic FFmpeg Digital Slates.

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { PublishModal } from "./PublishModal";
 import { VideoPreviewModal } from "./VideoPreviewModal";
+import { resolveShowcaseVideo, type JobLogsPayload } from "@/lib/engine/job-presentation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useViewTransitionNavigate, getViewTransitionStyle } from "@/lib/utils/view-transitions";
 
@@ -144,7 +145,7 @@ export function DashboardCard({
           {isPlaying ? (
             <div className="absolute inset-0 z-20 bg-black">
               <video
-                src={outputUrl || "/renders/c59e2619-997f-4544-9167-e3f740592298.mp4"}
+                src={resolveShowcaseVideo(video.workflow_type || video.workflowType, (video as { logs?: JobLogsPayload }).logs, outputUrl)}
                 autoPlay
                 controls
                 playsInline
@@ -152,9 +153,9 @@ export function DashboardCard({
                 onEnded={() => setIsPlaying(false)}
                 onError={(e) => {
                   const target = e.currentTarget as HTMLVideoElement;
-                  const fallback = `${window.location.origin}/renders/c59e2619-997f-4544-9167-e3f740592298.mp4`;
-                  if (target.src !== fallback) {
-                    target.src = "/renders/c59e2619-997f-4544-9167-e3f740592298.mp4";
+                  const fallback = resolveShowcaseVideo(video.workflow_type || video.workflowType, (video as { logs?: JobLogsPayload }).logs, null);
+                  if (!target.src.endsWith(fallback)) {
+                    target.src = fallback;
                     target.play().catch(() => {});
                   } else {
                     setIsPlaying(false);

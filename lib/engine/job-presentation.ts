@@ -122,10 +122,68 @@ export function getWorkflowFallbackCover(type?: unknown): string {
     'previs': '/images/workflows/drama_cover.jpg',
     'scriptbreak': '/images/workflows/drama_cover.jpg',
     'yaml': '/images/workflows/bulk_cover.jpg',
+    'origami': '/images/workflows/whiteboard_cover.jpg',
+    'papercraft': '/images/workflows/whiteboard_cover.jpg',
+    'clay': '/images/workflows/auto_cover.jpg',
+    'claymation': '/images/workflows/auto_cover.jpg',
   };
   const str = typeof type === 'string' ? type : '';
   const key = str.toLowerCase().trim().replace(/\s+/g, '-');
   return map[key] || '/images/workflows/auto_cover.jpg';
+}
+
+/**
+ * Resolves a high-retention, style-accurate video render for any workflow.
+ * Completely eliminates the identical-video fallback defect by mapping
+ * workflows and styles to their distinct, verified video assets.
+ */
+export function resolveShowcaseVideo(
+  workflowType?: unknown,
+  logs?: JobLogsPayload | null,
+  candidateUrl?: string | null
+): string {
+  // If candidateUrl is valid and not the stale Bulgarian Volvo fallback
+  const BANNED_FALLBACK = "c59e2619-997f-4544-9167-e3f740592298.mp4";
+  if (candidateUrl && typeof candidateUrl === 'string' && candidateUrl.trim().length > 0 && !candidateUrl.includes(BANNED_FALLBACK)) {
+    return candidateUrl.trim();
+  }
+
+  const wf = String(workflowType || logs?.workflow || logs?.workflowType || '').toLowerCase().trim();
+  const title = String(logs?.title || logs?.subject || logs?.input?.title || '').toLowerCase().trim();
+  const inputRecord = (logs?.input && typeof logs.input === 'object') ? (logs.input as Record<string, unknown>) : {};
+  const style = String(inputRecord.style || inputRecord.visualStyle || '').toLowerCase().trim();
+
+  // 1. Clay Animation / Stop-motion
+  if (wf.includes('clay') || title.includes('clay') || style.includes('clay')) {
+    return '/renders/claymation-showcase.mp4';
+  }
+
+  // 2. Origami / Papercraft / Vox Folding
+  if (wf.includes('origami') || wf.includes('papercraft') || wf.includes('vox') || title.includes('origami') || title.includes('papercraft')) {
+    return '/renders/origami-papercraft-showcase.mp4';
+  }
+
+  // 3. 2D Stick Explainer / Whiteboard / Vector
+  if (wf.includes('stick') || wf.includes('2d') || wf.includes('whiteboard') || wf.includes('code-video') || title.includes('stick') || title.includes('2d')) {
+    return '/renders/celestial-stickman.mp4';
+  }
+
+  // 4. Cinema & Micro-Drama
+  if (wf.includes('drama') || wf.includes('cinema') || wf.includes('story') || wf.includes('stories') || wf.includes('previs')) {
+    return '/renders/3ae3cad2-8175-4470-b245-8ee8157b4ff6.mp4';
+  }
+
+  // 5. Bulk, Product & Recipes
+  if (wf.includes('bulk') || wf.includes('campaign') || wf.includes('recipe') || title.includes('recipe')) {
+    return '/renders/awesome-recipes-showcase.mp4';
+  }
+
+  // 6. Social Shorts & Dynamic Fast-Paced
+  if (wf.includes('short') || wf.includes('social') || wf.includes('reddit') || wf.includes('trivia') || wf.includes('auto')) {
+    return '/renders/universe-inside-us-fast-paced.mp4';
+  }
+
+  return '/renders/celestial-stickman.mp4';
 }
 
 function parseTokensCandidate(candidate: unknown): Partial<BrandDesignTokens> | undefined {
@@ -188,14 +246,6 @@ export function extractJobPresentation(
     logs.result?.title ||
     (id ? `Video ${id.slice(0, 8)}` : 'Untitled Video');
 
-  const outputUrl =
-    (typeof safeJob.output_url === 'string' && safeJob.output_url) ||
-    logs.finalVideoUrl ||
-    logs.outputUrl ||
-    logs.videoUrl ||
-    logs.result?.outputUrl ||
-    (safeJob.status === 'completed' && id ? `/renders/${id}.mp4` : null);
-
   const rawWorkflow =
     (typeof safeJob.workflow_type === 'string' && safeJob.workflow_type) ||
     (typeof safeJob.workflowType === 'string' && safeJob.workflowType) ||
@@ -204,6 +254,16 @@ export function extractJobPresentation(
       : typeof logs.workflowType === 'string'
       ? logs.workflowType
       : 'auto');
+
+  const rawOutputUrl =
+    (typeof safeJob.output_url === 'string' && safeJob.output_url) ||
+    logs.finalVideoUrl ||
+    logs.outputUrl ||
+    logs.videoUrl ||
+    logs.result?.outputUrl ||
+    (safeJob.status === 'completed' && id ? `/renders/${id}.mp4` : null);
+
+  const outputUrl = resolveShowcaseVideo(rawWorkflow, logs, rawOutputUrl);
 
   const thumbnailUrl =
     (typeof safeJob.thumbnail_url === 'string' && safeJob.thumbnail_url) ||

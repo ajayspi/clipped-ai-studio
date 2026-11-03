@@ -20,6 +20,7 @@ import {
   Folder,
 } from "lucide-react";
 import { useViewTransitionNavigate } from "@/lib/utils/view-transitions";
+import { resolveShowcaseVideo, type JobLogsPayload } from "@/lib/engine/job-presentation";
 
 export interface PreviewVideoData {
   id: string;
@@ -44,8 +45,6 @@ interface VideoPreviewModalProps {
   onOpenPublish?: () => void;
 }
 
-const SHOWCASE_FALLBACK_URL = "/renders/c59e2619-997f-4544-9167-e3f740592298.mp4";
-
 export function VideoPreviewModal({
   video,
   isOpen,
@@ -56,7 +55,18 @@ export function VideoPreviewModal({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const initialVideoUrl = video ? (video.output_url || video.outputUrl || SHOWCASE_FALLBACK_URL) : "";
+  const getResolvedUrl = useCallback((candUrl?: string | null) => {
+    if (!video) return "";
+    return resolveShowcaseVideo(
+      video.workflow_type || video.workflowType,
+      (video as { logs?: JobLogsPayload }).logs,
+      candUrl
+    );
+  }, [video]);
+
+  const initialVideoUrl = video
+    ? getResolvedUrl(video.output_url || video.outputUrl)
+    : "";
   const [prevVideo, setPrevVideo] = useState<PreviewVideoData | null>(video);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
@@ -130,12 +140,13 @@ export function VideoPreviewModal({
   };
 
   const handleVideoError = () => {
-    // If custom URL failed to load, fallback to the confirmed rendered showcase video
-    if (!hasTriedFallback && videoSrc !== SHOWCASE_FALLBACK_URL) {
+    // If URL failed to load, fallback to the style-specific showcase video
+    const fallback = getResolvedUrl(null);
+    if (!hasTriedFallback && videoSrc !== fallback) {
       setHasTriedFallback(true);
-      setVideoSrc(SHOWCASE_FALLBACK_URL);
+      setVideoSrc(fallback);
       if (videoRef.current) {
-        videoRef.current.src = SHOWCASE_FALLBACK_URL;
+        videoRef.current.src = fallback;
         videoRef.current.play().catch(() => {});
       }
     }

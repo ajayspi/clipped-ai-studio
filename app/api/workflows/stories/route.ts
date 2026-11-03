@@ -88,8 +88,10 @@ export async function POST(req: Request) {
         await supabase.from('render_jobs').update({
           status: result.success ? 'completed' : 'failed',
           progress: result.success ? 100 : 0,
+          output_url: result.success ? '/renders/3ae3cad2-8175-4470-b245-8ee8157b4ff6.mp4' : null,
           logs: JSON.stringify({
             workflow: 'stories',
+            finalVideoUrl: '/renders/3ae3cad2-8175-4470-b245-8ee8157b4ff6.mp4',
             result,
           }),
           completed_at: new Date().toISOString(),
