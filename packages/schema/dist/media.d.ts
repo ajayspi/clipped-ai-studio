@@ -26,9 +26,9 @@ export declare const MediaAssetSchema: z.ZodObject<{
     model?: string | undefined;
     mimeType?: string | undefined;
     generatedAt?: string | undefined;
+    license?: string | undefined;
     width?: number | undefined;
     height?: number | undefined;
-    license?: string | undefined;
     attribution?: string | undefined;
 }, {
     url: string;
@@ -40,9 +40,9 @@ export declare const MediaAssetSchema: z.ZodObject<{
     model?: string | undefined;
     mimeType?: string | undefined;
     generatedAt?: string | undefined;
+    license?: string | undefined;
     width?: number | undefined;
     height?: number | undefined;
-    license?: string | undefined;
     attribution?: string | undefined;
 }>;
 export type MediaAsset = z.infer<typeof MediaAssetSchema>;
@@ -82,9 +82,9 @@ export declare const VideoSchema: z.ZodObject<{
         model?: string | undefined;
         mimeType?: string | undefined;
         generatedAt?: string | undefined;
+        license?: string | undefined;
         width?: number | undefined;
         height?: number | undefined;
-        license?: string | undefined;
         attribution?: string | undefined;
     }, {
         url: string;
@@ -96,9 +96,9 @@ export declare const VideoSchema: z.ZodObject<{
         model?: string | undefined;
         mimeType?: string | undefined;
         generatedAt?: string | undefined;
+        license?: string | undefined;
         width?: number | undefined;
         height?: number | undefined;
-        license?: string | undefined;
         attribution?: string | undefined;
     }>>;
 }, "strip", z.ZodTypeAny, {
@@ -120,9 +120,9 @@ export declare const VideoSchema: z.ZodObject<{
         model?: string | undefined;
         mimeType?: string | undefined;
         generatedAt?: string | undefined;
+        license?: string | undefined;
         width?: number | undefined;
         height?: number | undefined;
-        license?: string | undefined;
         attribution?: string | undefined;
     } | undefined;
 }, {
@@ -144,9 +144,9 @@ export declare const VideoSchema: z.ZodObject<{
         model?: string | undefined;
         mimeType?: string | undefined;
         generatedAt?: string | undefined;
+        license?: string | undefined;
         width?: number | undefined;
         height?: number | undefined;
-        license?: string | undefined;
         attribution?: string | undefined;
     } | undefined;
 }>;
@@ -197,9 +197,9 @@ export declare const SceneSchema: z.ZodObject<{
             model?: string | undefined;
             mimeType?: string | undefined;
             generatedAt?: string | undefined;
+            license?: string | undefined;
             width?: number | undefined;
             height?: number | undefined;
-            license?: string | undefined;
             attribution?: string | undefined;
         }, {
             url: string;
@@ -211,9 +211,9 @@ export declare const SceneSchema: z.ZodObject<{
             model?: string | undefined;
             mimeType?: string | undefined;
             generatedAt?: string | undefined;
+            license?: string | undefined;
             width?: number | undefined;
             height?: number | undefined;
-            license?: string | undefined;
             attribution?: string | undefined;
         }>>;
     }, "strip", z.ZodTypeAny, {
@@ -235,9 +235,9 @@ export declare const SceneSchema: z.ZodObject<{
             model?: string | undefined;
             mimeType?: string | undefined;
             generatedAt?: string | undefined;
+            license?: string | undefined;
             width?: number | undefined;
             height?: number | undefined;
-            license?: string | undefined;
             attribution?: string | undefined;
         } | undefined;
     }, {
@@ -259,9 +259,9 @@ export declare const SceneSchema: z.ZodObject<{
             model?: string | undefined;
             mimeType?: string | undefined;
             generatedAt?: string | undefined;
+            license?: string | undefined;
             width?: number | undefined;
             height?: number | undefined;
-            license?: string | undefined;
             attribution?: string | undefined;
         } | undefined;
     }>>;
@@ -292,9 +292,9 @@ export declare const SceneSchema: z.ZodObject<{
         model?: string | undefined;
         mimeType?: string | undefined;
         generatedAt?: string | undefined;
+        license?: string | undefined;
         width?: number | undefined;
         height?: number | undefined;
-        license?: string | undefined;
         attribution?: string | undefined;
     }, {
         url: string;
@@ -306,9 +306,9 @@ export declare const SceneSchema: z.ZodObject<{
         model?: string | undefined;
         mimeType?: string | undefined;
         generatedAt?: string | undefined;
+        license?: string | undefined;
         width?: number | undefined;
         height?: number | undefined;
-        license?: string | undefined;
         attribution?: string | undefined;
     }>>;
     wordTimestamps: z.ZodOptional<z.ZodArray<z.ZodObject<{
@@ -361,9 +361,9 @@ export declare const SceneSchema: z.ZodObject<{
             model?: string | undefined;
             mimeType?: string | undefined;
             generatedAt?: string | undefined;
+            license?: string | undefined;
             width?: number | undefined;
             height?: number | undefined;
-            license?: string | undefined;
             attribution?: string | undefined;
         } | undefined;
     } | undefined;
@@ -380,9 +380,9 @@ export declare const SceneSchema: z.ZodObject<{
         model?: string | undefined;
         mimeType?: string | undefined;
         generatedAt?: string | undefined;
+        license?: string | undefined;
         width?: number | undefined;
         height?: number | undefined;
-        license?: string | undefined;
         attribution?: string | undefined;
     } | undefined;
     emotion?: string | undefined;
@@ -421,9 +421,9 @@ export declare const SceneSchema: z.ZodObject<{
             model?: string | undefined;
             mimeType?: string | undefined;
             generatedAt?: string | undefined;
+            license?: string | undefined;
             width?: number | undefined;
             height?: number | undefined;
-            license?: string | undefined;
             attribution?: string | undefined;
         } | undefined;
     } | undefined;
@@ -440,9 +440,9 @@ export declare const SceneSchema: z.ZodObject<{
         model?: string | undefined;
         mimeType?: string | undefined;
         generatedAt?: string | undefined;
+        license?: string | undefined;
         width?: number | undefined;
         height?: number | undefined;
-        license?: string | undefined;
         attribution?: string | undefined;
     } | undefined;
     emotion?: string | undefined;
@@ -487,9 +487,9 @@ export declare const VideoMatchSchema: z.ZodObject<{
             model?: string | undefined;
             mimeType?: string | undefined;
             generatedAt?: string | undefined;
+            license?: string | undefined;
             width?: number | undefined;
             height?: number | undefined;
-            license?: string | undefined;
             attribution?: string | undefined;
         }, {
             url: string;
@@ -501,9 +501,9 @@ export declare const VideoMatchSchema: z.ZodObject<{
             model?: string | undefined;
             mimeType?: string | undefined;
             generatedAt?: string | undefined;
+            license?: string | undefined;
             width?: number | undefined;
             height?: number | undefined;
-            license?: string | undefined;
             attribution?: string | undefined;
         }>>;
     }, "strip", z.ZodTypeAny, {
@@ -525,9 +525,9 @@ export declare const VideoMatchSchema: z.ZodObject<{
             model?: string | undefined;
             mimeType?: string | undefined;
             generatedAt?: string | undefined;
+            license?: string | undefined;
             width?: number | undefined;
             height?: number | undefined;
-            license?: string | undefined;
             attribution?: string | undefined;
         } | undefined;
     }, {
@@ -549,9 +549,9 @@ export declare const VideoMatchSchema: z.ZodObject<{
             model?: string | undefined;
             mimeType?: string | undefined;
             generatedAt?: string | undefined;
+            license?: string | undefined;
             width?: number | undefined;
             height?: number | undefined;
-            license?: string | undefined;
             attribution?: string | undefined;
         } | undefined;
     }>;
@@ -577,9 +577,9 @@ export declare const VideoMatchSchema: z.ZodObject<{
             model?: string | undefined;
             mimeType?: string | undefined;
             generatedAt?: string | undefined;
+            license?: string | undefined;
             width?: number | undefined;
             height?: number | undefined;
-            license?: string | undefined;
             attribution?: string | undefined;
         } | undefined;
     };
@@ -605,9 +605,9 @@ export declare const VideoMatchSchema: z.ZodObject<{
             model?: string | undefined;
             mimeType?: string | undefined;
             generatedAt?: string | undefined;
+            license?: string | undefined;
             width?: number | undefined;
             height?: number | undefined;
-            license?: string | undefined;
             attribution?: string | undefined;
         } | undefined;
     };
@@ -663,9 +663,9 @@ export declare const ScriptAnalysisSchema: z.ZodObject<{
                 model?: string | undefined;
                 mimeType?: string | undefined;
                 generatedAt?: string | undefined;
+                license?: string | undefined;
                 width?: number | undefined;
                 height?: number | undefined;
-                license?: string | undefined;
                 attribution?: string | undefined;
             }, {
                 url: string;
@@ -677,9 +677,9 @@ export declare const ScriptAnalysisSchema: z.ZodObject<{
                 model?: string | undefined;
                 mimeType?: string | undefined;
                 generatedAt?: string | undefined;
+                license?: string | undefined;
                 width?: number | undefined;
                 height?: number | undefined;
-                license?: string | undefined;
                 attribution?: string | undefined;
             }>>;
         }, "strip", z.ZodTypeAny, {
@@ -701,9 +701,9 @@ export declare const ScriptAnalysisSchema: z.ZodObject<{
                 model?: string | undefined;
                 mimeType?: string | undefined;
                 generatedAt?: string | undefined;
+                license?: string | undefined;
                 width?: number | undefined;
                 height?: number | undefined;
-                license?: string | undefined;
                 attribution?: string | undefined;
             } | undefined;
         }, {
@@ -725,9 +725,9 @@ export declare const ScriptAnalysisSchema: z.ZodObject<{
                 model?: string | undefined;
                 mimeType?: string | undefined;
                 generatedAt?: string | undefined;
+                license?: string | undefined;
                 width?: number | undefined;
                 height?: number | undefined;
-                license?: string | undefined;
                 attribution?: string | undefined;
             } | undefined;
         }>>;
@@ -758,9 +758,9 @@ export declare const ScriptAnalysisSchema: z.ZodObject<{
             model?: string | undefined;
             mimeType?: string | undefined;
             generatedAt?: string | undefined;
+            license?: string | undefined;
             width?: number | undefined;
             height?: number | undefined;
-            license?: string | undefined;
             attribution?: string | undefined;
         }, {
             url: string;
@@ -772,9 +772,9 @@ export declare const ScriptAnalysisSchema: z.ZodObject<{
             model?: string | undefined;
             mimeType?: string | undefined;
             generatedAt?: string | undefined;
+            license?: string | undefined;
             width?: number | undefined;
             height?: number | undefined;
-            license?: string | undefined;
             attribution?: string | undefined;
         }>>;
         wordTimestamps: z.ZodOptional<z.ZodArray<z.ZodObject<{
@@ -827,9 +827,9 @@ export declare const ScriptAnalysisSchema: z.ZodObject<{
                 model?: string | undefined;
                 mimeType?: string | undefined;
                 generatedAt?: string | undefined;
+                license?: string | undefined;
                 width?: number | undefined;
                 height?: number | undefined;
-                license?: string | undefined;
                 attribution?: string | undefined;
             } | undefined;
         } | undefined;
@@ -846,9 +846,9 @@ export declare const ScriptAnalysisSchema: z.ZodObject<{
             model?: string | undefined;
             mimeType?: string | undefined;
             generatedAt?: string | undefined;
+            license?: string | undefined;
             width?: number | undefined;
             height?: number | undefined;
-            license?: string | undefined;
             attribution?: string | undefined;
         } | undefined;
         emotion?: string | undefined;
@@ -887,9 +887,9 @@ export declare const ScriptAnalysisSchema: z.ZodObject<{
                 model?: string | undefined;
                 mimeType?: string | undefined;
                 generatedAt?: string | undefined;
+                license?: string | undefined;
                 width?: number | undefined;
                 height?: number | undefined;
-                license?: string | undefined;
                 attribution?: string | undefined;
             } | undefined;
         } | undefined;
@@ -906,9 +906,9 @@ export declare const ScriptAnalysisSchema: z.ZodObject<{
             model?: string | undefined;
             mimeType?: string | undefined;
             generatedAt?: string | undefined;
+            license?: string | undefined;
             width?: number | undefined;
             height?: number | undefined;
-            license?: string | undefined;
             attribution?: string | undefined;
         } | undefined;
         emotion?: string | undefined;
@@ -953,9 +953,9 @@ export declare const ScriptAnalysisSchema: z.ZodObject<{
                 model?: string | undefined;
                 mimeType?: string | undefined;
                 generatedAt?: string | undefined;
+                license?: string | undefined;
                 width?: number | undefined;
                 height?: number | undefined;
-                license?: string | undefined;
                 attribution?: string | undefined;
             } | undefined;
         } | undefined;
@@ -972,9 +972,9 @@ export declare const ScriptAnalysisSchema: z.ZodObject<{
             model?: string | undefined;
             mimeType?: string | undefined;
             generatedAt?: string | undefined;
+            license?: string | undefined;
             width?: number | undefined;
             height?: number | undefined;
-            license?: string | undefined;
             attribution?: string | undefined;
         } | undefined;
         emotion?: string | undefined;
@@ -1019,9 +1019,9 @@ export declare const ScriptAnalysisSchema: z.ZodObject<{
                 model?: string | undefined;
                 mimeType?: string | undefined;
                 generatedAt?: string | undefined;
+                license?: string | undefined;
                 width?: number | undefined;
                 height?: number | undefined;
-                license?: string | undefined;
                 attribution?: string | undefined;
             } | undefined;
         } | undefined;
@@ -1038,9 +1038,9 @@ export declare const ScriptAnalysisSchema: z.ZodObject<{
             model?: string | undefined;
             mimeType?: string | undefined;
             generatedAt?: string | undefined;
+            license?: string | undefined;
             width?: number | undefined;
             height?: number | undefined;
-            license?: string | undefined;
             attribution?: string | undefined;
         } | undefined;
         emotion?: string | undefined;
@@ -1124,9 +1124,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                     model?: string | undefined;
                     mimeType?: string | undefined;
                     generatedAt?: string | undefined;
+                    license?: string | undefined;
                     width?: number | undefined;
                     height?: number | undefined;
-                    license?: string | undefined;
                     attribution?: string | undefined;
                 }, {
                     url: string;
@@ -1138,9 +1138,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                     model?: string | undefined;
                     mimeType?: string | undefined;
                     generatedAt?: string | undefined;
+                    license?: string | undefined;
                     width?: number | undefined;
                     height?: number | undefined;
-                    license?: string | undefined;
                     attribution?: string | undefined;
                 }>>;
             }, "strip", z.ZodTypeAny, {
@@ -1162,9 +1162,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                     model?: string | undefined;
                     mimeType?: string | undefined;
                     generatedAt?: string | undefined;
+                    license?: string | undefined;
                     width?: number | undefined;
                     height?: number | undefined;
-                    license?: string | undefined;
                     attribution?: string | undefined;
                 } | undefined;
             }, {
@@ -1186,9 +1186,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                     model?: string | undefined;
                     mimeType?: string | undefined;
                     generatedAt?: string | undefined;
+                    license?: string | undefined;
                     width?: number | undefined;
                     height?: number | undefined;
-                    license?: string | undefined;
                     attribution?: string | undefined;
                 } | undefined;
             }>>;
@@ -1219,9 +1219,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                 model?: string | undefined;
                 mimeType?: string | undefined;
                 generatedAt?: string | undefined;
+                license?: string | undefined;
                 width?: number | undefined;
                 height?: number | undefined;
-                license?: string | undefined;
                 attribution?: string | undefined;
             }, {
                 url: string;
@@ -1233,9 +1233,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                 model?: string | undefined;
                 mimeType?: string | undefined;
                 generatedAt?: string | undefined;
+                license?: string | undefined;
                 width?: number | undefined;
                 height?: number | undefined;
-                license?: string | undefined;
                 attribution?: string | undefined;
             }>>;
             wordTimestamps: z.ZodOptional<z.ZodArray<z.ZodObject<{
@@ -1288,9 +1288,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                     model?: string | undefined;
                     mimeType?: string | undefined;
                     generatedAt?: string | undefined;
+                    license?: string | undefined;
                     width?: number | undefined;
                     height?: number | undefined;
-                    license?: string | undefined;
                     attribution?: string | undefined;
                 } | undefined;
             } | undefined;
@@ -1307,9 +1307,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                 model?: string | undefined;
                 mimeType?: string | undefined;
                 generatedAt?: string | undefined;
+                license?: string | undefined;
                 width?: number | undefined;
                 height?: number | undefined;
-                license?: string | undefined;
                 attribution?: string | undefined;
             } | undefined;
             emotion?: string | undefined;
@@ -1348,9 +1348,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                     model?: string | undefined;
                     mimeType?: string | undefined;
                     generatedAt?: string | undefined;
+                    license?: string | undefined;
                     width?: number | undefined;
                     height?: number | undefined;
-                    license?: string | undefined;
                     attribution?: string | undefined;
                 } | undefined;
             } | undefined;
@@ -1367,9 +1367,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                 model?: string | undefined;
                 mimeType?: string | undefined;
                 generatedAt?: string | undefined;
+                license?: string | undefined;
                 width?: number | undefined;
                 height?: number | undefined;
-                license?: string | undefined;
                 attribution?: string | undefined;
             } | undefined;
             emotion?: string | undefined;
@@ -1414,9 +1414,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                     model?: string | undefined;
                     mimeType?: string | undefined;
                     generatedAt?: string | undefined;
+                    license?: string | undefined;
                     width?: number | undefined;
                     height?: number | undefined;
-                    license?: string | undefined;
                     attribution?: string | undefined;
                 } | undefined;
             } | undefined;
@@ -1433,9 +1433,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                 model?: string | undefined;
                 mimeType?: string | undefined;
                 generatedAt?: string | undefined;
+                license?: string | undefined;
                 width?: number | undefined;
                 height?: number | undefined;
-                license?: string | undefined;
                 attribution?: string | undefined;
             } | undefined;
             emotion?: string | undefined;
@@ -1480,9 +1480,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                     model?: string | undefined;
                     mimeType?: string | undefined;
                     generatedAt?: string | undefined;
+                    license?: string | undefined;
                     width?: number | undefined;
                     height?: number | undefined;
-                    license?: string | undefined;
                     attribution?: string | undefined;
                 } | undefined;
             } | undefined;
@@ -1499,9 +1499,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                 model?: string | undefined;
                 mimeType?: string | undefined;
                 generatedAt?: string | undefined;
+                license?: string | undefined;
                 width?: number | undefined;
                 height?: number | undefined;
-                license?: string | undefined;
                 attribution?: string | undefined;
             } | undefined;
             emotion?: string | undefined;
@@ -1546,9 +1546,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                 model?: string | undefined;
                 mimeType?: string | undefined;
                 generatedAt?: string | undefined;
+                license?: string | undefined;
                 width?: number | undefined;
                 height?: number | undefined;
-                license?: string | undefined;
                 attribution?: string | undefined;
             }, {
                 url: string;
@@ -1560,9 +1560,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                 model?: string | undefined;
                 mimeType?: string | undefined;
                 generatedAt?: string | undefined;
+                license?: string | undefined;
                 width?: number | undefined;
                 height?: number | undefined;
-                license?: string | undefined;
                 attribution?: string | undefined;
             }>>;
         }, "strip", z.ZodTypeAny, {
@@ -1584,9 +1584,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                 model?: string | undefined;
                 mimeType?: string | undefined;
                 generatedAt?: string | undefined;
+                license?: string | undefined;
                 width?: number | undefined;
                 height?: number | undefined;
-                license?: string | undefined;
                 attribution?: string | undefined;
             } | undefined;
         }, {
@@ -1608,9 +1608,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                 model?: string | undefined;
                 mimeType?: string | undefined;
                 generatedAt?: string | undefined;
+                license?: string | undefined;
                 width?: number | undefined;
                 height?: number | undefined;
-                license?: string | undefined;
                 attribution?: string | undefined;
             } | undefined;
         }>;
@@ -1636,9 +1636,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                 model?: string | undefined;
                 mimeType?: string | undefined;
                 generatedAt?: string | undefined;
+                license?: string | undefined;
                 width?: number | undefined;
                 height?: number | undefined;
-                license?: string | undefined;
                 attribution?: string | undefined;
             } | undefined;
         };
@@ -1664,9 +1664,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                 model?: string | undefined;
                 mimeType?: string | undefined;
                 generatedAt?: string | undefined;
+                license?: string | undefined;
                 width?: number | undefined;
                 height?: number | undefined;
-                license?: string | undefined;
                 attribution?: string | undefined;
             } | undefined;
         };
@@ -1712,9 +1712,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                     model?: string | undefined;
                     mimeType?: string | undefined;
                     generatedAt?: string | undefined;
+                    license?: string | undefined;
                     width?: number | undefined;
                     height?: number | undefined;
-                    license?: string | undefined;
                     attribution?: string | undefined;
                 } | undefined;
             } | undefined;
@@ -1731,9 +1731,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                 model?: string | undefined;
                 mimeType?: string | undefined;
                 generatedAt?: string | undefined;
+                license?: string | undefined;
                 width?: number | undefined;
                 height?: number | undefined;
-                license?: string | undefined;
                 attribution?: string | undefined;
             } | undefined;
             emotion?: string | undefined;
@@ -1766,9 +1766,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                 model?: string | undefined;
                 mimeType?: string | undefined;
                 generatedAt?: string | undefined;
+                license?: string | undefined;
                 width?: number | undefined;
                 height?: number | undefined;
-                license?: string | undefined;
                 attribution?: string | undefined;
             } | undefined;
         };
@@ -1814,9 +1814,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                     model?: string | undefined;
                     mimeType?: string | undefined;
                     generatedAt?: string | undefined;
+                    license?: string | undefined;
                     width?: number | undefined;
                     height?: number | undefined;
-                    license?: string | undefined;
                     attribution?: string | undefined;
                 } | undefined;
             } | undefined;
@@ -1833,9 +1833,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                 model?: string | undefined;
                 mimeType?: string | undefined;
                 generatedAt?: string | undefined;
+                license?: string | undefined;
                 width?: number | undefined;
                 height?: number | undefined;
-                license?: string | undefined;
                 attribution?: string | undefined;
             } | undefined;
             emotion?: string | undefined;
@@ -1868,9 +1868,9 @@ export declare const GenerationResponseSchema: z.ZodObject<{
                 model?: string | undefined;
                 mimeType?: string | undefined;
                 generatedAt?: string | undefined;
+                license?: string | undefined;
                 width?: number | undefined;
                 height?: number | undefined;
-                license?: string | undefined;
                 attribution?: string | undefined;
             } | undefined;
         };

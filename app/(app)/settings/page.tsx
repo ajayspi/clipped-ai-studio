@@ -32,6 +32,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useSupabase, TestConnectionResult } from "@/lib/supabase/context";
 import { ApiProviderHub } from "@/components/settings/ApiProviderHub";
+import { BRAND_TOKEN_PRESETS, OPEN_PROPS_EASINGS, getBrandTokenPreset, type OpenPropsEasingKey } from "@/lib/engine/brand-tokens-presets";
 
 interface OmniTestResult {
   success: boolean;
@@ -323,6 +324,9 @@ export default function SettingsPage() {
   const [watermarkPosition, setWatermarkPosition] = useState("Bottom Right");
   const [watermarkOpacity, setWatermarkOpacity] = useState(80);
   const [brandSavedFeedback, setBrandSavedFeedback] = useState(false);
+  const [selectedPresetId, setSelectedPresetId] = useState<string>("hormozi-viral");
+  const [motionEasing, setMotionEasing] = useState<string>("ease-squish-2");
+  const [previewActive, setPreviewActive] = useState<boolean>(false);
 
   // ── Workspaces State ──────────────────────────────────────────────────────
   const [workspaces, setWorkspaces] = useState<WorkspaceItem[]>([
@@ -431,6 +435,9 @@ export default function SettingsPage() {
         if (data.brandKit.customFontUrl) setCustomFontUrl(data.brandKit.customFontUrl);
         if (data.brandKit.subtitlePreset) setSubtitlePreset(data.brandKit.subtitlePreset);
         if (data.brandKit.subtitlePosition) setSubtitlePosition(data.brandKit.subtitlePosition);
+        if (data.brandKit.motionEasing) setMotionEasing(data.brandKit.motionEasing);
+        if (data.brandKit.selectedPresetId) setSelectedPresetId(data.brandKit.selectedPresetId);
+        if (data.brandKit.brandTokens?.motion?.easing) setMotionEasing(data.brandKit.brandTokens.motion.easing);
         if (data.brandKit.watermarkUrl) {
           setWatermarkUrl(data.brandKit.watermarkUrl);
           setWatermarkEnabled(true);
@@ -744,13 +751,32 @@ export default function SettingsPage() {
   // ── Brand Kit Action Handler ──────────────────────────────────────────────
   async function handleSaveBrandKit() {
     try {
+      const presetTokens = getBrandTokenPreset(selectedPresetId);
+      const easingDef = OPEN_PROPS_EASINGS[motionEasing as OpenPropsEasingKey];
+      const brandTokens = {
+        ...presetTokens,
+        colors: {
+          ...presetTokens.colors,
+          primary: customSubtitleColor,
+        },
+        motion: {
+          easing: motionEasing,
+          easingCurve: easingDef?.cssValue || 'cubic-bezier(.25, 0, .3, 1)',
+          durationScale: presetTokens.motion?.durationScale || 1.0,
+          zoomPanEasing: presetTokens.motion?.zoomPanEasing || 'ease-out-3',
+        },
+      };
+
       const brandKit = {
         customSubtitleColor,
         customFontUrl,
         subtitlePreset,
         subtitlePosition,
         watermarkUrl: watermarkEnabled ? watermarkUrl : '',
-        watermarkPosition
+        watermarkPosition,
+        motionEasing,
+        selectedPresetId,
+        brandTokens,
       };
       await fetch("/api/settings/brand-kit", {
         method: "POST",
@@ -1384,7 +1410,117 @@ export default function SettingsPage() {
                       </div>
                     )}
 
-                    <div className="space-y-6 max-w-2xl">
+                    <div className="space-y-6 max-w-3xl">
+                      {/* Open Props Brand Style & Motion Presets */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <label className="text-sm font-semibold text-foreground">Open Props Brand & Motion Presets</label>
+                            <p className="text-xs text-muted-foreground">Select a curated aesthetic or customize typography, colors, and physical easing curves.</p>
+                          </div>
+                          <span className="text-[11px] font-mono text-pink-400 bg-pink-500/10 border border-pink-500/20 px-2.5 py-0.5 rounded-full">
+                            Open Props ⚡
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+                          {Object.values(BRAND_TOKEN_PRESETS).map((p) => {
+                            const isSelected = selectedPresetId === p.id;
+                            return (
+                              <button
+                                key={p.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedPresetId(p.id);
+                                  setSubtitlePreset(p.subtitlePreset);
+                                  setCustomSubtitleColor(p.tokens.colors.primary);
+                                  if (p.tokens.motion?.easing) {
+                                    setMotionEasing(p.tokens.motion.easing);
+                                  }
+                                }}
+                                className={`text-left p-3.5 rounded-xl border transition-all flex flex-col justify-between ${
+                                  isSelected
+                                    ? "border-pink-500 bg-pink-500/10 shadow-sm ring-1 ring-pink-500/30"
+                                    : "border-border/60 bg-muted/20 hover:bg-muted/40 hover:border-border"
+                                }`}
+                              >
+                                <div>
+                                  <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-xs font-bold text-foreground">{p.name}</span>
+                                    <span className="text-[10px] font-medium text-pink-400 bg-pink-500/10 px-1.5 py-0.5 rounded">
+                                      {p.badge}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-muted-foreground line-clamp-2 mb-3">
+                                    {p.description}
+                                  </p>
+                                </div>
+
+                                <div className="space-y-2 pt-2 border-t border-border/40">
+                                  <div className="flex items-center justify-between text-[11px]">
+                                    <span className="text-muted-foreground font-mono text-[10px]">{p.tokens.typography.fontFamily.split(',')[0]}</span>
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="w-3.5 h-3.5 rounded-full border border-black/20" style={{ backgroundColor: p.tokens.colors.primary }} />
+                                      <span className="w-3.5 h-3.5 rounded-full border border-black/20" style={{ backgroundColor: p.tokens.colors.accent }} />
+                                    </div>
+                                  </div>
+                                  <div className="text-[10px] font-mono text-muted-foreground truncate">
+                                    {p.tokens.motion?.easing}
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Open Props Easing & Live Motion Preview */}
+                      <div className="p-4 rounded-xl border border-border/60 bg-muted/10 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <label className="text-xs font-semibold text-foreground">Remotion & Subtitle Easing Curve (Open Props)</label>
+                            <p className="text-[11px] text-muted-foreground">Governs Ken Burns camera acceleration and subtitle spring pop-in physics.</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setPreviewActive(!previewActive)}
+                            className="text-xs font-medium text-pink-400 hover:text-pink-300 underline"
+                          >
+                            {previewActive ? "Reset Physics" : "Trigger Bounce"}
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                          <select
+                            value={motionEasing}
+                            onChange={(e) => setMotionEasing(e.target.value)}
+                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring font-mono"
+                          >
+                            <option value="ease-squish-2">ease-squish-2 (Hormozi Punch: cubic-bezier(.5, -.3, .1, 1.5))</option>
+                            <option value="ease-elastic-3">ease-elastic-3 (Viral Pop: cubic-bezier(.5, 1.25, .75, 1.25))</option>
+                            <option value="ease-3">ease-3 (Cinematic Decel: cubic-bezier(.25, 0, .3, 1))</option>
+                            <option value="ease-out-3">ease-out-3 (Modern Clean: cubic-bezier(0, 0, .30, 1))</option>
+                            <option value="ease-elastic-1">ease-elastic-1 (Gentle Bounce: cubic-bezier(.5, .75, .75, 1.25))</option>
+                            <option value="ease-squish-5">ease-squish-5 (Cartoony Snap: cubic-bezier(.5, -.9, .1, 1.5))</option>
+                            <option value="ease-in-out-3">ease-in-out-3 (Balanced: cubic-bezier(.5, 0, .5, 1))</option>
+                          </select>
+
+                          {/* Live preview testbed */}
+                          <div className="h-9 rounded-lg bg-background/80 border border-border/50 px-3 flex items-center justify-between overflow-hidden">
+                            <span className="text-[10px] text-muted-foreground font-mono">Curve Test:</span>
+                            <div
+                              style={{
+                                transform: previewActive ? "scale(1.15) translateX(12px)" : "scale(1) translateX(0px)",
+                                transition: `transform 650ms ${OPEN_PROPS_EASINGS[motionEasing as OpenPropsEasingKey]?.cssValue || 'cubic-bezier(.5, 1.25, .75, 1.25)'}`,
+                              }}
+                              className="px-2 py-0.5 rounded text-[10px] font-bold bg-pink-500 text-white shadow-sm"
+                            >
+                              Pop Sample
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Subtitle Color */}
                       <div>
                         <label className="text-sm font-medium text-foreground">Custom Subtitle Color</label>

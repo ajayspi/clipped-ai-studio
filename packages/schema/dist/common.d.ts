@@ -2,7 +2,7 @@ import { z } from 'zod';
 /**
  * Common enums and base types shared across the pipeline
  */
-export declare const AspectRatioSchema: z.ZodEnum<["16:9", "9:16", "1:1"]>;
+export declare const AspectRatioSchema: z.ZodEnum<["16:9", "9:16", "1:1", "volumetric"]>;
 export type AspectRatio = z.infer<typeof AspectRatioSchema>;
 export declare const WorkflowTypeSchema: z.ZodEnum<["footage", "images", "ai-videos", "stories", "bulk", "bulk-plan", "shorts", "extract-shorts", "drama", "micro-drama", "auto", "avatar", "whiteboard", "mission"]>;
 export type WorkflowType = z.infer<typeof WorkflowTypeSchema>;
@@ -10,7 +10,7 @@ export declare const RenderJobStatusSchema: z.ZodEnum<["pending", "processing", 
 export type RenderJobStatus = z.infer<typeof RenderJobStatusSchema>;
 export declare const OrchestrationStateSchema: z.ZodEnum<["planning", "queued", "claimed", "rendering", "publishing", "retryable", "completed", "failed"]>;
 export type OrchestrationState = z.infer<typeof OrchestrationStateSchema>;
-export declare const TTSProviderSchema: z.ZodEnum<["omniroute", "azure", "openai", "elevenlabs", "google", "coqui", "keyless", "mock", "auto"]>;
+export declare const TTSProviderSchema: z.ZodEnum<["omniroute", "azure", "openai", "elevenlabs", "google", "coqui", "sarvam", "piper", "voicestudio", "keyless", "mock", "auto"]>;
 export type TTSProvider = z.infer<typeof TTSProviderSchema>;
 export declare const SupportedLanguageSchema: z.ZodEnum<["en-US", "en-IN", "hi-IN", "ta-IN", "te-IN", "kn-IN", "bn-IN", "mr-IN"]>;
 export type SupportedLanguage = z.infer<typeof SupportedLanguageSchema>;

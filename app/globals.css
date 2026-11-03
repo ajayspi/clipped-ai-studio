@@ -1,33 +1,40 @@
-@import "tailwindcss";
+@import "tailwindcss" source(none);
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@source "../app";
+@source "../components";
+@source "../lib";
+@source "../remotion";
 
 :root {
-  --background: 0 0% 100%;
+  --background: 220 14% 96%;
   --foreground: 240 10% 3.9%;
   --card: 0 0% 100%;
   --card-foreground: 240 10% 3.9%;
   --popover: 0 0% 100%;
   --popover-foreground: 240 10% 3.9%;
-  --primary: 240 5.9% 10%;
-  --primary-foreground: 0 0% 98%;
-  --secondary: 240 4.8% 95.9%;
+  --primary: 262 83% 58%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 220 14% 91%;
   --secondary-foreground: 240 5.9% 10%;
-  --muted: 240 4.8% 95.9%;
-  --muted-foreground: 240 3.8% 46.1%;
-  --accent: 240 4.8% 95.9%;
+  --muted: 220 14% 92%;
+  --muted-foreground: 240 3.8% 40%;
+  --accent: 220 14% 91%;
   --accent-foreground: 240 5.9% 10%;
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 0 0% 98%;
-  --border: 240 5.9% 90%;
-  --input: 240 5.9% 90%;
-  --ring: 240 10% 3.9%;
+  --border: 220 13% 86%;
+  --input: 220 13% 86%;
+  --ring: 262 83% 58%;
 }
 
 .dark {
   --background: 240 10% 3.9%;
   --foreground: 0 0% 98%;
-  --card: 240 10% 3.9%;
+  --card: 240 5.3% 10.6%;
   --card-foreground: 0 0% 98%;
-  --popover: 240 10% 3.9%;
+  --popover: 240 3.7% 15.9%;
   --popover-foreground: 0 0% 98%;
   --primary: 0 0% 98%;
   --primary-foreground: 240 5.9% 10%;
@@ -65,6 +72,47 @@
   --color-ring: hsl(var(--ring));
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Open Props Motion Tokens (33 curves) */
+  --ease-1: cubic-bezier(.25, 0, .5, 1);
+  --ease-2: cubic-bezier(.25, 0, .4, 1);
+  --ease-3: cubic-bezier(.25, 0, .3, 1);
+  --ease-4: cubic-bezier(.25, 0, .2, 1);
+  --ease-5: cubic-bezier(.25, 0, .1, 1);
+
+  --ease-out-1: cubic-bezier(0, 0, .75, 1);
+  --ease-out-2: cubic-bezier(0, 0, .50, 1);
+  --ease-out-3: cubic-bezier(0, 0, .30, 1);
+  --ease-out-4: cubic-bezier(0, 0, .10, 1);
+  --ease-out-5: cubic-bezier(0, 0, 0, 1);
+
+  --ease-in-1: cubic-bezier(.25, 0, 1, 1);
+  --ease-in-2: cubic-bezier(.50, 0, 1, 1);
+  --ease-in-3: cubic-bezier(.70, 0, 1, 1);
+  --ease-in-4: cubic-bezier(.90, 0, 1, 1);
+  --ease-in-5: cubic-bezier(1, 0, 1, 1);
+
+  --ease-in-out-1: cubic-bezier(.1, 0, .9, 1);
+  --ease-in-out-2: cubic-bezier(.3, 0, .7, 1);
+  --ease-in-out-3: cubic-bezier(.5, 0, .5, 1);
+  --ease-in-out-4: cubic-bezier(.7, 0, .3, 1);
+  --ease-in-out-5: cubic-bezier(.9, 0, .1, 1);
+
+  --ease-elastic-1: cubic-bezier(.5, .75, .75, 1.25);
+  --ease-elastic-2: cubic-bezier(.5, 1, .75, 1.25);
+  --ease-elastic-3: cubic-bezier(.5, 1.25, .75, 1.25);
+  --ease-elastic-4: cubic-bezier(.5, 1.5, .75, 1.25);
+  --ease-elastic-5: cubic-bezier(.5, 1.75, .75, 1.25);
+
+  --ease-squish-1: cubic-bezier(.5, -.1, .1, 1.5);
+  --ease-squish-2: cubic-bezier(.5, -.3, .1, 1.5);
+  --ease-squish-3: cubic-bezier(.5, -.5, .1, 1.5);
+  --ease-squish-4: cubic-bezier(.5, -.7, .1, 1.5);
+  --ease-squish-5: cubic-bezier(.5, -.9, .1, 1.5);
+
+  --ease-step-1: steps(2);
+  --ease-step-2: steps(4);
+  --ease-step-3: steps(7);
 }
 
 * {
@@ -79,7 +127,7 @@ html {
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), var(--font-sans), system-ui, sans-serif;
 }
 
 /* Custom scrollbar */

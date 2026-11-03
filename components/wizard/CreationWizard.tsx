@@ -181,7 +181,7 @@ export function CreationWizard({ workflowType }: { workflowType: string }) {
 
       if (!res.ok) throw new Error('Failed to start generation job');
       const data = await res.json();
-      router.push(`/dashboard?job=${data.jobId}`);
+      router.push(`/editor/${data.jobId}`);
     } catch (error) {
       w.setError(error instanceof Error ? error.message : 'Could not start the render');
     } finally {

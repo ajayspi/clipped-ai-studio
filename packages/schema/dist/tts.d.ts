@@ -5,7 +5,7 @@ import { z } from 'zod';
 export declare const TTSRequestSchema: z.ZodObject<{
     text: z.ZodString;
     language: z.ZodOptional<z.ZodEnum<["en-US", "en-IN", "hi-IN", "ta-IN", "te-IN", "kn-IN", "bn-IN", "mr-IN"]>>;
-    provider: z.ZodOptional<z.ZodEnum<["omniroute", "azure", "openai", "elevenlabs", "google", "coqui", "keyless", "mock", "auto"]>>;
+    provider: z.ZodOptional<z.ZodEnum<["omniroute", "azure", "openai", "elevenlabs", "google", "coqui", "sarvam", "piper", "voicestudio", "keyless", "mock", "auto"]>>;
     voice: z.ZodOptional<z.ZodString>;
     voiceId: z.ZodOptional<z.ZodString>;
     gender: z.ZodOptional<z.ZodEnum<["male", "female", "neutral"]>>;
@@ -19,6 +19,8 @@ export declare const TTSRequestSchema: z.ZodObject<{
     apiKey: z.ZodOptional<z.ZodString>;
     region: z.ZodOptional<z.ZodString>;
     model: z.ZodOptional<z.ZodString>;
+    sampleRate: z.ZodOptional<z.ZodNumber>;
+    commercialSafe: z.ZodOptional<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
     mock: boolean;
     text: string;
@@ -30,18 +32,20 @@ export declare const TTSRequestSchema: z.ZodObject<{
     audioFormat: "mp3" | "wav" | "ogg";
     voice?: string | undefined;
     language?: "en-US" | "en-IN" | "hi-IN" | "ta-IN" | "te-IN" | "kn-IN" | "bn-IN" | "mr-IN" | undefined;
-    provider?: "auto" | "omniroute" | "azure" | "openai" | "elevenlabs" | "google" | "coqui" | "keyless" | "mock" | undefined;
+    provider?: "auto" | "omniroute" | "azure" | "openai" | "elevenlabs" | "google" | "coqui" | "sarvam" | "piper" | "voicestudio" | "keyless" | "mock" | undefined;
     voiceId?: string | undefined;
     gender?: "male" | "female" | "neutral" | undefined;
     apiKey?: string | undefined;
     region?: string | undefined;
     model?: string | undefined;
+    sampleRate?: number | undefined;
+    commercialSafe?: boolean | undefined;
 }, {
     text: string;
     mock?: boolean | undefined;
     voice?: string | undefined;
     language?: "en-US" | "en-IN" | "hi-IN" | "ta-IN" | "te-IN" | "kn-IN" | "bn-IN" | "mr-IN" | undefined;
-    provider?: "auto" | "omniroute" | "azure" | "openai" | "elevenlabs" | "google" | "coqui" | "keyless" | "mock" | undefined;
+    provider?: "auto" | "omniroute" | "azure" | "openai" | "elevenlabs" | "google" | "coqui" | "sarvam" | "piper" | "voicestudio" | "keyless" | "mock" | undefined;
     voiceId?: string | undefined;
     gender?: "male" | "female" | "neutral" | undefined;
     speed?: number | undefined;
@@ -53,6 +57,8 @@ export declare const TTSRequestSchema: z.ZodObject<{
     apiKey?: string | undefined;
     region?: string | undefined;
     model?: string | undefined;
+    sampleRate?: number | undefined;
+    commercialSafe?: boolean | undefined;
 }>;
 export type TTSRequest = z.infer<typeof TTSRequestSchema>;
 /**
@@ -281,30 +287,39 @@ export type TTSResponse = z.infer<typeof TTSResponseSchema>;
 export declare const TTSVoiceOptionSchema: z.ZodObject<{
     id: z.ZodString;
     name: z.ZodString;
-    provider: z.ZodEnum<["omniroute", "azure", "openai", "elevenlabs", "google", "coqui", "keyless", "mock", "auto"]>;
+    provider: z.ZodEnum<["omniroute", "azure", "openai", "elevenlabs", "google", "coqui", "sarvam", "piper", "voicestudio", "keyless", "mock", "auto"]>;
     language: z.ZodEnum<["en-US", "en-IN", "hi-IN", "ta-IN", "te-IN", "kn-IN", "bn-IN", "mr-IN"]>;
     gender: z.ZodEnum<["male", "female", "neutral"]>;
     description: z.ZodOptional<z.ZodString>;
     sampleUrl: z.ZodOptional<z.ZodString>;
     previewText: z.ZodOptional<z.ZodString>;
+    sampleRate: z.ZodOptional<z.ZodNumber>;
+    commercialSafe: z.ZodOptional<z.ZodBoolean>;
+    license: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     id: string;
     language: "en-US" | "en-IN" | "hi-IN" | "ta-IN" | "te-IN" | "kn-IN" | "bn-IN" | "mr-IN";
-    provider: "auto" | "omniroute" | "azure" | "openai" | "elevenlabs" | "google" | "coqui" | "keyless" | "mock";
+    provider: "auto" | "omniroute" | "azure" | "openai" | "elevenlabs" | "google" | "coqui" | "sarvam" | "piper" | "voicestudio" | "keyless" | "mock";
     gender: "male" | "female" | "neutral";
     name: string;
+    sampleRate?: number | undefined;
+    commercialSafe?: boolean | undefined;
     description?: string | undefined;
     sampleUrl?: string | undefined;
     previewText?: string | undefined;
+    license?: string | undefined;
 }, {
     id: string;
     language: "en-US" | "en-IN" | "hi-IN" | "ta-IN" | "te-IN" | "kn-IN" | "bn-IN" | "mr-IN";
-    provider: "auto" | "omniroute" | "azure" | "openai" | "elevenlabs" | "google" | "coqui" | "keyless" | "mock";
+    provider: "auto" | "omniroute" | "azure" | "openai" | "elevenlabs" | "google" | "coqui" | "sarvam" | "piper" | "voicestudio" | "keyless" | "mock";
     gender: "male" | "female" | "neutral";
     name: string;
+    sampleRate?: number | undefined;
+    commercialSafe?: boolean | undefined;
     description?: string | undefined;
     sampleUrl?: string | undefined;
     previewText?: string | undefined;
+    license?: string | undefined;
 }>;
 export type TTSVoiceOption = z.infer<typeof TTSVoiceOptionSchema>;
 /**

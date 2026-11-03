@@ -1,0 +1,399 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Clipped AI Studio - Full-Stack Architecture",
+    "output": ".archify/architecture-full-stack-studio-20261103-151000/full-stack-studio.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/ajayspi/clipped-ai-studio.git",
+      "provider": "github",
+      "revision": "8cce15bd91f0f3e447be0714c212918803d52b05"
+    }
+  },
+  "components": [
+    {
+      "id": "creator-browser",
+      "type": "external",
+      "label": "Creator Client",
+      "sublabel": "Desktop / Mobile Web",
+      "pos": [50, 50],
+      "size": [140, 64],
+      "icon": "person"
+    },
+    {
+      "id": "signature-studios",
+      "type": "frontend",
+      "label": "Creation Hub",
+      "sublabel": "Drama · Cinema · Paper · 2D",
+      "tag": "Auto-Pilot",
+      "pos": [310, 50],
+      "size": [150, 64],
+      "icon": "frontend",
+      "sources": [
+        {
+          "path": "app/(app)/create/page.tsx",
+          "line": 10,
+          "end_line": 80,
+          "label": "Creation Hub Page"
+        }
+      ]
+    },
+    {
+      "id": "studio-dashboard",
+      "type": "frontend",
+      "label": "Studio Dashboard",
+      "sublabel": "Operations & Projects",
+      "tag": "React 19 Transitions",
+      "pos": [580, 50],
+      "size": [150, 64],
+      "icon": "frontend",
+      "sources": [
+        {
+          "path": "app/(app)/dashboard/page.tsx",
+          "line": 20,
+          "end_line": 111,
+          "label": "Studio Dashboard"
+        }
+      ]
+    },
+    {
+      "id": "timeline-editor",
+      "type": "frontend",
+      "label": "NLE Timeline Editor",
+      "sublabel": "Zustand + Zundo Time-Travel",
+      "tag": "0ms Sync",
+      "pos": [850, 50],
+      "size": [150, 64],
+      "icon": "frontend",
+      "sources": [
+        {
+          "path": "components/timeline/TimelineEditor.tsx",
+          "line": 83,
+          "end_line": 232,
+          "label": "Timeline Editor"
+        }
+      ]
+    },
+    {
+      "id": "remotion-compositor",
+      "type": "backend",
+      "label": "Remotion Engine",
+      "sublabel": "FFmpeg Hardware Compositor",
+      "tag": "Hardware Mux",
+      "pos": [1120, 50],
+      "size": [150, 64],
+      "icon": "backend",
+      "sources": [
+        {
+          "path": "remotion/Composition.tsx",
+          "line": 43,
+          "end_line": 120,
+          "label": "MainComposition"
+        }
+      ]
+    },
+    {
+      "id": "workflow-router",
+      "type": "backend",
+      "label": "Workflows API Gateway",
+      "sublabel": "/api/workflows/generate",
+      "tag": "Schema Guard",
+      "pos": [310, 234],
+      "size": [150, 64],
+      "icon": "backend",
+      "sources": [
+        {
+          "path": "app/api/workflows/generate/route.ts",
+          "line": 15,
+          "end_line": 180,
+          "label": "Workflow POST Router"
+        }
+      ]
+    },
+    {
+      "id": "engine-orchestrator",
+      "type": "backend",
+      "label": "Studio Orchestrator",
+      "sublabel": "lib/engine/orchestrator.ts",
+      "tag": "DAG Execution",
+      "pos": [580, 234],
+      "size": [150, 64],
+      "icon": "backend",
+      "sources": [
+        {
+          "path": "lib/engine/orchestrator.ts",
+          "line": 5,
+          "end_line": 45,
+          "label": "Video Plan Generator"
+        }
+      ]
+    },
+    {
+      "id": "jobs-enqueue",
+      "type": "backend",
+      "label": "Job Lease Dispatcher",
+      "sublabel": "lib/jobs/enqueue.ts",
+      "tag": "Atomic Lease",
+      "pos": [850, 234],
+      "size": [150, 64],
+      "icon": "messagebus",
+      "sources": [
+        {
+          "path": "lib/jobs/enqueue.ts",
+          "line": 16,
+          "end_line": 82,
+          "label": "enqueueRenderJob"
+        }
+      ]
+    },
+    {
+      "id": "render-worker",
+      "type": "backend",
+      "label": "PM2 Render Worker",
+      "sublabel": "scripts/render-worker.ts",
+      "tag": "Heartbeat Loop",
+      "pos": [1120, 234],
+      "size": [150, 64],
+      "icon": "backend",
+      "sources": [
+        {
+          "path": "scripts/render-worker.ts",
+          "line": 490,
+          "end_line": 580,
+          "label": "pollAndProcess Loop"
+        }
+      ]
+    },
+    {
+      "id": "omniroute-gateway",
+      "type": "cloud",
+      "label": "OmniRoute Gateway",
+      "sublabel": "Local Proxy :20128/v1",
+      "tag": "Model Cascade",
+      "pos": [580, 418],
+      "size": [150, 64],
+      "icon": "cloud",
+      "sources": [
+        {
+          "path": "lib/keys.ts",
+          "line": 33,
+          "end_line": 85,
+          "label": "getOmniRouteConfig"
+        }
+      ]
+    },
+    {
+      "id": "supabase-db",
+      "type": "database",
+      "label": "PostgreSQL Database",
+      "sublabel": "render_jobs & videos",
+      "tag": "RLS & Leases",
+      "pos": [850, 418],
+      "size": [150, 64],
+      "icon": "database",
+      "sources": [
+        {
+          "path": "supabase/migrations/20260905_render_job_leases.sql",
+          "line": 1,
+          "end_line": 50,
+          "label": "render_jobs Schema"
+        }
+      ]
+    },
+    {
+      "id": "lease-rpc",
+      "type": "database",
+      "label": "claim_render_job RPC",
+      "sublabel": "PostgreSQL Stored Procedure",
+      "tag": "SKIP LOCKED",
+      "pos": [1120, 418],
+      "size": [150, 64],
+      "icon": "security",
+      "sources": [
+        {
+          "path": "supabase/migrations/20260905_render_job_leases.sql",
+          "line": 23,
+          "end_line": 85,
+          "label": "claim_render_job RPC"
+        }
+      ]
+    },
+    {
+      "id": "external-ai",
+      "type": "external",
+      "label": "Zero-Cost AI Cascade",
+      "sublabel": "Edge TTS · Pollinations",
+      "tag": "$0 Compute",
+      "pos": [580, 602],
+      "size": [150, 64],
+      "icon": "external",
+      "sources": [
+        {
+          "path": "lib/keys.ts",
+          "line": 86,
+          "end_line": 150,
+          "label": "Keyless AI Fallbacks"
+        }
+      ]
+    },
+    {
+      "id": "recovery-worker",
+      "type": "security",
+      "label": "Quality Gate & Recovery",
+      "sublabel": "scripts/recovery-worker.ts",
+      "tag": "Stale Sweeper",
+      "pos": [850, 602],
+      "size": [150, 64],
+      "icon": "security",
+      "sources": [
+        {
+          "path": "scripts/recovery-worker.ts",
+          "line": 19,
+          "end_line": 60,
+          "label": "recoverStuckJobs"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Client Runtime: Next.js 16 / React 19 App Router",
+      "wraps": ["creator-browser", "signature-studios", "studio-dashboard", "timeline-editor"]
+    },
+    {
+      "kind": "region",
+      "label": "Application Server: Next.js API Routes & Engine",
+      "wraps": ["workflow-router", "engine-orchestrator", "jobs-enqueue"]
+    },
+    {
+      "kind": "region",
+      "label": "AI Gateway: Local OmniRoute & Keyless Cascade",
+      "wraps": ["omniroute-gateway", "external-ai"]
+    },
+    {
+      "kind": "region",
+      "label": "Persistence: Supabase PostgreSQL & Leases",
+      "wraps": ["supabase-db", "lease-rpc", "recovery-worker"]
+    },
+    {
+      "kind": "region",
+      "label": "Render Daemon: PM2 Background Service",
+      "wraps": ["render-worker", "remotion-compositor"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn-browser-studios",
+      "from": "creator-browser",
+      "to": "signature-studios",
+      "label": "select studio"
+    },
+    {
+      "id": "conn-studios-router",
+      "from": "signature-studios",
+      "to": "workflow-router",
+      "label": "POST /workflows",
+      "variant": "emphasis"
+    },
+    {
+      "id": "conn-router-orchestrator",
+      "from": "workflow-router",
+      "to": "engine-orchestrator",
+      "label": "plan breakdown"
+    },
+    {
+      "id": "conn-orchestrator-gateway",
+      "from": "engine-orchestrator",
+      "to": "omniroute-gateway",
+      "label": "script & beats"
+    },
+    {
+      "id": "conn-gateway-external",
+      "from": "omniroute-gateway",
+      "to": "external-ai",
+      "label": "fallback cascade",
+      "variant": "dashed"
+    },
+    {
+      "id": "conn-orchestrator-enqueue",
+      "from": "engine-orchestrator",
+      "to": "jobs-enqueue",
+      "label": "submit job"
+    },
+    {
+      "id": "conn-dashboard-timeline",
+      "from": "studio-dashboard",
+      "to": "timeline-editor",
+      "label": "inspect video"
+    },
+    {
+      "id": "conn-timeline-enqueue",
+      "from": "timeline-editor",
+      "to": "jobs-enqueue",
+      "label": "save & queue"
+    },
+    {
+      "id": "conn-enqueue-db",
+      "from": "jobs-enqueue",
+      "to": "supabase-db",
+      "label": "INSERT queued"
+    },
+    {
+      "id": "conn-db-rpc",
+      "from": "supabase-db",
+      "to": "lease-rpc",
+      "label": "SKIP LOCKED",
+      "variant": "security"
+    },
+    {
+      "id": "conn-worker-rpc",
+      "from": "render-worker",
+      "to": "lease-rpc",
+      "label": "claim lease"
+    },
+    {
+      "id": "conn-worker-remotion",
+      "from": "render-worker",
+      "to": "remotion-compositor",
+      "label": "render frames"
+    },
+    {
+      "id": "conn-recovery-db",
+      "from": "recovery-worker",
+      "to": "supabase-db",
+      "label": "sweep stale",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Client Experience",
+      "items": [
+        "Next.js 16 App Router with React 19 View Transitions",
+        "Signature Studios (Drama, Cinema, Papercraft, 2D) with Auto-Pilot",
+        "NLE Timeline Editor with 0ms optimistic mutations and debounced sync"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Job Orchestration & Leases",
+      "items": [
+        "Atomic render job enrollment via claim_render_job() RPC",
+        "Distributed leasing using PostgreSQL FOR UPDATE SKIP LOCKED",
+        "Stale-lease sweeper and zero-blank-frame quality recovery worker"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Dual-Engine Video & AI Cascade",
+      "items": [
+        "Zero-cost client hardware export via WebCodecs API",
+        "Headless server-side Remotion + FFmpeg hardware acceleration",
+        "Local OmniRoute gateway fallback to Edge TTS & Pollinations AI ($0 compute)"
+      ]
+    }
+  ]
+}

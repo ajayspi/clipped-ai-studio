@@ -1,7 +1,7 @@
 "use client"
 import { useState } from 'react'
 import { useWizardStore, Beat } from './wizard-store'
-import { Image as ImageIcon, Video, Clock, GripVertical } from 'lucide-react'
+import { Image as ImageIcon, Video, Clock, GripVertical, Check, Edit2, X } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -36,23 +36,46 @@ function SortableBeat({ beat, index }: { beat: Beat; index: number }) {
   };
 
   const [loadingMedia, setLoadingMedia] = useState(false)
+  const [editingText, setEditingText] = useState(false)
+  const [textValue, setTextValue] = useState(beat.text)
+  const [durationValue, setDurationValue] = useState(beat.duration)
+  const [showCandidates, setShowCandidates] = useState(false)
+
+  const candidates = beat.candidates || []
+  const selectedCandidate = candidates.find((c: { id?: string }) => c.id === beat.selectedId) || candidates[0]
+
+  const updateBeat = (updates: Partial<Beat>) => {
+    const updatedBeats = w.beats.map(b => b.id === beat.id ? { ...b, ...updates } : b)
+    w.set('beats', updatedBeats)
+  }
+
+  const selectCandidate = (candidate: { id?: string }) => {
+    updateBeat({ selectedId: candidate.id })
+    setShowCandidates(false)
+  }
+
+  const saveText = () => {
+    updateBeat({ text: textValue })
+    setEditingText(false)
+  }
+
+  const saveDuration = (val: number) => {
+    updateBeat({ duration: Math.max(1, val) })
+  }
 
   const handleSearch = async () => {
-    const query = window.prompt("Enter new search keyword for this scene:", beat.keywords.join(" "))
-    if (!query) return;
-
     setLoadingMedia(true)
     try {
       const res = await fetch("/api/v1/source", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ beatId: beat.id, keywords: query.split(" "), workflowType: w.workflowType })
+        body: JSON.stringify({ beatId: beat.id, keywords: beat.keywords, workflowType: w.workflowType })
       })
       if (res.ok) {
         const data = await res.json()
-        if (data.candidates && data.candidates.length > 0) {
-          const updatedBeats = w.beats.map(b => b.id === beat.id ? { ...b, candidates: data.candidates } : b)
-          w.set('beats', updatedBeats)
+        if (Array.isArray(data.candidates) && data.candidates.length > 0) {
+          updateBeat({ candidates: data.candidates, selectedId: data.candidates[0].id })
+          setShowCandidates(true)
         } else {
           alert("No media found for that keyword.")
         }
@@ -82,12 +105,37 @@ function SortableBeat({ beat, index }: { beat: Beat; index: number }) {
       </div>
       
       <div className="flex-1 space-y-3">
-        <div className="text-sm font-medium leading-relaxed">
-          &ldquo;{beat.text}&rdquo;
-        </div>
+        {editingText ? (
+          <div className="flex gap-2">
+            <input
+              value={textValue}
+              onChange={(e) => setTextValue(e.target.value)}
+              className="flex-1 px-2 py-1 text-sm border rounded bg-background"
+            />
+            <button onClick={saveText} className="p-1 hover:bg-muted rounded"><Check className="w-4 h-4" /></button>
+            <button onClick={() => { setTextValue(beat.text); setEditingText(false) }} className="p-1 hover:bg-muted rounded"><X className="w-4 h-4" /></button>
+          </div>
+        ) : (
+          <div className="flex items-start gap-2 group/text">
+            <div className="text-sm font-medium leading-relaxed flex-1">
+              &ldquo;{beat.text}&rdquo;
+            </div>
+            <button onClick={() => setEditingText(true)} className="opacity-0 group-hover/text:opacity-100 p-1 hover:bg-muted rounded transition-opacity">
+              <Edit2 className="w-3 h-3" />
+            </button>
+          </div>
+        )}
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Clock className="w-3 h-3" />
-          {beat.duration}s
+          <input
+            type="number"
+            value={durationValue}
+            onChange={(e) => setDurationValue(parseFloat(e.target.value) || 1)}
+            onBlur={() => saveDuration(durationValue)}
+            className="w-12 px-1 py-0.5 border rounded bg-background"
+            min="1"
+            step="0.5"
+          />s
           <div className="flex flex-wrap gap-1 ml-2">
             {(beat.keywords || []).map((kw, i) => (
               <span key={i} className="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
@@ -100,33 +148,51 @@ function SortableBeat({ beat, index }: { beat: Beat; index: number }) {
       
       <div className="w-48 shrink-0 flex flex-col gap-2">
          <div className="aspect-video bg-muted rounded-md border flex items-center justify-center relative overflow-hidden group/thumb">
-           {loadingMedia ? (
-             <div className="flex flex-col items-center justify-center space-y-2 opacity-50">
-               <Video className="w-6 h-6 animate-pulse" />
-               <span className="text-[10px]">Searching...</span>
-             </div>
-           ) : beat.candidates && beat.candidates.length > 0 ? (
-             beat.candidates[0].url?.endsWith('.mp4') ? (
-               <video src={beat.candidates[0].url} className="w-full h-full object-cover" muted loop autoPlay playsInline />
-             ) : (
-               // eslint-disable-next-line @next/next/no-img-element -- Pollinations media candidate URL (arbitrary host)
-               <img src={beat.candidates[0].url} alt="Candidate" className="w-full h-full object-cover" />
-             )
-           ) : (
-             <Video className="w-6 h-6 text-muted-foreground opacity-50" />
-           )}
-           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center">
-             <button 
-               onClick={handleSearch}
-               className="text-xs font-medium text-white px-3 py-1 bg-primary rounded hover:bg-primary/90 shadow-md transition-transform active:scale-95"
-             >
-               Change Asset
-             </button>
-           </div>
-         </div>
-         <p className="text-[10px] text-muted-foreground text-center truncate">
-           {beat.candidates && beat.candidates.length > 0 ? beat.candidates[0].platform : 'AI Selected Clip'}
-         </p>
+            {loadingMedia ? (
+              <div className="flex flex-col items-center justify-center space-y-2 opacity-50">
+                <Video className="w-6 h-6 animate-pulse" />
+                <span className="text-[10px]">Searching...</span>
+              </div>
+            ) : selectedCandidate ? (
+              selectedCandidate.url?.endsWith('.mp4') ? (
+                <video src={selectedCandidate.url} className="w-full h-full object-cover" muted loop autoPlay playsInline />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element -- Pollinations media candidate URL (arbitrary host)
+                <img src={selectedCandidate.url} alt="Candidate" className="w-full h-full object-cover" />
+              )
+            ) : (
+              <Video className="w-6 h-6 text-muted-foreground opacity-50" />
+            )}
+            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center">
+              <button 
+                onClick={() => candidates.length > 1 ? setShowCandidates(!showCandidates) : handleSearch()}
+                className="text-xs font-medium text-white px-3 py-1 bg-primary rounded hover:bg-primary/90 shadow-md transition-transform active:scale-95"
+              >
+                {candidates.length > 1 ? 'Pick Asset' : 'Change Asset'}
+              </button>
+            </div>
+          </div>
+          {showCandidates && candidates.length > 0 && (
+            <div className="grid grid-cols-2 gap-1 max-h-32 overflow-y-auto">
+              {candidates.map((c: { id?: string; url?: string }) => (
+                <button
+                  key={c.id}
+                  onClick={() => selectCandidate(c)}
+                  className={`aspect-video rounded overflow-hidden border-2 ${selectedCandidate?.id === c.id ? 'border-primary' : 'border-transparent'} hover:border-primary/50`}
+                >
+                  {c.url?.endsWith('.mp4') ? (
+                    <video src={c.url} className="w-full h-full object-cover" muted />
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={c.url} alt="" className="w-full h-full object-cover" />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+          <p className="text-[10px] text-muted-foreground text-center truncate">
+            {selectedCandidate?.platform || 'AI Selected Clip'}
+          </p>
       </div>
     </div>
   );

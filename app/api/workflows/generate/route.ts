@@ -28,6 +28,7 @@ export async function POST(req: Request) {
       voiceVolume,
       musicSource,
       musicVolume,
+      voiceoverMode,
       burnSubtitles,
       subtitlePreset,
       subtitleUppercase,
@@ -39,8 +40,31 @@ export async function POST(req: Request) {
       subtitleOutlineWidth,
       subtitleBox,
       subtitleBoxColor,
+      subtitleBoxOpacity,
+      subtitleBoxRadius,
+      subtitleLetterSpacing,
+      subtitleMaxWidth,
       subtitleSize,
       subtitleY,
+      subtitleFont,
+      subtitlePosition,
+      platforms,
+      publishingPlatforms,
+      targetDuration,
+      language,
+      provider,
+      model,
+      systemPrompt,
+      paragraphCount,
+      variants,
+      autoPublish,
+      watermarkUrl,
+      watermarkPosition,
+      watermarkOpacity,
+      watermarkScale,
+      watermarkMargin,
+      workspaceId,
+      campaignId,
     } = body
 
     if (!script) {
@@ -104,8 +128,14 @@ export async function POST(req: Request) {
       subtitleOutlineWidth: typeof subtitleOutlineWidth === 'number' ? subtitleOutlineWidth : 2,
       subtitleBox: subtitleBox !== undefined ? Boolean(subtitleBox) : false,
       subtitleBoxColor: subtitleBoxColor || 'rgba(0, 0, 0, 0.7)',
+      subtitleBoxOpacity: typeof subtitleBoxOpacity === 'number' ? subtitleBoxOpacity : 70,
+      subtitleBoxRadius: typeof subtitleBoxRadius === 'number' ? subtitleBoxRadius : 8,
+      subtitleLetterSpacing: typeof subtitleLetterSpacing === 'number' ? subtitleLetterSpacing : 0,
+      subtitleMaxWidth: typeof subtitleMaxWidth === 'number' ? subtitleMaxWidth : 82,
       subtitleSize: typeof subtitleSize === 'number' ? subtitleSize : 4.5,
       subtitleY: typeof subtitleY === 'number' ? subtitleY : 75,
+      subtitleFont: subtitleFont || null,
+      subtitlePosition: subtitlePosition || null,
     }
 
     // The wizard's voice choices live here too. The render worker prefers
@@ -116,6 +146,7 @@ export async function POST(req: Request) {
       voiceProvider: voiceProvider || null,
       voiceSpeed: voiceSpeed || 1.0,
       voiceVolume: voiceVolume || 100,
+      voiceoverMode: voiceoverMode || null,
       musicSource: musicSource || 'Random Background Music',
       musicVolume: musicVolume || 20,
     }
@@ -144,6 +175,25 @@ export async function POST(req: Request) {
       subtitleSettings,
       ...voiceSettings,
       ...subtitleSettings,
+      platforms: Array.isArray(platforms) ? platforms : undefined,
+      publishingPlatforms: Array.isArray(publishingPlatforms) ? publishingPlatforms : undefined,
+      targetDuration: typeof targetDuration === 'number' ? targetDuration : undefined,
+      language: language || undefined,
+      provider: provider || undefined,
+      model: model || undefined,
+      systemPrompt: systemPrompt || undefined,
+      paragraphCount: typeof paragraphCount === 'number' ? paragraphCount : undefined,
+      variants: typeof variants === 'number' ? variants : undefined,
+      autoPublish: autoPublish === true,
+      watermark: watermarkUrl ? {
+        url: watermarkUrl,
+        position: watermarkPosition,
+        opacity: watermarkOpacity,
+        scale: watermarkScale,
+        margin: watermarkMargin,
+      } : undefined,
+      workspaceId: workspaceId || undefined,
+      campaignId: campaignId || undefined,
     }
 
     // Beats supplied by the wizard already ARE the plan — re-planning from `script`
@@ -169,8 +219,10 @@ export async function POST(req: Request) {
     // Without them 'planning' keeps the worker away until beats are written below.
     const insertPayload: Record<string, unknown> = {
       id: jobId,
+      title: subject || (workflow ? workflow.replace(/-/g, ' ') : 'New Video'),
       status: hasBeats ? 'pending' : 'generating_plan',
       progress: hasBeats ? 10 : 0,
+      workflow_type: workflow || null,
       orchestration_state: initialState,
       logs: JSON.stringify(initialLogs)
     }

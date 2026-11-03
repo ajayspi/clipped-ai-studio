@@ -6,8 +6,11 @@ import {
   DramaSeriesRequest,
   DramaSeriesResponse,
   Scene,
+  ShotType,
+  CameraMove,
 } from './types';
 import { buildDramaSeriesPrompt } from './prompts';
+import { resolveVoiceForCharacter } from './voice-mapper';
 
 interface DramaScenePayload {
   text?: string;
@@ -16,6 +19,9 @@ interface DramaScenePayload {
   duration?: number;
   emotion?: string;
   keywords?: unknown[];
+  speaker?: string;
+  shotType?: ShotType;
+  cameraMove?: CameraMove;
 }
 
 interface DramaEpisodePayload {
@@ -55,12 +61,13 @@ export class DramaOrchestrator {
         ? char.visualAnchor.trim()
         : `distinctive look: ${name}, ${description}, consistent facial structure, attire: ${genre} style`;
       const avatarUrl = char.avatarUrl || `https://image.pollinations.ai/prompt/${encodeURIComponent(visualAnchor)}?width=512&height=512&nologo=true`;
+      const voice = resolveVoiceForCharacter(char.voice || (index % 2 === 0 ? 'onyx' : 'nova'));
 
       return {
         name,
         description,
         visualAnchor,
-        voice: char.voice || 'alloy',
+        voice,
         avatarUrl,
       };
     });
@@ -135,8 +142,18 @@ export class DramaOrchestrator {
         const { sceneMatcher } = await import('@/lib/engine/scene-matcher');
         const context = `Genre: ${genre}. Style: ${visualStyle}. Characters: ${characters.map(c => c.visualAnchor).join(' | ')}`;
         const analysis = await sceneMatcher.analyzeScript(epScript, undefined, context);
-        scenes = analysis.scenes;
-      } catch (err) {
+        scenes = analysis.scenes.map((s, idx) => {
+          const char = characters[idx % characters.length];
+          return {
+            ...s,
+            speaker: char?.name || 'Narrator',
+            voice: char?.voice || resolveVoiceForCharacter('onyx'),
+            shotType: (s.shotType || (idx === 0 ? 'wide' : idx === 1 ? 'medium' : 'close-up')) as ShotType,
+            cameraMove: (s.cameraMove || 'push-in') as CameraMove,
+            visualPrompt: s.visualPrompt || `[Character: ${char?.visualAnchor || 'protagonist'}], ${s.description}`,
+          };
+        });
+      } catch {
         scenes = this.generateDefaultScenesForEpisode(epNum, genre, characters, visualStyle);
       }
 
@@ -253,15 +270,7 @@ export class DramaOrchestrator {
         : `${leadChar.name}: "${arc.hook}" As tension escalates, ${leadChar.name} ${arc.action} ${secondaryChar.name} steps into the light: "You should never have dug into this."`;
       const cliffhanger = ep < episodesCount ? arc.cliffhanger : 'The final chapter concludes, leaving an unforgettable legacy.';
 
-      let scenes: Scene[] = [];
-      try {
-        const { sceneMatcher } = await import('@/lib/engine/scene-matcher');
-        const context = `Genre: ${genre}. Style: ${visualStyle}. Characters: ${characters.map(c => c.visualAnchor).join(' | ')}`;
-        const analysis = await sceneMatcher.analyzeScript(script, undefined, context);
-        scenes = analysis.scenes;
-      } catch (err) {
-        scenes = this.generateDefaultScenesForEpisode(ep, genre, characters, visualStyle, customScript);
-      }
+      const scenes = this.generateDefaultScenesForEpisode(ep, genre, characters, visualStyle, customScript);
 
       episodes.push({
         episodeNumber: ep,
@@ -307,10 +316,18 @@ export class DramaOrchestrator {
     const char1 = characters[0];
     const char2 = characters[1] || characters[0];
 
+    const voice1 = resolveVoiceForCharacter(char1.voice || 'onyx');
+    const voice2 = resolveVoiceForCharacter(char2.voice || 'nova');
+
     return [
       {
         id: `ep-${episodeNumber}-s1`,
         text: segmentScript ? segmentScript.substring(0, 50) : `${char1.name} steps into the dimly lit room.`,
+        dialogue: segmentScript ? segmentScript.substring(0, 50) : `${char1.name}: "Something isn't right here."`,
+        speaker: char1.name,
+        voice: voice1,
+        shotType: 'wide',
+        cameraMove: 'push-in',
         keywords: [genre, char1.name, 'establishing-shot'],
         description: `Establishing shot of ${char1.name} (${char1.visualAnchor}) in a moody ${genre} atmosphere.`,
         visualPrompt: `[Character: ${char1.visualAnchor}], ${visualStyle}, cinematic lighting, photorealistic 8k, camera zoom in`,
@@ -321,6 +338,11 @@ export class DramaOrchestrator {
       {
         id: `ep-${episodeNumber}-s2`,
         text: segmentScript ? segmentScript.substring(50, 120) : `${char2.name} turns around with an intense expression.`,
+        dialogue: segmentScript ? segmentScript.substring(50, 120) : `${char2.name}: "Turn back before it's too late."`,
+        speaker: char2.name,
+        voice: voice2,
+        shotType: 'medium',
+        cameraMove: 'pan-left',
         keywords: [genre, char2.name, 'dramatic-confrontation'],
         description: `Dramatic medium shot of ${char2.name} (${char2.visualAnchor}) reacting with high emotional stakes.`,
         visualPrompt: `[Character: ${char2.visualAnchor}], ${visualStyle}, intense eye contact, dramatic rim lighting, camera orbit`,
@@ -331,6 +353,11 @@ export class DramaOrchestrator {
       {
         id: `ep-${episodeNumber}-s3`,
         text: segmentScript ? segmentScript.substring(120, 200) : `The confrontation reaches its climax before the cliffhanger.`,
+        dialogue: segmentScript ? segmentScript.substring(120, 200) : `${char1.name}: "The truth comes out tonight."`,
+        speaker: char1.name,
+        voice: voice1,
+        shotType: 'close-up',
+        cameraMove: 'pull-out',
         keywords: [genre, 'cliffhanger', 'twist'],
         description: `Close-up shot of ${char1.name} (${char1.visualAnchor}) realizing the shocking twist in ${genre} setting.`,
         visualPrompt: `[Character: ${char1.visualAnchor}], ${visualStyle}, shock and tension, 24fps film grain, cinematic pullback zoom`,
@@ -343,5 +370,3 @@ export class DramaOrchestrator {
 }
 
 export const dramaOrchestrator = new DramaOrchestrator();
-
-

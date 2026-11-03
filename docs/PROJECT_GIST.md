@@ -2,10 +2,10 @@
 
 > **Repository:** `clipped-omni-router`  
 > **Operations Companion:** [`MAINTENANCE.md`](MAINTENANCE.md) — master maintenance/ops document (commands, quirks, work history, procedures).  
-> **Framework:** Next.js 15 (React 19, App Router, TypeScript)  
-> **Video Engine:** Remotion (`@remotion/bundler`, `@remotion/renderer`, `@remotion/player`) + FFmpeg  
+> **Framework:** Next.js 16.3.3 (React 19, Turbopack, App Router, TypeScript)  
+> **Video Engine:** Remotion 4 (`@remotion/bundler`, `@remotion/renderer`, `@remotion/player`) + FFmpeg  
 > **Database & Auth:** Supabase PostgreSQL (Multi-tenant, Dynamic Client Routing, Cookie/LocalStorage sync)  
-> **Process Manager:** PM2 Native on Oracle Cloud Infrastructure (Ubuntu 22.04, 952MB RAM constraint)  
+> **Process Manager:** PM2 Native on Linode VM (172.104.171.123, 8GB RAM, CPU-Only $0 GPU Transcoding)  
 > **Core AI Gateway:** OmniRoute Single-Gateway (`http://localhost:20128/v1` or remote URL) with Keyless/Free Fallback Cascades  
 
 ---
@@ -15,17 +15,13 @@
 **Clipped AI Studio** is a full-stack, autonomous video creation, editing, and publishing platform designed to turn text prompts, long-form URLs, and media assets into high-retention vertical (9:16), horizontal (16:9), and square (1:1) videos.
 
 The application combines:
-1. **10 Dedicated Creation Workflows**:
-   - **Stories Generator** (`/create/stories`): Narrative-driven video with sequential scenes, dynamic text overlays, and emotion-matched narration.
-   - **AI Images Video** (`/create/images`): Text-to-image video generation utilizing Fal.ai Flux/SDXL and Pollinations free fallbacks.
-   - **Generative AI Video** (`/create/video`): Full AI video generation with Kling, Luma Dream Machine, Runway Gen-3, or Fal.ai video models.
-   - **Stock Footage** (`/create/stock`): Automated keyword extraction sourcing B-roll from Pexels, Pixabay, and Openverse.
-   - **Bulk 30-Day Planner** (`/create/bulk`): 30-day content calendar generator with batch video production and scheduled publishing.
-   - **Extract Shorts** (`/create/shorts`): Long-form video to viral short-form clips extraction using transcript analysis and hook detection.
-   - **Micro-Drama Series** (`/create/drama`): Multi-episode story arcs with consistent character styling and dramatic cliffhangers.
-   - **Auto Pilot** (`/create/auto`): Single-prompt end-to-end autonomous mission mode with live multi-stage execution steppers.
-   - **Talking Head Avatars** (`/create/avatar`): AI avatar presenter synthesis powered by HeyGen and D-ID.
-   - **Whiteboard Animation** (`/create/whiteboard`): Character sheet animations (stickman, saint, modern persona) powered by Gemini vision prompting.
+1. **6 Signature Creative Studios** ([`components/create/SignatureStudios.tsx`](../components/create/SignatureStudios.tsx)):
+   - **Social Shorts Studio** (`/create/shorts`): Fast viral shorts, talking avatars, Reddit story scraper, and outpainting with hook detection.
+   - **Cinema & Drama Studio** (`/create/cinema` & `/create/drama`): Multi-agent episodic series with consistent character anchor prefixing, director lens mode, and 1:N decoupled batch queue dispatch.
+   - **2D & Explainer Studio** (`/create/2d` & `/create/stick-figure`): 11-point vector kinematics, anime stroke tracer, whiteboard sketch, and code morphing.
+   - **Papercraft Studio** (`/create/papercraft`): Tactile stop-motion papercraft, depth shadow casting, and layered craft animation.
+   - **Technical Architecture Studio** (`/create/code-video`): Dynamic architecture diagrams, code diff morphing, WaveDrom waveforms, and system flow visualizations.
+   - **Viral Campaign Studio** (`/create/campaign` & `/create/bulk`): 30-day viral trend planner, automated newsroom batch generation, and podcast conversations.
 
 2. **OmniRoute Integration**:
    - Centralizes 45+ AI models under a unified OpenAI-compatible endpoint.
@@ -49,16 +45,16 @@ The application combines:
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │                                   CLIENT INTERFACE                                     │
 │  - App Shell: Glassmorphism Sidebar, Desktop/Mobile Header, Dark/Light Theme Provider │
-│  - Creation Wizard (/create/stories): Zero-scroll 1080p viewport-constrained layout    │
-│  - Creation Hub (/create): 10 workflow cards with real-time API health status dots     │
+│  - Creation Studios: 6 Signature Studios (/create/shorts, cinema, 2d, papercraft, etc)│
+│  - Studio Dashboard (/dashboard): StudioPulse KPIs, OmniLaunchpad, Operations Deck     │
 │  - Dedicated Queue (/queue): Real-time progress, status badges, and execution logs     │
-│  - Video Library (/library): Inline playback, workspace filtering, and asset downloads │
+│  - Video Library (/library): Inline playback modal, workspace filtering, downloads    │
 │  - OmniRoute Settings (/settings): Gateway URL, API keys, and custom Supabase probe    │
 └──────────────────────────────────────────┬─────────────────────────────────────────────┘
                                            │
 ┌──────────────────────────────────────────▼─────────────────────────────────────────────┐
 │                                NEXT.JS APP ROUTER APIS                                 │
-│  - /api/workflows/* (generate, bulk-plan, extract-shorts, mission, scrape)             │
+│  - /api/workflows/* (generate, micro-drama, stickman, cinema, mission, bulk-plan)      │
 │  - /api/jobs (live count, polling, retry, status updates)                              │
 │  - /api/tts/preview (low-latency voice sample preview)                                 │
 │  - /api/settings/keys (OmniRoute single-gateway credential management)                 │
@@ -70,7 +66,7 @@ The application combines:
 │  - OmniRoute Gateway & Key Resolver (lib/keys.ts): DB -> Env -> Localhost fallback     │
 │  - LLM Dispatcher (lib/engine/llm.ts): OmniRoute 'auto' model + robust JSON repair     │
 │  - TTS Voice Engine (lib/engine/tts.ts): Edge TTS -> Google Translate -> Synthetic WAV │
-│  - Media Sourcing & Generation (lib/engine/video-generator.ts, image-orchestrator.ts)  │
+│  - Media Sourcing & Generation (lib/media/*, video-generator.ts, image-orchestrator.ts)│
 │  - Subtitle Styler (remotion/Composition.tsx & scripts/render-worker.ts drawtext)      │
 └──────────────────────────────────────────┬─────────────────────────────────────────────┘
                                            │
@@ -91,12 +87,14 @@ The database uses Supabase PostgreSQL. Key tables include:
 
 1. **`render_jobs`**:
    - `id`: UUID primary key.
-   - `status`: `'pending' | 'generating' | 'rendering' | 'completed' | 'failed'`.
+   - `orchestration_state`: Primary claim status: `'planning' | 'queued' | 'rendering' | 'completed' | 'failed' | 'retryable'`.
+   - `status`: Secondary legacy status tracking.
    - `progress`: 0 to 100 percentage.
-   - `payload`: Full JSON workflow configuration (beats, script, voice, subtitles, aspect ratio, prompt).
-   - `video_url`: Rendered MP4 output destination.
+   - `params`: JSONB workflow configuration (beats, script, voice, subtitles, aspect ratio, prompt).
+   - `logs`: JSONB execution logs, intermediate plans, presentation metadata (`title`, `thumbnailUrl`, `aspectRatio`).
+   - `output_url`: Rendered MP4 output destination.
    - `lease_holder`, `lease_expires_at`: Distributed lease locking to avoid worker race conditions.
-   - `error_message`, `render_log`: Execution trace.
+   - `error_message`: Execution error trace.
 
 2. **`videos`**:
    - Completed video library records linked to user workspaces.
@@ -115,23 +113,25 @@ The database uses Supabase PostgreSQL. Key tables include:
 ## 4. Video Rendering Pipeline
 
 1. **Submission**:
-   - User inputs script/prompt in Creation Wizard or Auto-Pilot.
-   - API creates a `render_jobs` record with status `pending`.
-   - Client immediately navigates to `/queue?jobId=...`.
+   - User inputs script/prompt in Creation Studio or Omni-Launchpad.
+   - API creates a `render_jobs` record with `orchestration_state: 'planning'` (for multi-step orchestration) or `'queued'` (when beats are finalized).
+   - Client receives HTTP 202 or navigates to `/dashboard` / `/queue`.
 
 2. **Worker Processing (`render-worker.ts`)**:
-   - PM2 worker claims job using atomic lease update (`UPDATE render_jobs SET lease_holder = ... WHERE lease_expires_at < NOW()`).
-   - Downloads/decodes audio and visual assets (supporting `data:` base64 URIs natively).
-   - Assembles timeline via Remotion or FFmpeg fluent filter graphs (`cmd.videoFilters()`).
-   - Applies word-by-word subtitle styling with escaped characters and safety margins.
-   - Produces high-bitrate H.264 MP4 with synchronized AAC audio.
-   - Updates `render_jobs` to `completed` and creates entry in `videos`.
+   - PM2 worker claims job using atomic PostgreSQL RPC function:
+     `SELECT * FROM claim_render_job(worker_id, lease_duration)`
+     which matches `orchestration_state IN ('queued', 'retryable')`.
+   - Encodes clips beat-by-beat with `-threads 2` and `-preset veryfast` for CPU safety.
+   - Assembles timeline via FFmpeg concat filter graphs (`cmd.videoFilters()`).
+   - Applies word-by-word subtitle styling with escaped characters, custom font sizes, and bounding boxes.
+   - Produces high-bitrate H.264 MP4 with synchronized AAC audio and sidechain audio ducking.
+   - Updates `render_jobs` to `completed` via `complete_render_job` RPC and creates entry in `videos`.
 
 ---
 
 ## 5. Deployment Guidelines & Rules
 
-- **Oracle Cloud VM Limit**: Strict 952MB RAM limit.
-- **Never Build Docker on VM**: Next.js builds cause OOM panics. Build locally (`npm run build` / `npx next build`).
-- **Deploy via PM2**: Compress build bundle (`zip_fast.py` excluding `.zip` files), SCP to Oracle VM, extract, and restart via `pm2 restart clipped-web`.
+- **Target Host**: Linode VM with 8GB RAM (`172.104.171.123`).
+- **Never Build Docker on VM**: Build locally (`pnpm build`) to prevent swap thrashing and OOM crashes.
+- **Deploy via PM2**: Compress standalone `.next` build bundle, transfer via SCP/SFTP, extract, and restart via `pm2 restart ecosystem.config.js`.
 - **Zero Hardcoded Secrets**: All API keys must be dynamic (Supabase `settings` table or environment variables).

@@ -1,127 +1,17 @@
-import { Clock, CheckCircle2, XCircle } from "lucide-react";
 import { supabase } from "@/lib/db";
-import { ScheduleModal } from "@/components/planner/ScheduleModal";
+import { PlannerView, ScheduledPost } from "@/components/planner/PlannerView";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function isValidDate(d: unknown): d is Date {
-  return d instanceof Date && !isNaN(d.getTime());
-}
-
-const weekdayFmt = new Intl.DateTimeFormat('en-US', { weekday: 'short' });
-const dayNumFmt = new Intl.DateTimeFormat('en-US', { day: 'numeric' });
-const timeFmt = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
-
-function addDays(date: Date, days: number): Date {
-  const d = new Date(date);
-  d.setDate(d.getDate() + days);
-  return d;
-}
-
-function isSameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
 export default async function PlannerPage() {
-  // Fetch pending and published posts
+  // Fetch pending and published posts with related render jobs
   const { data: scheduled } = await supabase
-    .from('scheduled_posts')
-    .select('*, render_jobs(logs)')
-    .order('scheduled_for', { ascending: true });
+    .from("scheduled_posts")
+    .select("*, render_jobs(logs)")
+    .order("scheduled_for", { ascending: true });
 
-  // Generate a basic 7-day week view starting from today
-  const today = new Date();
-  const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(today, i));
+  const posts = (scheduled || []) as ScheduledPost[];
 
-  const posts = scheduled || [];
-
-  return (
-    <div className="flex flex-1 flex-col gap-6 p-6 max-w-[1600px] mx-auto w-full">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Content Calendar</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Schedule and automate your AI video distribution.
-          </p>
-        </div>
-        <ScheduleModal jobs={[]} /> {/* We will fetch jobs inside the client component */}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mt-8">
-        {weekDays.map((day, i) => {
-          const dayPosts = posts.filter((p) => {
-            if (!p?.scheduled_for) return false;
-            const d = new Date(p.scheduled_for);
-            return isValidDate(d) && isSameDay(d, day);
-          });
-          
-          return (
-            <div key={i} className="flex flex-col border rounded-xl bg-card overflow-hidden min-h-[400px]">
-              <div className="p-3 border-b font-medium text-sm flex justify-between items-center">
-                <span>{weekdayFmt.format(day)}</span>
-                <span className="w-7 h-7 rounded-full flex items-center justify-center">
-                  {dayNumFmt.format(day)}
-                </span>
-              </div>
-              <div className="p-3 flex-1 flex flex-col gap-3 overflow-y-auto">
-                {dayPosts.length === 0 ? (
-                  <div className="flex-1 flex items-center justify-center text-muted-foreground/30 text-xs text-center p-4">
-                    No posts scheduled
-                  </div>
-                ) : (
-                  dayPosts.map(post => {
-                    let parsed: { subject?: string } = {};
-                    try {
-                        parsed = typeof post.render_jobs?.logs === 'string' ? JSON.parse(post.render_jobs.logs) : post.render_jobs?.logs || {};
-                    } catch {}
-                    
-                    const isPublished = post.status === 'published';
-                    const postDate = post.scheduled_for ? new Date(post.scheduled_for) : null;
-                    const formattedTime = isValidDate(postDate) ? timeFmt.format(postDate) : 'Time TBD';
-                    
-                    return (
-                      <div key={post.id} className="group relative border rounded-lg p-3 bg-background shadow-sm hover:shadow-md transition-all">
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-accent text-accent-foreground">
-                            {formattedTime}
-                          </span>
-                          {isPublished ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-500" />
-                          ) : post.status === 'failed' ? (
-                            <XCircle className="w-4 h-4 text-destructive" />
-                          ) : (
-                            <Clock className="w-4 h-4 text-muted-foreground" />
-                          )}
-                        </div>
-                        <p className="text-sm font-medium line-clamp-2 mb-2">
-                          {post.caption || parsed.subject || 'Untitled Video'}
-                        </p>
-                        <div className="flex gap-1 flex-wrap">
-                          {(parsed as any).workflowType === 'bulk-plan' && (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                              Bulk Plan
-                            </span>
-                          )}
-                          {Array.isArray(post.platforms) && post.platforms.map((p: string) => (
-                            <span key={p} className="text-[10px] capitalize px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                              {p}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )
-                  })
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
+  return <PlannerView initialPosts={posts} />;
 }

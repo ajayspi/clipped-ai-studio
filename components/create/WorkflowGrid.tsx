@@ -12,11 +12,11 @@ interface WorkflowGridProps {
 }
 
 const CATEGORIES = [
-  { id: "all", label: "All Workflows" },
-  { id: "automation", label: "Planning & Automation" },
-  { id: "stock", label: "Stock Footage" },
-  { id: "ai-video", label: "AI Generative" },
-  { id: "avatar-wb", label: "Avatars & Whiteboards" },
+  { id: "all", label: "All Pipelines" },
+  { id: "shorts", label: "⚡ Social Shorts" },
+  { id: "cinema", label: "🎬 Cinema & Drama" },
+  { id: "2d", label: "✏️ 2D & Explainers" },
+  { id: "campaign", label: "🚀 Campaigns & Automation" },
 ];
 
 export function WorkflowGrid({
@@ -27,7 +27,7 @@ export function WorkflowGrid({
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
-  // Compute stats across all 10 workflows
+  // Compute stats across all workflows
   const stats = useMemo(() => {
     let readyCount = 0;
     let fallbackCount = 0;

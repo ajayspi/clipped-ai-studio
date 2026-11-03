@@ -4768,7 +4768,28 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     'Tier 30: Reddit & Trivia Workflows',
     'Tier 31: Epic 4 Brand Kits',
     'Tier 32: Epic 5 Multi-Language Dubbing',
-    'Tier 33: Declarative YAML Workflows'
+    'Tier 33: Declarative YAML Workflows',
+    'Tier 34: Brand & Design Data Contracts',
+    'Tier 35: Sidebar Navigation Consolidation',
+    'Tier 36: Creation Hub Rationalization & 4 Signature Studios',
+    'Tier 37: Brand Tokens Pipeline in Remotion & FFmpeg Worker',
+    'Tier 38: 2D Stick Figure Studio Expressions & Anime.js Stroke Tracer',
+    'Tier 39: Open Props Design Tokens & Remotion Kinetic Easing',
+    'Tier 40: Stickman Video Director & Comedic Staging Engine',
+    'Tier 41: Nafay 3D Kinetic Callouts & Slate Chalkboard Engine',
+    'Tier 42: Vox Papercraft Explainer & 3D Origami Transitions',
+    'Tier 43: Remotion Audio-Driven Talking Avatar Component',
+    'Tier 44: Voice-First Audio Mastering, HyperFrames & Pacing Engine',
+    'Tier 45: Technical Architecture & Digital Waveform Engine (WaveDrom & Lanshu & Lawrence Systems)',
+    'Tier 46: VisoTalk Word-Anchored Narration Timeline & Declarative Cues Engine',
+    'Tier 47: Hormozi Kinetic Captions & Zero-Asset Procedural Foley Engine',
+    'Tier 48: Fireship Code Morph & Sigmoid Bar Chart Race Engines',
+    'Tier 49: Micro-Drama 1:N Episodic Pusher & Two-Phase Storyboard Pipeline',
+    'Tier 50: Studio Dashboard Pulse & Omni-Launchpad Operations Deck',
+    'Tier 51: Native View Transitions & Optimistic Studio Mutations Engine',
+    'Tier 52: XIAS UI/UX Design Doctrine & Component Model',
+    'Tier 53: Multi-Channel Content Planner & Social Publishing Engine',
+    'Tier 54: VoiceStudio 48kHz Broadcast Engine & Commercial Safety Gate'
 ];
 
 tests.push({
@@ -4813,6 +4834,1641 @@ tests.push({
     expect(routeSource).toContain("beats: compiled.beats");
   }
 });
+
+// ─── TIER 34: BRAND & DESIGN DATA CONTRACTS ─────────────────────────────────
+tests.push({
+  tier: 'Tier 34: Brand & Design Data Contracts',
+  id: 'T34-CONTRACT-01',
+  title: 'lib/engine/job-presentation.ts exports extractJobPresentation and getWorkflowFallbackCover',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'job-presentation.ts');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('export function extractJobPresentation');
+    expect(src).toContain('export function getWorkflowFallbackCover');
+    expect(src).toContain('export function normalizeAspectRatio');
+  }
+});
+
+tests.push({
+  tier: 'Tier 34: Brand & Design Data Contracts',
+  id: 'T34-CONTRACT-02',
+  title: 'app/api/jobs/route.ts invokes extractJobPresentation to serialize jobs',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'app', 'api', 'jobs', 'route.ts'), 'utf8');
+    expect(src).toContain('extractJobPresentation');
+  }
+});
+
+tests.push({
+  tier: 'Tier 34: Brand & Design Data Contracts',
+  id: 'T34-CONTRACT-03',
+  title: 'app/(app)/editor/[jobId]/page.tsx strips title and workflow_type from PostgREST query',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'app', '(app)', 'editor', '[jobId]', 'page.tsx'), 'utf8');
+    expect(src).toContain('extractJobPresentation');
+    expect(src).not.toContain("select('*, title, workflow_type')");
+  }
+});
+
+tests.push({
+  tier: 'Tier 34: Brand & Design Data Contracts',
+  id: 'T34-CONTRACT-04',
+  title: 'DashboardCard.tsx renders real HTML5 video and audio playback elements',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'components', 'dashboard', 'DashboardCard.tsx');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('<video');
+    expect(src).toContain('outputUrl');
+    expect(src).toContain('setIsPlaying(false)');
+  }
+});
+
+tests.push({
+  tier: 'Tier 34: Brand & Design Data Contracts',
+  id: 'T34-CONTRACT-05',
+  title: 'DashboardCard.tsx dynamically computes aspect ratio container classes',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'components', 'dashboard', 'DashboardCard.tsx'), 'utf8');
+    expect(src).toContain('aspectRatio');
+    expect(src).toContain("'16:9'");
+    expect(src).toContain("'9:16'");
+  }
+});
+
+tests.push({
+  tier: 'Tier 34: Brand & Design Data Contracts',
+  id: 'T34-CONTRACT-06',
+  title: 'editor/[jobId]/page.tsx permits retryable and completed jobs without trapdoors',
+  fn: async () => {
+    const editorSrc = fs.readFileSync(path.join(process.cwd(), 'app', '(app)', 'editor', '[jobId]', 'page.tsx'), 'utf8');
+    expect(editorSrc).toContain("'retryable'");
+    expect(editorSrc).toContain("allowedStates.includes(job.status)");
+
+    const jobsApiSrc = fs.readFileSync(path.join(process.cwd(), 'app', 'api', 'jobs', 'route.ts'), 'utf8');
+    expect(jobsApiSrc).toContain("activeStatuses");
+    expect(jobsApiSrc).toContain("'claimed'");
+  }
+});
+
+// ─── TIER 35: SIDEBAR NAVIGATION CONSOLIDATION ──────────────────────────────
+tests.push({
+  tier: 'Tier 35: Sidebar Navigation Consolidation',
+  id: 'T35-SIDEBAR-01',
+  title: 'components/sidebar.tsx organizes 4 sections with zero icon collisions',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'components', 'sidebar.tsx');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('"STUDIO"');
+    expect(src).toContain('"CONTENT"');
+    expect(src).toContain('"OPERATIONS"');
+    expect(src).toContain('"SYSTEM"');
+    expect(src).toContain('Folder');
+    expect(src).toContain('Sparkles');
+    expect(src).toContain('Film');
+    expect(src).toContain('LayoutDashboard');
+    expect(src).toContain('ListVideo');
+    expect(src).toContain('CalendarDays');
+    expect(src).toContain('Settings');
+  }
+});
+
+tests.push({
+  tier: 'Tier 35: Sidebar Navigation Consolidation',
+  id: 'T35-SIDEBAR-02',
+  title: 'components/sidebar.tsx renders overflow-visible when collapsed to prevent tooltip clipping',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'components', 'sidebar.tsx'), 'utf8');
+    expect(src).toContain('isCollapsed ? "overflow-visible" : "overflow-y-auto"');
+    expect(src).toContain('group-hover:opacity-100');
+  }
+});
+
+tests.push({
+  tier: 'Tier 35: Sidebar Navigation Consolidation',
+  id: 'T35-SIDEBAR-03',
+  title: 'components/sidebar.tsx wires handleLogout to supabase.auth.signOut()',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'components', 'sidebar.tsx'), 'utf8');
+    expect(src).toContain('handleLogout');
+    expect(src).toContain('supabase.auth.signOut()');
+    expect(src).toContain('createClient');
+  }
+});
+
+tests.push({
+  tier: 'Tier 35: Sidebar Navigation Consolidation',
+  id: 'T35-SIDEBAR-04',
+  title: 'components/sidebar.tsx removes hardcoded 850 / 1k credits meter',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'components', 'sidebar.tsx'), 'utf8');
+    expect(src).not.toContain('850 / 1k');
+    expect(src).not.toContain('w-[85%]');
+    expect(src).toContain('/api/credits');
+  }
+});
+
+tests.push({
+  tier: 'Tier 35: Sidebar Navigation Consolidation',
+  id: 'T35-SIDEBAR-05',
+  title: 'Sidebar eliminates badge carnival and keeps live queue badge only',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'components', 'sidebar.tsx'), 'utf8');
+    expect(src).not.toContain('badge: "New"');
+    expect(src).not.toContain('badge: "Vault"');
+    expect(src).not.toContain('badge: "Local"');
+    expect(src).not.toContain('badge: "Trending"');
+    expect(src).not.toContain('badge: "AI"');
+    expect(src).not.toContain('badge: "Live"');
+    expect(src).toContain('activeJobsCount');
+    expect(src).toContain('/api/jobs');
+  }
+});
+
+tests.push({
+  tier: 'Tier 35: Sidebar Navigation Consolidation',
+  id: 'T35-SIDEBAR-06',
+  title: 'app/(app)/editor/page.tsx redirects to recent job or /create without 404',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'app', '(app)', 'editor', 'page.tsx');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('EditorLandingPage');
+    expect(src).toContain('render_jobs');
+    expect(src).toContain('/create');
+  }
+});
+
+// ─── TIER 36: CREATION HUB RATIONALIZATION & 4 SIGNATURE STUDIOS ────────────
+tests.push({
+  tier: 'Tier 36: Creation Hub Rationalization & 4 Signature Studios',
+  id: 'T36-STUDIOS-01',
+  title: 'components/create/SignatureStudios.tsx renders 4 Signature Studios',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'components', 'create', 'SignatureStudios.tsx');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('Social Shorts Studio');
+    expect(src).toContain('Cinema & Drama Studio');
+    expect(src).toContain('2D & Explainer Studio');
+    expect(src).toContain('Campaign & Newsroom Studio');
+    expect(src).toContain('/create/shorts');
+    expect(src).toContain('/create/cinema');
+  }
+});
+
+tests.push({
+  tier: 'Tier 36: Creation Hub Rationalization & 4 Signature Studios',
+  id: 'T36-STUDIOS-02',
+  title: 'components/create/workflow-definitions.ts registers all 9 dark routes in WORKFLOWS',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'components', 'create', 'workflow-definitions.ts');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('stick-figure');
+    expect(src).toContain('podcast');
+    expect(src).toContain('code-video');
+    expect(src).toContain('reddit');
+    expect(src).toContain('trivia');
+    expect(src).toContain('/create/url');
+    expect(src).toContain('/create/previs');
+    expect(src).toContain('/create/scriptbreak');
+    expect(src).toContain('/create/yaml');
+  }
+});
+
+tests.push({
+  tier: 'Tier 36: Creation Hub Rationalization & 4 Signature Studios',
+  id: 'T36-STUDIOS-03',
+  title: 'components/create/WorkflowGrid.tsx defines StudioCategory filters and displays signature cards',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'components', 'create', 'WorkflowGrid.tsx');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('"shorts"');
+    expect(src).toContain('"cinema"');
+    expect(src).toContain('"2d"');
+    expect(src).toContain('"campaign"');
+  }
+});
+
+tests.push({
+  tier: 'Tier 36: Creation Hub Rationalization & 4 Signature Studios',
+  id: 'T36-STUDIOS-04',
+  title: 'app/(app)/create/2d/page.tsx and campaign/page.tsx landing pages exist',
+  fn: async () => {
+    const p2d = path.join(process.cwd(), 'app', '(app)', 'create', '2d', 'page.tsx');
+    const pCamp = path.join(process.cwd(), 'app', '(app)', 'create', 'campaign', 'page.tsx');
+    expect(fs.existsSync(p2d)).toBe(true);
+    expect(fs.existsSync(pCamp)).toBe(true);
+  }
+});
+
+tests.push({
+  tier: 'Tier 36: Creation Hub Rationalization & 4 Signature Studios',
+  id: 'T36-STUDIOS-05',
+  title: 'lib/engine/types.ts exports BrandDesignTokens interface and getDefaultBrandTokens helper',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'types.ts');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('export interface BrandDesignTokens');
+    expect(src).toContain('export function getDefaultBrandTokens');
+    expect(src).toContain('typography');
+    expect(src).toContain('colors');
+    expect(src).toContain('geometry');
+  }
+});
+
+// ─── TIER 37: BRAND TOKENS PIPELINE IN REMOTION & FFMPEG WORKER ─────────────
+tests.push({
+  tier: 'Tier 37: Brand Tokens Pipeline in Remotion & FFmpeg Worker',
+  id: 'T37-TOKENS-01',
+  title: 'remotion/Composition.tsx accepts brandTokens and maps typography and colors into subtitle styles',
+  fn: async () => {
+    const compSrc = fs.readFileSync(path.join(process.cwd(), 'remotion', 'Composition.tsx'), 'utf8');
+    expect(compSrc).toContain("import type { BrandDesignTokens } from '@/lib/engine/types';");
+    expect(compSrc).toContain('brandTokens?: BrandDesignTokens;');
+    expect(compSrc).toContain('brandTokens?.colors?.primary');
+    expect(compSrc).toContain('brandTokens?.typography?.fontFamily');
+    expect(compSrc).toContain('brandTokens?.colors?.outlineColor');
+    expect(compSrc).toContain('brandTokens?.colors?.background');
+  }
+});
+
+tests.push({
+  tier: 'Tier 37: Brand Tokens Pipeline in Remotion & FFmpeg Worker',
+  id: 'T37-TOKENS-02',
+  title: 'scripts/render-worker.ts integrates brandTokens into subtitle drawtext filter',
+  fn: async () => {
+    const workerSrc = fs.readFileSync(path.join(process.cwd(), 'scripts', 'render-worker.ts'), 'utf8');
+    expect(workerSrc).toContain('brandTokens?.colors?.primary');
+    expect(workerSrc).toContain('brandTokens?.colors?.outlineColor');
+    expect(workerSrc).toContain('brandTokens?.colors?.background');
+    expect(workerSrc).toContain("brandTokens?.typography?.textTransform === 'uppercase'");
+  }
+});
+
+tests.push({
+  tier: 'Tier 37: Brand Tokens Pipeline in Remotion & FFmpeg Worker',
+  id: 'T37-TOKENS-03',
+  title: 'lib/engine/job-presentation.ts parses brand_tokens into brandTokens with fallback',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'job-presentation.ts');
+    const presSrc = fs.readFileSync(p, 'utf8');
+    expect(presSrc).toContain('brandTokens');
+    expect(presSrc).toContain('getDefaultBrandTokens');
+    expect(presSrc).toContain('parseTokensCandidate');
+    expect(presSrc).toContain('rawTokens?.colors');
+    expect(presSrc).toContain('rawTokens?.typography');
+    expect(presSrc).toContain('rawTokens?.geometry');
+  }
+});
+
+tests.push({
+  tier: 'Tier 37: Brand Tokens Pipeline in Remotion & FFmpeg Worker',
+  id: 'T37-TOKENS-04',
+  title: 'scripts/render-worker.ts connects brandTokens overrides to drawtext filter construction',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'scripts', 'render-worker.ts');
+    const workerSrc = fs.readFileSync(p, 'utf8');
+    expect(workerSrc).toContain('export function buildSubtitleDrawtextFilter');
+    expect(workerSrc).toContain('(s as any).brandTokens?.colors?.primary');
+    expect(workerSrc).toContain('(s as any).brandTokens?.colors?.outlineColor');
+    expect(workerSrc).toContain('(s as any).brandTokens?.colors?.background');
+    expect(workerSrc).toContain("(s as any).brandTokens?.typography?.textTransform === 'uppercase'");
+  }
+});
+
+// ─── TIER 38: 2D STICK FIGURE STUDIO EXPRESSIONS & ANIME.JS STROKE TRACER ──
+tests.push({
+  tier: 'Tier 38: 2D Stick Figure Studio Expressions & Anime.js Stroke Tracer',
+  id: 'T38-STICK-01',
+  title: 'lib/engine/2d-studio/rig2d.ts defines all 5 canonical expressions in EXPR',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', '2d-studio', 'rig2d.ts');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain("smiling: { eyes: 'dot', brows: 'gentle', mouth: 'smile' }");
+    expect(src).toContain("angry: { eyes: 'narrow', brows: 'angry', mouth: 'scowl' }");
+    expect(src).toContain("shocked: { eyes: 'wide', brows: 'raised', mouth: 'oBig' }");
+    expect(src).toContain("happy: { eyes: 'happy', brows: 'raised', mouth: 'grin' }");
+    expect(src).toContain("laughing: { eyes: 'happy', brows: 'raised', mouth: 'laugh' }");
+  }
+});
+
+tests.push({
+  tier: 'Tier 38: 2D Stick Figure Studio Expressions & Anime.js Stroke Tracer',
+  id: 'T38-STICK-02',
+  title: 'lib/engine/2d-studio/rig2d.ts implements V-furrow eyebrows, scowl, and laughing mouth oscillator',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', '2d-studio', 'rig2d.ts');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain("ex.brows === 'angry'");
+    expect(src).toContain("case 'scowl':");
+    expect(src).toContain("case 'laugh':");
+    expect(src).toContain('Math.sin(o.animTime * 18)');
+  }
+});
+
+tests.push({
+  tier: 'Tier 38: 2D Stick Figure Studio Expressions & Anime.js Stroke Tracer',
+  id: 'T38-STICK-03',
+  title: 'components/2d-studio/StickFigureCanvas.tsx renders 5 mood buttons and forwards animTime',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'components', '2d-studio', 'StickFigureCanvas.tsx');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain("'smiling'");
+    expect(src).toContain("'angry'");
+    expect(src).toContain("'shocked'");
+    expect(src).toContain("'happy'");
+    expect(src).toContain("'laughing'");
+    expect(src).toContain("animTime: t");
+  }
+});
+
+tests.push({
+  tier: 'Tier 38: 2D Stick Figure Studio Expressions & Anime.js Stroke Tracer',
+  id: 'T38-STICK-04',
+  title: 'StrokeTracerCanvas.tsx imports animejs and implements progressive vector stroke tracing',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'components', '2d-studio', 'StrokeTracerCanvas.tsx');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src.includes('animejs')).toBe(true);
+    expect(src).toContain("strokeDashoffset");
+    expect(src).toContain("getExpressionElements");
+    expect(src).toContain("getPosePaths");
+    expect(src).toContain("getPropElements");
+  }
+});
+
+tests.push({
+  tier: 'Tier 38: 2D Stick Figure Studio Expressions & Anime.js Stroke Tracer',
+  id: 'T38-STICK-05',
+  title: 'app/(app)/create/stick-figure/page.tsx registers Anime.js Vector Stroke Tracer view',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'app', '(app)', 'create', 'stick-figure', 'page.tsx');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('StrokeTracerCanvas');
+    expect(src).toContain('Anime.js Vector Stroke Tracer');
+    expect(src).toContain('activeView === "tracing"');
+  }
+});
+
+// ─── TIER 39: OPEN PROPS DESIGN TOKENS & REMOTION KINETIC EASING ────────────
+tests.push({
+  tier: 'Tier 39: Open Props Design Tokens & Remotion Kinetic Easing',
+  id: 'T39-OPENPROPS-01',
+  title: 'lib/engine/brand-tokens-presets.ts defines OPEN_PROPS_EASINGS with standard, elastic, and squish curves',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'brand-tokens-presets.ts');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('OPEN_PROPS_EASINGS');
+    expect(src).toContain("'ease-1'");
+    expect(src).toContain("'ease-3'");
+    expect(src).toContain("'ease-elastic-3'");
+    expect(src).toContain("'ease-squish-2'");
+    expect(src).toContain('cubic-bezier(.5, 1.25, .75, 1.25)');
+    expect(src).toContain('cubic-bezier(.5, -.3, .1, 1.5)');
+  }
+});
+
+tests.push({
+  tier: 'Tier 39: Open Props Design Tokens & Remotion Kinetic Easing',
+  id: 'T39-OPENPROPS-02',
+  title: 'lib/engine/brand-tokens-presets.ts implements solveCubicBezier and sampleEasing evaluator',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'brand-tokens-presets.ts');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('export function solveCubicBezier');
+    expect(src).toContain('export function sampleEasing');
+    expect(src).toContain('sampleDerivX');
+    expect(src).toContain('Newton-Raphson');
+  }
+});
+
+tests.push({
+  tier: 'Tier 39: Open Props Design Tokens & Remotion Kinetic Easing',
+  id: 'T39-OPENPROPS-03',
+  title: 'lib/engine/brand-tokens-presets.ts exports 5 signature brand presets with motion tokens',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'brand-tokens-presets.ts');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('BRAND_TOKEN_PRESETS');
+    expect(src).toContain("'cyber-neon'");
+    expect(src).toContain("'hormozi-viral'");
+    expect(src).toContain("'cinematic-drama'");
+    expect(src).toContain("'minimalist-studio'");
+    expect(src).toContain("'retro-arcade'");
+    expect(src).toContain('export function getBrandTokenPreset');
+    expect(src).toContain('export function listBrandTokenPresets');
+  }
+});
+
+tests.push({
+  tier: 'Tier 39: Open Props Design Tokens & Remotion Kinetic Easing',
+  id: 'T39-OPENPROPS-04',
+  title: 'remotion/Composition.tsx applies sampleEasing to Ken Burns zoom/pan and subtitle pop-in scaling',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'remotion', 'Composition.tsx');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain("import { sampleEasing } from '@/lib/engine/brand-tokens-presets';");
+    expect(src).toContain('easedProgress');
+    expect(src).toContain('popProgress');
+    expect(src).toContain('popEased');
+    expect(src).toContain('popScale');
+  }
+});
+
+tests.push({
+  tier: 'Tier 39: Open Props Design Tokens & Remotion Kinetic Easing',
+  id: 'T39-OPENPROPS-05',
+  title: 'app/(app)/settings/page.tsx renders Open Props Presets & Easing Selector with live motion preview',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'app', '(app)', 'settings', 'page.tsx');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('BRAND_TOKEN_PRESETS');
+    expect(src).toContain('OPEN_PROPS_EASINGS');
+    expect(src).toContain('Open Props Brand & Motion Presets');
+    expect(src).toContain('Remotion & Subtitle Easing Curve (Open Props)');
+    expect(src).toContain('ease-squish-2');
+    expect(src).toContain('ease-elastic-3');
+    expect(src).toContain('setSelectedPresetId');
+    expect(src).toContain('setMotionEasing');
+  }
+});
+
+// ─── TIER 40: STICKMAN VIDEO DIRECTOR & COMEDIC STAGING ENGINE ──────────────
+tests.push({
+  tier: 'Tier 40: Stickman Video Director & Comedic Staging Engine',
+  id: 'T40-CHOREO-01',
+  title: 'lib/engine/stick-figure-choreography.ts exports parsing, evaluation, camera models, and comedic presets',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'stick-figure-choreography.ts');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('export function parseScreenplayChoreography');
+    expect(src).toContain('export function evaluateChoreographyFrame');
+    expect(src).toContain('export function getCameraTransformForMode');
+    expect(src).toContain('export const COMEDIC_SCREENPLAY_PRESETS');
+  }
+});
+
+tests.push({
+  tier: 'Tier 40: Stickman Video Director & Comedic Staging Engine',
+  id: 'T40-CHOREO-02',
+  title: 'parseScreenplayChoreography implements tag extraction for ACTION, POSE, REACTION, CAMERA, SFX, and PAUSE',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'stick-figure-choreography.ts');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('ACTION|POSE|REACTION|CAMERA|SFX|PAUSE|STAGE|FACING');
+    expect(src).toContain('enter_stage');
+    expect(src).toContain('facepalm');
+    expect(src).toContain('jaw_drop');
+    expect(src).toContain('snap_push');
+    expect(src).toContain('record_scratch');
+    expect(src).toContain('comedicPausesCount');
+    expect(src).toContain('pauseDurationSec');
+  }
+});
+
+tests.push({
+  tier: 'Tier 40: Stickman Video Director & Comedic Staging Engine',
+  id: 'T40-CHOREO-03',
+  title: 'evaluateChoreographyFrame calculates stage translations, camera shake, and snap zoom eases',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'stick-figure-choreography.ts');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('xPercent');
+    expect(src).toContain('shakeX');
+    expect(src).toContain('shakeY');
+    expect(src).toContain('shakeIntensity');
+    expect(src).toContain('snap_push');
+    expect(src).toContain('curZoom');
+  }
+});
+
+tests.push({
+  tier: 'Tier 40: Stickman Video Director & Comedic Staging Engine',
+  id: 'T40-CHOREO-04',
+  title: 'lib/engine/prompts.ts exports STICKMAN_DIRECTOR system prompt and buildStickmanDirectorPrompt',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'prompts.ts');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('STICKMAN_DIRECTOR:');
+    expect(src).toContain('export function buildStickmanDirectorPrompt');
+    expect(src).toContain('kaomei/stickman-video-director');
+    expect(src).toContain('[ACTION:');
+    expect(src).toContain('[POSE:');
+    expect(src).toContain('[REACTION:');
+  }
+});
+
+tests.push({
+  tier: 'Tier 40: Stickman Video Director & Comedic Staging Engine',
+  id: 'T40-CHOREO-05',
+  title: 'components/2d-studio/ScriptToVideoStudio.tsx & page.tsx integrate Kaomei Choreography engine',
+  fn: async () => {
+    const studioPath = path.join(process.cwd(), 'components', '2d-studio', 'ScriptToVideoStudio.tsx');
+    const studioSrc = fs.readFileSync(studioPath, 'utf8');
+    expect(studioSrc).toContain('parseScreenplayChoreography');
+    expect(studioSrc).toContain('evaluateChoreographyFrame');
+    expect(studioSrc).toContain('choreoProject');
+    expect(studioSrc).toContain('choreoFrame');
+
+    const pagePath = path.join(process.cwd(), 'app', '(app)', 'create', 'stick-figure', 'page.tsx');
+    const pageSrc = fs.readFileSync(pagePath, 'utf8');
+    expect(pageSrc).toContain('Screenplay Director');
+    expect(pageSrc).toContain('Kaomei Choreo');
+  }
+});
+
+// ─── TIER 41: NAFAY 3D KINETIC CALLOUTS & SLATE CHALKBOARD ENGINE ───────────
+tests.push({
+  tier: 'Tier 41: Nafay 3D Kinetic Callouts & Slate Chalkboard Engine',
+  id: 'T41-CALLOUTS-01',
+  title: 'lib/engine/kinetic-callouts.tsx exports highlighter, circling ellipse, arrow pointer, and metric ticker',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'kinetic-callouts.tsx');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('export function detectKineticCallouts');
+    expect(src).toContain('export const MarkerHighlighter');
+    expect(src).toContain('export const CirclingEllipse');
+    expect(src).toContain('export const ArrowPointer');
+    expect(src).toContain('export const MetricTicker');
+    expect(src).toContain('export const KineticCalloutsOverlay');
+  }
+});
+
+tests.push({
+  tier: 'Tier 41: Nafay 3D Kinetic Callouts & Slate Chalkboard Engine',
+  id: 'T41-CALLOUTS-02',
+  title: 'detectKineticCallouts extracts metrics, warning emphasis words, and directional keywords',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'kinetic-callouts.tsx');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('EMPHASIS_WORDS');
+    expect(src).toContain('metric_ticker');
+    expect(src).toContain('circling_ellipse');
+    expect(src).toContain('highlighter');
+    expect(src).toContain('targetNumber');
+  }
+});
+
+tests.push({
+  tier: 'Tier 41: Nafay 3D Kinetic Callouts & Slate Chalkboard Engine',
+  id: 'T41-CALLOUTS-03',
+  title: 'remotion/Composition.tsx mounts KineticCalloutsOverlay with frame timing and highlight color',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'remotion', 'Composition.tsx');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain("import { KineticCalloutsOverlay } from '@/lib/engine/kinetic-callouts';");
+    expect(src).toContain('<KineticCalloutsOverlay');
+    expect(src).toContain('beatText={beat.text}');
+    expect(src).toContain('frameInBeat=');
+    expect(src).toContain('durationInFrames={beat.durationInFrames}');
+  }
+});
+
+tests.push({
+  tier: 'Tier 41: Nafay 3D Kinetic Callouts & Slate Chalkboard Engine',
+  id: 'T41-CALLOUTS-04',
+  title: 'components/2d-studio/ChalkboardCanvas.tsx renders slate chalkboard with chalk dust particles',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'components', '2d-studio', 'ChalkboardCanvas.tsx');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('CHALKBOARD_PRESETS');
+    expect(src).toContain('STATIC_CHALK_PARTICLES');
+    expect(src).toContain('chalkDustEnabled');
+    expect(src).toContain('Nafay Slate Chalkboard Engine');
+    expect(src).toContain('slateGrad');
+  }
+});
+
+tests.push({
+  tier: 'Tier 41: Nafay 3D Kinetic Callouts & Slate Chalkboard Engine',
+  id: 'T41-CALLOUTS-05',
+  title: 'app/(app)/create/whiteboard/page.tsx registers Nafay Slate mode and mounts ChalkboardCanvas',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'app', '(app)', 'create', 'whiteboard', 'page.tsx');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('ChalkboardCanvas');
+    expect(src).toContain('components/2d-studio/ChalkboardCanvas');
+    expect(src).toContain('Nafay Slate');
+    expect(src).toContain('studioMode === "chalkboard"');
+    expect(src).toContain('<ChalkboardCanvas />');
+  }
+});
+
+// ─── TIER 42: VOX PAPERCRAFT EXPLAINER & 3D ORIGAMI TRANSITIONS ─────────────
+tests.push({
+  tier: 'Tier 42: Vox Papercraft Explainer & 3D Origami Transitions',
+  id: 'T42-VOX-01',
+  title: 'lib/engine/papercraft-studio.tsx exports styles, origami presets, and tactile engine functions',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'papercraft-studio.tsx');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('export const PAPERCRAFT_STYLE_PRESETS');
+    expect(src).toContain('export const ORIGAMI_FOLD_PRESETS');
+    expect(src).toContain('export function computeStopMotionJitter');
+    expect(src).toContain('export function calculateOrigamiFoldTransform');
+    expect(src).toContain('export function generateTornEdgePath');
+    expect(src).toContain('export const PaperFastener');
+    expect(src).toContain('export const PAPERCRAFT_DOCUMENTARY_PRESETS');
+  }
+});
+
+tests.push({
+  tier: 'Tier 42: Vox Papercraft Explainer & 3D Origami Transitions',
+  id: 'T42-VOX-02',
+  title: 'calculateOrigamiFoldTransform computes 3D origami transforms with shading falloff',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'papercraft-studio.tsx');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain("case 'accordion_h':");
+    expect(src).toContain("case 'accordion_v':");
+    expect(src).toContain("case 'diagonal_fold':");
+    expect(src).toContain("case 'envelope_reveal':");
+    expect(src).toContain("case 'pop_up_book':");
+    expect(src).toContain('perspective(1200px)');
+    expect(src).toContain('shadingOpacity');
+  }
+});
+
+tests.push({
+  tier: 'Tier 42: Vox Papercraft Explainer & 3D Origami Transitions',
+  id: 'T42-VOX-03',
+  title: 'computeStopMotionJitter quantizes timeline to 12 FPS with deterministic bounds',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'papercraft-studio.tsx');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('Math.max(1, Math.round(fps / 12))');
+    expect(src).toContain('rotateDeg:');
+    expect(src).toContain('translateX:');
+    expect(src).toContain('translateY:');
+  }
+});
+
+tests.push({
+  tier: 'Tier 42: Vox Papercraft Explainer & 3D Origami Transitions',
+  id: 'T42-VOX-04',
+  title: 'remotion/Composition.tsx mounts papercraft framing, fasteners, and 3D origami fold container',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'remotion', 'Composition.tsx');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('from \'@/lib/engine/papercraft-studio\'');
+    expect(src).toContain('calculateOrigamiFoldTransform');
+    expect(src).toContain('computeStopMotionJitter');
+    expect(src).toContain('PaperFastener');
+    expect(src).toContain('papercraftMode');
+    expect(src).toContain('isPapercraft');
+    expect(src).toContain('transformStyle: \'preserve-3d\'');
+  }
+});
+
+tests.push({
+  tier: 'Tier 42: Vox Papercraft Explainer & 3D Origami Transitions',
+  id: 'T42-VOX-05',
+  title: 'SignatureStudios registers Vox Papercraft and app/(app)/create/papercraft/page.tsx renders studio',
+  fn: async () => {
+    const studioListPath = path.join(process.cwd(), 'components', 'create', 'SignatureStudios.tsx');
+    const studioListSrc = fs.readFileSync(studioListPath, 'utf8');
+    expect(studioListSrc).toContain('Vox Papercraft & Documentary');
+    expect(studioListSrc).toContain('/create/papercraft');
+    expect(studioListSrc).toContain('The 5 Signature Studios');
+
+    const pagePath = path.join(process.cwd(), 'app', '(app)', 'create', 'papercraft', 'page.tsx');
+    expect(fs.existsSync(pagePath)).toBe(true);
+    const pageSrc = fs.readFileSync(pagePath, 'utf8');
+    expect(pageSrc).toContain('PapercraftStudio');
+    expect(pageSrc).toContain('Vox Papercraft Explainer');
+
+    const studioCompPath = path.join(process.cwd(), 'components', '2d-studio', 'PapercraftStudio.tsx');
+    expect(fs.existsSync(studioCompPath)).toBe(true);
+    const studioCompSrc = fs.readFileSync(studioCompPath, 'utf8');
+    expect(studioCompSrc).toContain('PAPERCRAFT_DOCUMENTARY_PRESETS');
+    expect(studioCompSrc).toContain('3D Origami Viewport (12 FPS Stop-Motion)');
+  }
+});
+
+// ─── TIER 43: REMOTION AUDIO-DRIVEN TALKING AVATAR COMPONENT ────────────────
+tests.push({
+  tier: 'Tier 43: Remotion Audio-Driven Talking Avatar Component',
+  id: 'T43-AVATAR-01',
+  title: 'lib/engine/talking-avatar.tsx exports physics engine, layout mapper, presets, and AudioDrivenAvatar',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'talking-avatar.tsx');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('export function calculateAvatarPhysics');
+    expect(src).toContain('export function getAvatarLayoutStyles');
+    expect(src).toContain('export const TALKING_AVATAR_PRESETS');
+    expect(src).toContain('export const AudioDrivenAvatar');
+  }
+});
+
+tests.push({
+  tier: 'Tier 43: Remotion Audio-Driven Talking Avatar Component',
+  id: 'T43-AVATAR-02',
+  title: 'calculateAvatarPhysics simulates sinusoidal head bobbing, tilt, pulse scale, and jaw cadence',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'talking-avatar.tsx');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('bobY');
+    expect(src).toContain('tiltDeg');
+    expect(src).toContain('pulseScale');
+    expect(src).toContain('jawScaleY');
+    expect(src).toContain('glowIntensity');
+    expect(src).toContain('isSpeaking');
+  }
+});
+
+tests.push({
+  tier: 'Tier 43: Remotion Audio-Driven Talking Avatar Component',
+  id: 'T43-AVATAR-03',
+  title: 'getAvatarLayoutStyles supports PiP, circular bubble, fullscreen, and split-screen layouts',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'talking-avatar.tsx');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain("case 'pip_bottom_right':");
+    expect(src).toContain("case 'pip_bottom_left':");
+    expect(src).toContain("case 'circular_bubble':");
+    expect(src).toContain("case 'fullscreen':");
+    expect(src).toContain("case 'side_by_side':");
+  }
+});
+
+tests.push({
+  tier: 'Tier 43: Remotion Audio-Driven Talking Avatar Component',
+  id: 'T43-AVATAR-04',
+  title: 'remotion/Composition.tsx mounts AudioDrivenAvatar with frameInBeat and layout support',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'remotion', 'Composition.tsx');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain("from '@/lib/engine/talking-avatar'");
+    expect(src).toContain('<AudioDrivenAvatar');
+    expect(src).toContain('avatarUrl=');
+    expect(src).toContain('layout=');
+    expect(src).toContain('frameInBeat=');
+    expect(src).toContain('durationInFrames={beat.durationInFrames}');
+  }
+});
+
+tests.push({
+  tier: 'Tier 43: Remotion Audio-Driven Talking Avatar Component',
+  id: 'T43-AVATAR-05',
+  title: 'TALKING_AVATAR_PRESETS provides creator_neon, anchor_dark, podcast_mic, and minimal_bubble presets',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'talking-avatar.tsx');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('creator_neon:');
+    expect(src).toContain('anchor_dark:');
+    expect(src).toContain('podcast_mic:');
+    expect(src).toContain('minimal_bubble:');
+    expect(src).toContain('badgeBg');
+    expect(src).toContain('showBadge');
+  }
+});
+
+// ─── TIER 44: VOICE-FIRST AUDIO MASTERING, HYPERFRAMES & PACING ENGINE ──────
+tests.push({
+  tier: 'Tier 44: Voice-First Audio Mastering, HyperFrames & Pacing Engine',
+  id: 'T44-AUDIO-01',
+  title: 'lib/engine/ffprobe.ts exports buildVoiceFirstMasteringFilterGraph',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'ffprobe.ts');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('export function buildVoiceFirstMasteringFilterGraph');
+    expect(src).toContain('VoiceFirstMasteringOptions');
+  }
+});
+
+tests.push({
+  tier: 'Tier 44: Voice-First Audio Mastering, HyperFrames & Pacing Engine',
+  id: 'T44-AUDIO-02',
+  title: 'buildVoiceFirstMasteringFilterGraph constructs EBU R128 -14 LUFS, sidechain ducking, and -1.0 dBFS limiter',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'ffprobe.ts');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('loudnorm=I=');
+    expect(src).toContain('sidechaincompress=');
+    expect(src).toContain('alimiter=limit=-1.0dB');
+  }
+});
+
+tests.push({
+  tier: 'Tier 44: Voice-First Audio Mastering, HyperFrames & Pacing Engine',
+  id: 'T44-AUDIO-03',
+  title: 'lib/engine/hyperframe-orchestrator.ts exports validateRetentionPacing, compileHyperframeScene, and generateLanshuDiagramHtml',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'hyperframe-orchestrator.ts');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('export function validateRetentionPacing');
+    expect(src).toContain('export function compileHyperframeScene');
+    expect(src).toContain('export function generateLanshuDiagramHtml');
+  }
+});
+
+tests.push({
+  tier: 'Tier 44: Voice-First Audio Mastering, HyperFrames & Pacing Engine',
+  id: 'T44-AUDIO-04',
+  title: 'validateRetentionPacing enforces the 3-second hook rule and flags gaps > 3.0s without motion/SFX',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'hyperframe-orchestrator.ts');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('maxAllowedGapSeconds: number = 3.0');
+    expect(src).toContain('hasCameraMove');
+    expect(src).toContain('hasTransition');
+    expect(src).toContain('hasSFX');
+    expect(src).toContain('hasCallout');
+    expect(src).toContain('flaggedIntervals');
+    expect(src).toContain('recommendations');
+    expect(src).toContain('RetentionPacingReport');
+  }
+});
+
+tests.push({
+  tier: 'Tier 44: Voice-First Audio Mastering, HyperFrames & Pacing Engine',
+  id: 'T44-AUDIO-05',
+  title: 'compileHyperframeScene and generateLanshuDiagramHtml produce seekable HTML5 motion graphics',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'hyperframe-orchestrator.ts');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('function compileHyperframeScene');
+    expect(src).toContain('window.seekToFrame');
+    expect(src).toContain('gsap.timeline');
+    expect(src).toContain('interpolate');
+    expect(src).toContain('function generateLanshuDiagramHtml');
+    expect(src).toContain('pulse-packet');
+    expect(src).toContain('pipeline-card');
+    expect(src).toContain('connector-wire');
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TIER 45: TECHNICAL ARCHITECTURE & DIGITAL WAVEFORM ENGINE (WAVEDROM & LANSHU)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+tests.push({
+  tier: 'Tier 45: Technical Architecture & Digital Waveform Engine (WaveDrom & Lanshu & Lawrence Systems)',
+  id: 'T45-TECH-01',
+  title: 'lib/engine/wavedrom-renderer.tsx exports parser, theme tokens, SVG path builder, overlay, and presets',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'wavedrom-renderer.tsx');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('export function parseWaveLane');
+    expect(src).toContain('export function getWaveDromTheme');
+    expect(src).toContain('export function buildLaneSvgPaths');
+    expect(src).toContain('export const WaveDromOverlay');
+    expect(src).toContain('export function generateWaveDromHtml');
+    expect(src).toContain('export const WAVEDROM_PRESETS');
+  }
+});
+
+tests.push({
+  tier: 'Tier 45: Technical Architecture & Digital Waveform Engine (WaveDrom & Lanshu & Lawrence Systems)',
+  id: 'T45-TECH-02',
+  title: 'WAVEDROM_PRESETS defines hardware timing protocols (SPI, I2C, CPU bus, TCP)',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'wavedrom-renderer.tsx');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('spi_transaction');
+    expect(src).toContain('i2c_handshake');
+    expect(src).toContain('cpu_memory_read');
+    expect(src).toContain('tcp_handshake');
+    expect(src).toContain('window.seekToFrame');
+  }
+});
+
+tests.push({
+  tier: 'Tier 45: Technical Architecture & Digital Waveform Engine (WaveDrom & Lanshu & Lawrence Systems)',
+  id: 'T45-TECH-03',
+  title: 'lib/engine/infrastructure-diagrams.ts exports Lawrence Systems enterprise network models and HTML5 compiler',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'infrastructure-diagrams.ts');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('export const INFRASTRUCTURE_PRESETS');
+    expect(src).toContain('export function getInfraNodeVisuals');
+    expect(src).toContain('export function generateInfrastructureDiagramHtml');
+    expect(src).toContain('pfsense_ha_truenas');
+    expect(src).toContain('vlan_segmentation');
+    expect(src).toContain('wireguard_mesh');
+  }
+});
+
+tests.push({
+  tier: 'Tier 45: Technical Architecture & Digital Waveform Engine (WaveDrom & Lanshu & Lawrence Systems)',
+  id: 'T45-TECH-04',
+  title: 'remotion/Composition.tsx mounts WaveDromOverlay with waveJson and scanning cursor progress',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'remotion', 'Composition.tsx');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('WaveDromOverlay');
+    expect(src).toContain('waveJson?: WaveJson;');
+    expect(src).toContain('<WaveDromOverlay');
+    expect(src).toContain('waveJson={beat.waveJson}');
+    expect(src).toContain('progress={progress}');
+  }
+});
+
+tests.push({
+  tier: 'Tier 45: Technical Architecture & Digital Waveform Engine (WaveDrom & Lanshu & Lawrence Systems)',
+  id: 'T45-TECH-05',
+  title: 'components/2d-studio/TechDiagramStudio.tsx & code-video/page.tsx integrate the Technical Studio into SignatureStudios',
+  fn: async () => {
+    const studioP = path.join(process.cwd(), 'components', '2d-studio', 'TechDiagramStudio.tsx');
+    expect(fs.existsSync(studioP)).toBe(true);
+    const studioSrc = fs.readFileSync(studioP, 'utf8');
+    expect(studioSrc).toContain('export function TechDiagramStudio');
+    expect(studioSrc).toContain('activeTab');
+    expect(studioSrc).toContain('Digital Waveforms (WaveDrom)');
+    expect(studioSrc).toContain('Enterprise Network (Lawrence Systems)');
+    expect(studioSrc).toContain('System Architecture (Lanshu Style)');
+
+    const pageP = path.join(process.cwd(), 'app', '(app)', 'create', 'code-video', 'page.tsx');
+    const pageSrc = fs.readFileSync(pageP, 'utf8');
+    expect(pageSrc).toContain('TechDiagramStudio');
+
+    const sigP = path.join(process.cwd(), 'components', 'create', 'SignatureStudios.tsx');
+    const sigSrc = fs.readFileSync(sigP, 'utf8');
+    expect(sigSrc).toContain('/create/code-video');
+    expect(sigSrc).toContain('Technical Architecture & Signals');
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TIER 46: VISOTALK WORD-ANCHORED NARRATION TIMELINE & DECLARATIVE CUES ENGINE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+tests.push({
+  tier: 'Tier 46: VisoTalk Word-Anchored Narration Timeline & Declarative Cues Engine',
+  id: 'T46-VISO-01',
+  title: 'lib/engine/visotalk-orchestrator.ts exports alignment, document parser, state evaluator, and HTML5 compiler',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'visotalk-orchestrator.ts');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('export function alignWordsToNarration');
+    expect(src).toContain('export function parseVisoDocument');
+    expect(src).toContain('export function evaluateActiveWordAndCues');
+    expect(src).toContain('export function generateVisoTalkHtml');
+    expect(src).toContain('export const VISOTALK_PRESETS');
+  }
+});
+
+tests.push({
+  tier: 'Tier 46: VisoTalk Word-Anchored Narration Timeline & Declarative Cues Engine',
+  id: 'T46-VISO-02',
+  title: 'alignWordsToNarration aligns words to millisecond boundaries with syllable and punctuation weights',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'visotalk-orchestrator.ts');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('totalDurationSeconds');
+    expect(src).toContain('startMs');
+    expect(src).toContain('endMs');
+    expect(src).toContain('cleanWord');
+  }
+});
+
+tests.push({
+  tier: 'Tier 46: VisoTalk Word-Anchored Narration Timeline & Declarative Cues Engine',
+  id: 'T46-VISO-03',
+  title: 'parseVisoDocument parses <Beat>, <Line>, and <Appear> cues with target word matching',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'visotalk-orchestrator.ts');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('<Beat');
+    expect(src).toContain('<Line');
+    expect(src).toContain('<Appear');
+    expect(src).toContain('targetWordIndex');
+    expect(src).toContain('window.seekToMs');
+  }
+});
+
+tests.push({
+  tier: 'Tier 46: VisoTalk Word-Anchored Narration Timeline & Declarative Cues Engine',
+  id: 'T46-VISO-04',
+  title: 'remotion/Composition.tsx mounts word-anchored declarative cue overlays from beat.visotalkBeat',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'remotion', 'Composition.tsx');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('evaluateActiveWordAndCues');
+    expect(src).toContain('type VisoBeat');
+    expect(src).toContain('visotalkBeat?: VisoBeat;');
+    expect(src).toContain('beat.visotalkBeat');
+  }
+});
+
+tests.push({
+  tier: 'Tier 46: VisoTalk Word-Anchored Narration Timeline & Declarative Cues Engine',
+  id: 'T46-VISO-05',
+  title: 'components/2d-studio/VisoTalkStudio.tsx & TechDiagramStudio.tsx integrate VisoTalk into the studio workspace',
+  fn: async () => {
+    const visoP = path.join(process.cwd(), 'components', '2d-studio', 'VisoTalkStudio.tsx');
+    expect(fs.existsSync(visoP)).toBe(true);
+    const visoSrc = fs.readFileSync(visoP, 'utf8');
+    expect(visoSrc).toContain('export function VisoTalkStudio');
+    expect(visoSrc).toContain('VISOTALK_PRESETS');
+    expect(visoSrc).toContain('evaluateActiveWordAndCues');
+
+    const techP = path.join(process.cwd(), 'components', '2d-studio', 'TechDiagramStudio.tsx');
+    const techSrc = fs.readFileSync(techP, 'utf8');
+    expect(techSrc).toContain('VisoTalkStudio');
+    expect(techSrc).toContain('visotalk');
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TIER 47: HORMOZI KINETIC CAPTIONS & ZERO-ASSET PROCEDURAL FOLEY ENGINE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+tests.push({
+  tier: 'Tier 47: Hormozi Kinetic Captions & Zero-Asset Procedural Foley Engine',
+  id: 'T47-HORMOZI-01',
+  title: 'lib/engine/kinetic-captions.tsx exports keyword emoji mapping and enrichWordsWithEmojis',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'kinetic-captions.tsx');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('KEYWORD_EMOJI_MAP');
+    expect(src).toContain('enrichWordsWithEmojis');
+    expect(src).toContain('getCaptionThemeStyles');
+    expect(src).toContain('HormoziKineticCaptions');
+    
+    // Check keyword emoji coverage
+    expect(src).toContain("money: '💸'");
+    expect(src).toContain("fire: '🔥'");
+    expect(src).toContain("brain: '🧠'");
+    expect(src).toContain("warning: '⚠️'");
+  }
+});
+
+tests.push({
+  tier: 'Tier 47: Hormozi Kinetic Captions & Zero-Asset Procedural Foley Engine',
+  id: 'T47-HORMOZI-02',
+  title: 'getCaptionThemeStyles provides high-contrast neon yellow and elastic scale',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'kinetic-captions.tsx');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('hormozi_yellow');
+    expect(src).toContain('#facc15');
+    expect(src).toContain('activeScale: 1.22');
+    expect(src).toContain('textShadow');
+  }
+});
+
+tests.push({
+  tier: 'Tier 47: Hormozi Kinetic Captions & Zero-Asset Procedural Foley Engine',
+  id: 'T47-HORMOZI-03',
+  title: 'remotion/Composition.tsx mounts HormoziKineticCaptions tied to beat.visotalkBeat',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'remotion', 'Composition.tsx');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('HormoziKineticCaptions');
+    expect(src).toContain('beat.visotalkBeat');
+    expect(src).toContain('currentTimeMs={(beatFrameOffset / fps) * 1000}');
+    expect(src).toContain('hormozi_yellow');
+  }
+});
+
+tests.push({
+  tier: 'Tier 47: Hormozi Kinetic Captions & Zero-Asset Procedural Foley Engine',
+  id: 'T47-FOLEY-01',
+  title: 'lib/engine/procedural-foley.ts defines mathematical audio filter recipes for whoosh, pop, click, riser, and ding',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'procedural-foley.ts');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('getFoleyFilterDefinition');
+    expect(src).toContain('generateProceduralFoleyCommand');
+    expect(src).toContain('buildProceduralSfxFiltergraph');
+    expect(src).toContain('playBrowserProceduralSfx');
+
+    // Mathematical source verification
+    expect(src).toContain('anoisesrc=duration=');
+    expect(src).toContain('color=brown');
+    expect(src).toContain('sine=frequency=');
+  }
+});
+
+tests.push({
+  tier: 'Tier 47: Hormozi Kinetic Captions & Zero-Asset Procedural Foley Engine',
+  id: 'T47-FOLEY-02',
+  title: 'buildProceduralSfxFiltergraph creates inline FFmpeg filtergraphs with adelay and amix',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'procedural-foley.ts');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('adelay=');
+    expect(src).toContain('amix=inputs=');
+    expect(src).toContain('filterComplex');
+    expect(src).toContain('[a_sfx_mix]');
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TIER 48: FIRESHIP CODE MORPH & SIGMOID BAR CHART RACE ENGINES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+tests.push({
+  tier: 'Tier 48: Fireship Code Morph & Sigmoid Bar Chart Race Engines',
+  id: 'T48-CODEMORPH-01',
+  title: 'lib/engine/code-morph-engine.tsx provides syntax tokenization and curated presets',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'code-morph-engine.tsx');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('tokenizeLine');
+    expect(src).toContain('parseCodeLines');
+    expect(src).toContain('CODE_MORPH_PRESETS');
+    expect(src).toContain('CodeMorphViewer');
+    expect(src).toContain('generateCodeMorphHtml');
+    expect(src).toContain('rsc_streaming');
+    expect(src).toContain('async_await_refactor');
+  }
+});
+
+tests.push({
+  tier: 'Tier 48: Fireship Code Morph & Sigmoid Bar Chart Race Engines',
+  id: 'T48-CODEMORPH-02',
+  title: 'CodeMorphViewer mounts with Mac terminal chrome, diff highlighting, and seek hook',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'code-morph-engine.tsx');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('#ef4444');
+    expect(src).toContain('#f59e0b');
+    expect(src).toContain('#10b981');
+    expect(src).toContain('REFACTORED');
+    expect(src).toContain('ORIGINAL');
+    expect(src).toContain('window.seekToFrame');
+  }
+});
+
+tests.push({
+  tier: 'Tier 48: Fireship Code Morph & Sigmoid Bar Chart Race Engines',
+  id: 'T48-CHARTRACE-01',
+  title: 'lib/engine/bar-chart-race.tsx evaluates continuous rank interpolation and exports BarChartRaceViewer',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'bar-chart-race.tsx');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('evaluateBarChartRace');
+    expect(src).toContain('BAR_CHART_PRESETS');
+    expect(src).toContain('BarChartRaceViewer');
+    expect(src).toContain('generateBarChartRaceHtml');
+    expect(src).toContain('ai_frontier_mmlu');
+    expect(src).toContain('cloud_market_share');
+  }
+});
+
+tests.push({
+  tier: 'Tier 48: Fireship Code Morph & Sigmoid Bar Chart Race Engines',
+  id: 'T48-CHARTRACE-02',
+  title: 'remotion/Composition.tsx mounts CodeMorphViewer and BarChartRaceViewer overlays',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'remotion', 'Composition.tsx');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('beat.codeMorph');
+    expect(src).toContain('<CodeMorphViewer');
+    expect(src).toContain('beat.chartRace');
+    expect(src).toContain('<BarChartRaceViewer');
+  }
+});
+
+tests.push({
+  tier: 'Tier 48: Fireship Code Morph & Sigmoid Bar Chart Race Engines',
+  id: 'T48-STUDIO-01',
+  title: 'components/2d-studio/TechDiagramStudio.tsx mounts tabs and stages for code morph, chart race, and foley',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'components', '2d-studio', 'TechDiagramStudio.tsx');
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('activeTab === \'code_morph\'');
+    expect(src).toContain('activeTab === \'chart_race\'');
+    expect(src).toContain('activeTab === \'foley\'');
+    expect(src).toContain('CodeMorphViewer');
+    expect(src).toContain('BarChartRaceViewer');
+    expect(src).toContain('playBrowserProceduralSfx');
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TIER 49: MICRO-DRAMA 1:N EPISODIC PUSHER & TWO-PHASE STORYBOARD PIPELINE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+tests.push({
+  tier: 'Tier 49: Micro-Drama 1:N Episodic Pusher & Two-Phase Storyboard Pipeline',
+  id: 'T49-DRAMA-01',
+  title: 'lib/engine/voice-mapper.ts exports resolveVoiceForCharacter and maps neural voices',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'voice-mapper.ts');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('export function resolveVoiceForCharacter');
+    expect(src).toContain('export const DRAMA_VOICE_PRESETS');
+    expect(src).toContain('en-US-GuyNeural');
+    expect(src).toContain('en-US-JennyNeural');
+    expect(src).toContain('en-GB-RyanNeural');
+  }
+});
+
+tests.push({
+  tier: 'Tier 49: Micro-Drama 1:N Episodic Pusher & Two-Phase Storyboard Pipeline',
+  id: 'T49-DRAMA-02',
+  title: 'lib/engine/drama-pusher.ts dispatches N child jobs with keyless provider and undefined root voice',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'drama-pusher.ts');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('export async function pushDramaSeriesToQueue');
+    expect(src).toContain("voiceProvider: 'keyless'");
+    expect(src).toContain("intent: 'render'");
+    expect(src).toContain('enqueueRenderJob');
+    // Ensure root logs.voice is NOT hardcoded, preserving beat-level dialogue turns
+    expect(src).not.toContain('voice: defaultVoice,\n      beats');
+  }
+});
+
+tests.push({
+  tier: 'Tier 49: Micro-Drama 1:N Episodic Pusher & Two-Phase Storyboard Pipeline',
+  id: 'T49-DRAMA-03',
+  title: 'app/api/workflows/micro-drama/route.ts implements action=plan and action=render without setTimeout',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'app', 'api', 'workflows', 'micro-drama', 'route.ts');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('action === "render"');
+    expect(src).toContain('pushDramaSeriesToQueue');
+    expect(src).toContain('dramaOrchestrator.generateDramaSeries');
+    expect(src).toContain("orchestration_state: 'planning'");
+    // Verify unmanaged setTimeout is eliminated
+    expect(src).not.toContain('setTimeout(');
+  }
+});
+
+tests.push({
+  tier: 'Tier 49: Micro-Drama 1:N Episodic Pusher & Two-Phase Storyboard Pipeline',
+  id: 'T49-DRAMA-04',
+  title: 'app/(app)/create/drama/page.tsx implements Phase 1 planning and Phase 2 Storyboard Studio',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'app', '(app)', 'create', 'drama', 'page.tsx');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain("phase === 'planning'");
+    expect(src).toContain("phase === 'storyboard'");
+    expect(src).toContain('action=plan');
+    expect(src).toContain('action=render');
+    expect(src).toContain('handleRenderAllEpisodes');
+    expect(src).toContain('Series Storyboard');
+    expect(src).toContain('DRAMA_VOICE_PRESETS');
+  }
+});
+
+// 
+// TIER 50: STUDIO DASHBOARD PULSE & OMNI-LAUNCHPAD OPERATIONS DECK
+// 
+
+tests.push({
+  tier: 'Tier 50: Studio Dashboard Pulse & Omni-Launchpad Operations Deck',
+  id: 'T50-DASHBOARD-01',
+  title: 'components/dashboard/StudioPulse.tsx renders KPI cards (Active Renders, Completed, Scheduled, Quota)',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'components', 'dashboard', 'StudioPulse.tsx');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('export function StudioPulse');
+    expect(src).toContain('Active Renders');
+    expect(src).toContain('Completed Videos');
+    expect(src).toContain('Scheduled Posts');
+    expect(src).toContain('API Quota Health');
+    expect(src).toContain('/queue');
+    expect(src).toContain('/library');
+    expect(src).toContain('/planner');
+    expect(src).toContain('/settings');
+  }
+});
+
+tests.push({
+  tier: 'Tier 50: Studio Dashboard Pulse & Omni-Launchpad Operations Deck',
+  id: 'T50-DASHBOARD-02',
+  title: 'components/dashboard/OmniLaunchpad.tsx provides 1-click prompt creation and studio shortcuts',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'components', 'dashboard', 'OmniLaunchpad.tsx');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('export function OmniLaunchpad');
+    expect(src).toContain('Omni-Launchpad');
+    expect(src).toContain('What video do you want to create today?');
+    expect(src).toContain('/api/workflows/mission');
+    expect(src).toContain('/create/shorts');
+    expect(src).toContain('/create/drama');
+    expect(src).toContain('/create/2d');
+    expect(src).toContain('/create/campaign');
+  }
+});
+
+tests.push({
+  tier: 'Tier 50: Studio Dashboard Pulse & Omni-Launchpad Operations Deck',
+  id: 'T50-DASHBOARD-03',
+  title: 'components/dashboard/ActiveOperationsDeck.tsx manages active jobs with polling and cancel action',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'components', 'dashboard', 'ActiveOperationsDeck.tsx');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('export function ActiveOperationsDeck');
+    expect(src).toContain('Active Operations Deck');
+    expect(src).toContain('/api/jobs');
+    expect(src).toContain('handleCancel');
+    expect(src).toContain('DELETE');
+    expect(src).toContain('displayProgress');
+  }
+});
+
+tests.push({
+  tier: 'Tier 50: Studio Dashboard Pulse & Omni-Launchpad Operations Deck',
+  id: 'T50-DASHBOARD-04',
+  title: 'app/(app)/dashboard/page.tsx embeds StudioPulse, OmniLaunchpad, and ActiveOperationsDeck',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'app', '(app)', 'dashboard', 'page.tsx');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('StudioPulse');
+    expect(src).toContain('OmniLaunchpad');
+    expect(src).toContain('ActiveOperationsDeck');
+    expect(src).toContain('ACTIVE_STATUSES');
+    expect(src).toContain('activeJobs');
+    expect(src).toContain('completedVideos');
+    expect(src).toContain('scheduled_posts');
+    expect(src).toContain('DashboardCard');
+  }
+});
+
+// 
+// TIER 51: NATIVE VIEW TRANSITIONS & OPTIMISTIC STUDIO MUTATIONS ENGINE
+// 
+
+tests.push({
+  tier: 'Tier 51: Native View Transitions & Optimistic Studio Mutations Engine',
+  id: 'T51-VIEWTRANS-01',
+  title: 'lib/utils/view-transitions.ts exports view transition navigation utilities',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'utils', 'view-transitions.ts');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('export function isViewTransitionSupported');
+    expect(src).toContain('export function transitionNavigate');
+    expect(src).toContain('export function useViewTransitionNavigate');
+    expect(src).toContain('export function getViewTransitionStyle');
+    expect(src).toContain('startViewTransition');
+  }
+});
+
+tests.push({
+  tier: 'Tier 51: Native View Transitions & Optimistic Studio Mutations Engine',
+  id: 'T51-VIEWTRANS-02',
+  title: 'DashboardCard and Editor align viewTransitionName for zero-jank morphing',
+  fn: async () => {
+    const p1 = path.join(process.cwd(), 'components', 'dashboard', 'DashboardCard.tsx');
+    expect(fs.existsSync(p1)).toBe(true);
+    const src1 = fs.readFileSync(p1, 'utf8');
+    expect(src1).toContain('useViewTransitionNavigate');
+    expect(src1).toContain('getViewTransitionStyle');
+    expect(src1).toContain('video-player-');
+    expect(src1).toContain('optimisticWorkspaceId');
+
+    const p2 = path.join(process.cwd(), 'app', '(app)', 'editor', '[jobId]', 'page.tsx');
+    expect(fs.existsSync(p2)).toBe(true);
+    const src2 = fs.readFileSync(p2, 'utf8');
+    expect(src2).toContain('getViewTransitionStyle');
+    expect(src2).toContain('video-player-');
+  }
+});
+
+tests.push({
+  tier: 'Tier 51: Native View Transitions & Optimistic Studio Mutations Engine',
+  id: 'T51-OPTIMISTIC-01',
+  title: 'lib/engine/optimistic-mutations.ts exports DebouncedSyncQueue and useOptimisticMutation',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'lib', 'engine', 'optimistic-mutations.ts');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('export class DebouncedSyncQueue');
+    expect(src).toContain('export function useOptimisticMutation');
+    expect(src).toContain('enqueue');
+    expect(src).toContain('flush');
+    expect(src).toContain('rollback');
+  }
+});
+
+tests.push({
+  tier: 'Tier 51: Native View Transitions & Optimistic Studio Mutations Engine',
+  id: 'T51-OPTIMISTIC-02',
+  title: 'TimelineEditor integrates DebouncedSyncQueue with autoSaveStatus indicators',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'components', 'timeline', 'TimelineEditor.tsx');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('DebouncedSyncQueue');
+    expect(src).toContain('syncQueue');
+    expect(src).toContain('autoSaveStatus');
+    expect(src).toContain('Saved');
+    expect(src).toContain('Syncing');
+  }
+});
+
+// 
+// TIER 52: XIAS UI/UX DESIGN DOCTRINE & COMPONENT MODEL
+// 
+
+tests.push({
+  tier: 'Tier 52: XIAS UI/UX Design Doctrine & Component Model',
+  id: 'T52-XIAS-01',
+  title: '.agents/skills/ux-ui-design-doctrine/SKILL.md defines 8-state model and WCAG 2.2 accessibility',
+  fn: async () => {
+    const p = path.join(process.cwd(), '.agents', 'skills', 'ux-ui-design-doctrine', 'SKILL.md');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('name: ux-ui-design-doctrine');
+    expect(src).toContain('Anti-AI-Slop Visual Standard');
+    expect(src).toContain('8-State Interactive Component Model');
+    expect(src).toContain('focus-visible');
+    expect(src).toContain('WCAG 2.2');
+    expect(src).toContain('Major Third');
+    expect(src).toContain('Error Formula');
+  }
+});
+
+tests.push({
+  tier: 'Tier 52: XIAS UI/UX Design Doctrine & Component Model',
+  id: 'T52-XIAS-02',
+  title: '.agents/rules/clipped-development.md incorporates Rules 14, 15, and 16',
+  fn: async () => {
+    const p = path.join(process.cwd(), '.agents', 'rules', 'clipped-development.md');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('14. XIAS Anti-AI-Slop Visual Hierarchy');
+    expect(src).toContain('15. 8-State Interactive Component Model & Keyboard Accessibility');
+    expect(src).toContain('16. Actionable UX Microcopy & Error Formulas');
+    expect(src).toContain('focus-visible:ring-primary');
+  }
+});
+
+// 
+// TIER 53: MULTI-CHANNEL CONTENT PLANNER & SOCIAL PUBLISHING ENGINE
+// 
+
+tests.push({
+  tier: 'Tier 53: Multi-Channel Content Planner & Social Publishing Engine',
+  id: 'T53-PLANNER-01',
+  title: 'components/planner/PlannerView.tsx implements 30-day month grid, 7-day week strip, and quick publish',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'components', 'planner', 'PlannerView.tsx');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('PlannerView');
+    expect(src).toContain('30-Day Month');
+    expect(src).toContain('7-Day Week');
+    expect(src).toContain('handlePublishNow');
+    expect(src).toContain('handleDeletePost');
+    expect(src).toContain('handleOpenScheduleForDate');
+    expect(src).toContain('weekdayFmt');
+    expect(src).toContain('dayNumFmt');
+    expect(src).toContain('No posts scheduled');
+  }
+});
+
+tests.push({
+  tier: 'Tier 53: Multi-Channel Content Planner & Social Publishing Engine',
+  id: 'T53-PLANNER-02',
+  title: 'components/planner/ScheduleModal.tsx supports preset times, viral tags, and platform selection',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'components', 'planner', 'ScheduleModal.tsx');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('ScheduleModal');
+    expect(src).toContain('PRESET_TIMES');
+    expect(src).toContain('SUGGESTED_TAGS');
+    expect(src).toContain('PLATFORM_CONFIG');
+    expect(src).toContain('YouTube Shorts');
+    expect(src).toContain('TikTok');
+    expect(src).toContain('Instagram Reels');
+    expect(src).toContain('handleSchedule');
+  }
+});
+
+tests.push({
+  tier: 'Tier 53: Multi-Channel Content Planner & Social Publishing Engine',
+  id: 'T53-PLANNER-03',
+  title: 'app/api/scheduled-posts/[id]/route.ts implements DELETE and PATCH route handlers',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'app', 'api', 'scheduled-posts', '[id]', 'route.ts');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('export async function DELETE');
+    expect(src).toContain('export async function PATCH');
+    expect(src).toContain('scheduled_posts');
+    expect(src).toContain('await context.params');
+  }
+});
+
+tests.push({
+  tier: 'Tier 53: Multi-Channel Content Planner & Social Publishing Engine',
+  id: 'T53-PLANNER-04',
+  title: 'app/(app)/planner/page.tsx renders PlannerView with scheduled_posts query',
+  fn: async () => {
+    const p = path.join(process.cwd(), 'app', '(app)', 'planner', 'page.tsx');
+    expect(fs.existsSync(p)).toBe(true);
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('PlannerPage');
+    expect(src).toContain('PlannerView');
+    expect(src).toContain('scheduled_posts');
+    expect(src).toContain('render_jobs(logs)');
+  }
+});
+
+
+tests.push({
+  tier: 'Tier 54: VoiceStudio 48kHz Broadcast Engine & Commercial Safety Gate',
+  id: 'T54-VOICESTUDIO-01',
+  title: 'VoiceStudio models catalog exports 48kHz broadcast engines and commercial licensing metadata',
+  fn: async () => {
+    const ttsSource = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'tts.ts'), 'utf8');
+    expect(ttsSource).toContain('VOICESTUDIO_MODELS');
+    expect(ttsSource).toContain('moss-tts-nano');
+    expect(ttsSource).toContain('voxcpm2');
+    expect(ttsSource).toContain('kitten-tts');
+    expect(ttsSource).toContain('cosyvoice-3');
+    expect(ttsSource).toContain('gpt-sovits');
+    expect(ttsSource).toContain('omnivoice');
+    expect(ttsSource).toContain('sampleRate: 48000');
+    expect(ttsSource).toContain('commercialSafe: true');
+    expect(ttsSource).toContain('commercialSafe: false');
+    expect(ttsSource).toContain('VOICESTUDIO_VOICE_CATALOG');
+  }
+});
+
+tests.push({
+  tier: 'Tier 54: VoiceStudio 48kHz Broadcast Engine & Commercial Safety Gate',
+  id: 'T54-VOICESTUDIO-02',
+  title: 'Commercial safety gate prevents non-commercial models from generating commercial video assets',
+  fn: async () => {
+    const ttsSource = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'tts.ts'), 'utf8');
+    expect(ttsSource).toContain('resolveVoiceStudioModel');
+    expect(ttsSource).toContain('commercialSafeOnly?: boolean');
+    expect(ttsSource).toContain('commercialSafe && !modelInfo.commercialSafe');
+    expect(ttsSource).toContain("VOICESTUDIO_MODELS['moss-tts-nano']");
+  }
+});
+
+tests.push({
+  tier: 'Tier 54: VoiceStudio 48kHz Broadcast Engine & Commercial Safety Gate',
+  id: 'T54-VOICESTUDIO-03',
+  title: 'Broadcast 48 kHz standard matches Remotion and FFmpeg procedural audio pipelines without upsampling',
+  fn: async () => {
+    const ttsSource = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'tts.ts'), 'utf8');
+    expect(ttsSource).toContain('sampleRate?: 48000 | 44100 | 32000 | 24000 | number');
+    expect(ttsSource).toContain('generateSyntheticWavBuffer(duration, targetSampleRate)');
+
+    const proceduralAudioSource = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', '2d-studio', 'procedural-audio-server.ts'), 'utf8');
+    expect(proceduralAudioSource).toContain('const sampleRate = 48000');
+  }
+});
+
+tests.push({
+  tier: 'Tier 54: VoiceStudio 48kHz Broadcast Engine & Commercial Safety Gate',
+  id: 'T54-VOICESTUDIO-04',
+  title: 'Fallback cascade routes from voicestudio to omniroute, keyless and deterministic mock on failure',
+  fn: async () => {
+    const ttsSource = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'tts.ts'), 'utf8');
+    expect(ttsSource).toContain("primaryProvider === 'voicestudio'");
+    expect(ttsSource).toContain("providersToTry.push('voicestudio')");
+    expect(ttsSource).toContain("providersToTry.push('omniroute')");
+    expect(ttsSource).toContain("providersToTry.push('keyless')");
+    expect(ttsSource).toContain("synthesizeWithVoiceStudio(");
+  }
+});
+
+tests.push({
+  tier: 'Tier 54: VoiceStudio 48kHz Broadcast Engine & Commercial Safety Gate',
+  id: 'T54-VOICESTUDIO-05',
+  title: '@clipped/schema includes voicestudio in TTSProviderSchema and exports commercialSafe and sampleRate fields',
+  fn: async () => {
+    const schemaCommon = fs.readFileSync(path.join(process.cwd(), 'packages', 'schema', 'src', 'common.ts'), 'utf8');
+    expect(schemaCommon).toContain("'voicestudio'");
+
+    const schemaTts = fs.readFileSync(path.join(process.cwd(), 'packages', 'schema', 'src', 'tts.ts'), 'utf8');
+    expect(schemaTts).toContain('sampleRate: z.number().optional()');
+    expect(schemaTts).toContain('commercialSafe: z.boolean().optional()');
+  }
+});
+
   for (const tier of tiers) {
     const tierTests = tests.filter(t => t.tier === tier);
     console.log(`\n--- ${tier} (${tierTests.length} tests) ---`);

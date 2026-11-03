@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { StickFigureCanvas } from "@/components/2d-studio/StickFigureCanvas";
+import { ChalkboardCanvas } from "@/components/2d-studio/ChalkboardCanvas";
 import {
   PenTool,
   Sparkles,
@@ -81,6 +84,7 @@ export default function WhiteboardCreatePage() {
   const [markerColor, setMarkerColor] = useState("#1E293B");
   const [aspectRatio, setAspectRatio] = useState("16:9");
   const [activePosePreview, setActivePosePreview] = useState<string>("pose_1");
+  const [studioMode, setStudioMode] = useState<"gemini" | "procedural" | "chalkboard">("gemini");
 
   const [characterSheet, setCharacterSheet] = useState<CharacterSheet | null>(null);
   const [loadingSheet, setLoadingSheet] = useState(false);
@@ -359,7 +363,81 @@ export default function WhiteboardCreatePage() {
 
         {/* Right Column: Interactive Gemini 9-Pose Sheet & Preview Canvas (5 Cols) */}
         <div className="lg:col-span-5 space-y-6">
-          {/* Gemini 9-Pose Reference Grid */}
+          {/* Mode Selector Tabs */}
+          <div className="flex items-center gap-2 p-1 bg-slate-900 border border-slate-800 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setStudioMode("gemini")}
+              className={`flex-1 py-2 px-2.5 rounded-lg text-xs font-semibold transition-all ${
+                studioMode === "gemini"
+                  ? "bg-amber-500 text-slate-950 shadow-sm"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              Gemini 9-Pose
+            </button>
+            <button
+              type="button"
+              onClick={() => setStudioMode("procedural")}
+              className={`flex-1 py-2 px-2.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1 ${
+                studioMode === "procedural"
+                  ? "bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow-sm"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              2D Rig
+            </button>
+            <button
+              type="button"
+              onClick={() => setStudioMode("chalkboard")}
+              className={`flex-1 py-2 px-2.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1 ${
+                studioMode === "chalkboard"
+                  ? "bg-emerald-500 text-slate-950 shadow-sm"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Nafay Slate
+            </button>
+          </div>
+
+          {studioMode === "chalkboard" ? (
+            <ChalkboardCanvas />
+          ) : studioMode === "procedural" ? (
+            <div className="space-y-6">
+              <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 backdrop-blur-sm shadow-xl">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-400" />
+                      Procedural 2D Kinematic Canvas
+                    </h3>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Deterministic skeletal animation, rim light & procedural SFX
+                    </p>
+                  </div>
+                  <Link
+                    href="/create/stick-figure"
+                    className="text-[11px] text-amber-400 hover:text-amber-300 underline font-medium"
+                  >
+                    Open Full Studio &rarr;
+                  </Link>
+                </div>
+                <div className="w-full flex justify-center overflow-hidden rounded-xl border border-slate-800 bg-slate-950">
+                  <StickFigureCanvas
+                    initialStyle="dusk"
+                    initialPose="walk"
+                    width={520}
+                    height={292}
+                    showControls={true}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Gemini 9-Pose Reference Grid */}
           <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 backdrop-blur-sm shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -514,6 +592,8 @@ export default function WhiteboardCreatePage() {
               </div>
             </div>
           </div>
+            </>
+          )}
         </div>
       </div>
     </div>

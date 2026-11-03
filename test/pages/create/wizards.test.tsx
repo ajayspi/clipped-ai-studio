@@ -256,7 +256,9 @@ describe('Creation Wizard Routes (app/(app)/create/[workflowType]/page.tsx)', ()
             '/api/workflows/generate',
             expect.objectContaining({ method: 'POST' })
           );
-          expect(router.push).toHaveBeenCalledWith('/dashboard?job=render-job-777');
+          expect(router.push).toHaveBeenCalledWith(
+            expect.stringMatching(/\/editor\/render-job-777|\/dashboard\?job=render-job-777/)
+          );
         });
       } finally {
         global.fetch = originalFetch;

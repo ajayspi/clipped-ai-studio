@@ -10,7 +10,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative flex min-h-screen flex-col md:flex-row bg-background overflow-x-hidden">
       {/* Ambient Glowing Mesh Gradients in Background */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 select-none">
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 select-none opacity-30 dark:opacity-100 transition-opacity">
         {/* Top-left vibrant violet/indigo glow */}
         <div className="absolute -top-32 -left-32 w-96 h-96 bg-gradient-to-br from-violet-600/20 via-indigo-500/15 to-transparent rounded-full blur-[140px] dark:from-violet-600/25 dark:via-indigo-500/20" />
         {/* Mid-right fuchsia/pink glow */}
@@ -20,7 +20,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Mobile Header (Sticky Glassmorphism) */}
-      <header className="md:hidden sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border/40 bg-background/70 dark:bg-zinc-950/70 backdrop-blur-xl px-4 shadow-sm">
+      <header className="md:hidden sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 dark:bg-zinc-950/70 backdrop-blur-xl px-4 shadow-xs">
         <Link href="/dashboard" className="flex items-center gap-2 font-bold text-lg">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-sm shadow-violet-500/20">
             <Video className="w-3.5 h-3.5" />
@@ -28,7 +28,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <span className="bg-gradient-to-r from-foreground via-foreground/90 to-muted-foreground bg-clip-text">
             Clipped
           </span>
-          <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-500 border border-violet-500/20">
+          <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-700 dark:text-violet-400 border border-violet-500/20">
             AI
           </span>
         </Link>
@@ -46,7 +46,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col min-w-0 h-[calc(100vh-3.5rem)] md:h-screen relative z-10">
         {/* Desktop Header (Glassmorphism & Quick Actions) */}
-        <header className="hidden md:flex sticky top-0 z-20 h-16 items-center justify-between border-b border-border/40 bg-background/60 dark:bg-zinc-950/50 backdrop-blur-xl px-6">
+        <header className="hidden md:flex sticky top-0 z-20 h-16 items-center justify-between border-b border-border/60 bg-background/80 dark:bg-zinc-950/50 backdrop-blur-xl px-6 shadow-xs">
           <div className="flex items-center gap-3">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-xs font-medium">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />

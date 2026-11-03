@@ -92,8 +92,8 @@ export function WorkflowCard({
     <Link
       href={workflow.href}
       className={cn(
-        "group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/50 bg-card/70 dark:bg-zinc-900/60 backdrop-blur-xl p-6 shadow-sm transition-all duration-300",
-        "hover:shadow-xl hover:shadow-violet-500/5 hover:-translate-y-1 hover:border-violet-500/40",
+        "group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/70 bg-card dark:bg-zinc-900/60 backdrop-blur-xl p-6 shadow-xs transition-all duration-300",
+        "hover:shadow-md hover:shadow-zinc-900/5 dark:hover:shadow-violet-500/5 hover:-translate-y-1 hover:border-violet-500/40",
         workflow.borderHover
       )}
     >
@@ -109,7 +109,7 @@ export function WorkflowCard({
         {/* Header Row: Icon + Badges + Settings Link */}
         <div className="flex items-start justify-between gap-2 mb-4">
           <div className="flex items-center gap-2">
-            <div className={cn("inline-flex rounded-xl p-3 border border-border/30", workflow.bg)}>
+            <div className={cn("inline-flex rounded-xl p-3 border border-border/50 bg-muted/30", workflow.bg)}>
               <Icon className={cn("h-6 w-6", workflow.color)} />
             </div>
             {workflow.badge && (
@@ -139,7 +139,7 @@ export function WorkflowCard({
               {/* Glassmorphic Tooltip Popover */}
               {showTooltip && (
                 <div
-                  className="absolute right-0 top-full mt-2 z-50 w-72 rounded-xl border border-border/60 bg-popover/95 dark:bg-zinc-950/95 p-3.5 text-popover-foreground shadow-2xl backdrop-blur-xl transition-all animate-in fade-in zoom-in-95 duration-150"
+                  className="absolute right-0 top-full mt-2 z-50 w-72 rounded-xl border border-border/70 bg-popover dark:bg-zinc-950/95 p-3.5 text-popover-foreground shadow-xl backdrop-blur-xl transition-all animate-in fade-in zoom-in-95 duration-150"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();

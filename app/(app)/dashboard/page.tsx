@@ -1,6 +1,11 @@
-import { Video, Sparkles, Folder } from "lucide-react"
-import { supabase } from "@/lib/db"
-import { DashboardCard } from "@/components/dashboard/DashboardCard"
+import Link from "next/link";
+import { Video, Sparkles, Folder, Film, Clapperboard } from "lucide-react";
+import { supabase } from "@/lib/db";
+import { DashboardCard } from "@/components/dashboard/DashboardCard";
+import { StudioPulse } from "@/components/dashboard/StudioPulse";
+import { OmniLaunchpad } from "@/components/dashboard/OmniLaunchpad";
+import { ActiveOperationsDeck } from "@/components/dashboard/ActiveOperationsDeck";
+import { extractJobPresentation } from "@/lib/engine/job-presentation";
 
 interface WorkspaceSummary {
   id: string;
@@ -8,27 +13,39 @@ interface WorkspaceSummary {
   color?: string | null;
 }
 
-interface ParsedLogs {
-  videos?: Array<{ video?: string; thumbnail?: string; previewUrl?: string }>;
-  subject?: string;
-  workflowType?: string;
-}
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+const ACTIVE_STATUSES = [
+  'pending',
+  'generating_plan',
+  'processing',
+  'queued',
+  'claimed',
+  'rendering',
+  'planning',
+  'in_progress',
+  'retryable',
+];
 
 export default async function DashboardPage() {
+  // Fetch recent jobs with projected presentation fields to avoid downloading full LLM log payloads
   const { data: jobs } = await supabase
     .from('render_jobs')
-    .select('*')
+    .select('id, workspace_id, orchestration_state, status, progress, created_at, output_url, title:logs->>title, thumbnail_url:logs->>thumbnailUrl, aspectRatio:logs->>aspectRatio, workflowType:logs->>workflowType')
     .order('created_at', { ascending: false })
-    .limit(20)
+    .limit(30);
 
   // Fetch workspaces for folder labels
   const { data: dbWorkspaces } = await supabase
     .from('workspaces')
     .select('*')
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: true });
+
+  // Fetch scheduled posts count
+  const { count: scheduledCount } = await supabase
+    .from('scheduled_posts')
+    .select('*', { count: 'exact', head: true });
 
   const workspaces = (dbWorkspaces || []).map((w: WorkspaceSummary) => ({
     id: w.id,
@@ -36,28 +53,19 @@ export default async function DashboardPage() {
     color: w.color || '#8b5cf6',
   }));
 
-  // Parse jobs to extract thumbnail and video data
-  const videos = (jobs || []).map(job => {
-    let parsed: ParsedLogs = {}
-    try {
-      parsed = typeof job.logs === 'string' ? JSON.parse(job.logs) : job.logs
-    } catch {}
-    
-    const firstClip = parsed?.videos?.[0]?.video || parsed?.videos?.[0]
-    const thumbnail = typeof firstClip === 'string' ? null : (firstClip?.thumbnail || firstClip?.previewUrl || null)
-    
-    return {
-      ...job,
-      thumbnail,
-      parsedLogs: parsed,
-      clipCount: parsed?.videos?.length || 0,
-      title: parsed?.subject || `Job ${job.id.slice(0, 8)}`,
-      workflowType: parsed?.workflowType || "Footage"
-    }
-  })
+  // Parse jobs to extract canonical presentation data
+  const allVideos = (jobs || []).map((job) => extractJobPresentation(job));
+
+  // Partition into active operations vs completed videos
+  const activeJobs = allVideos.filter((v) =>
+    ACTIVE_STATUSES.includes(v.status) ||
+    (v.orchestration_state ? ACTIVE_STATUSES.includes(v.orchestration_state) : false)
+  );
+  const completedVideos = allVideos.filter((v) => v.status === 'completed');
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6 max-w-[1600px] mx-auto w-full">
+      {/* Top Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
@@ -65,47 +73,99 @@ export default async function DashboardPage() {
             Studio Dashboard
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage, view, and publish your rendered short-form videos.
+            Real-time command center, autonomous creation pipelines, and video library.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <a
+          <Link
             href="/library"
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border bg-background hover:bg-muted font-medium text-xs transition-colors shadow-sm"
           >
             <Folder className="w-4 h-4 text-violet-500" />
-            View Workspaces
-          </a>
-          <a
-            href="/create/footage"
+            Workspaces
+          </Link>
+          <Link
+            href="/queue"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border bg-background hover:bg-muted font-medium text-xs transition-colors shadow-sm"
+          >
+            <Clapperboard className="w-4 h-4 text-amber-500" />
+            Queue ({activeJobs.length})
+          </Link>
+          <Link
+            href="/create"
             className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow hover:bg-primary/90 transition-colors"
           >
             Create New Video
-          </a>
+          </Link>
         </div>
       </div>
 
-      {videos.length === 0 ? (
-        <div className="flex h-64 items-center justify-center rounded-xl border border-dashed bg-card text-center p-8">
+      {/* 1. Studio Pulse: KPI Metric Cards */}
+      <StudioPulse
+        activeRenders={activeJobs.length}
+        completedVideos={completedVideos.length}
+        scheduledPosts={scheduledCount || 0}
+        quotaHealth="100% (Keyless)"
+      />
+
+      {/* 2. Omni-Launchpad: 1-Click Prompt & Studio Shortcuts */}
+      <OmniLaunchpad />
+
+      {/* 3. Active Operations Deck (Appears when renders or planning are active) */}
+      <ActiveOperationsDeck initialJobs={activeJobs} />
+
+      {/* 4. Recent Creations Reel */}
+      <div className="space-y-4 pt-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/40 pb-3">
           <div>
-            <Video className="mx-auto h-12 w-12 text-muted-foreground opacity-20 mb-4" />
-            <h3 className="text-lg font-semibold">No videos yet</h3>
-            <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto mb-4">
-              Get started by creating your first AI-generated short-form video in the creation wizard.
+            <h2 className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
+              <Film className="w-5 h-5 text-primary" />
+              Recent Creations Reel
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              High-retention renders with playable preview, multi-channel distribution, and workspace tagging
             </p>
-            <a href="/create/footage" className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90">
-              Create New Video
-            </a>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">
+              {allVideos.length} {allVideos.length === 1 ? "Video" : "Videos"}
+            </span>
+            <span>•</span>
+            <Link
+              href="/library"
+              className="text-primary hover:underline font-medium"
+            >
+              Browse Full Catalog →
+            </Link>
           </div>
         </div>
-      ) : (
-        <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
-          {videos.map((video) => (
-            <DashboardCard key={video.id} video={video} workspaces={workspaces} />
-          ))}
-        </div>
-      )}
+
+        {allVideos.length === 0 ? (
+          <div className="flex h-64 items-center justify-center rounded-xl border border-dashed bg-card text-center p-8">
+            <div>
+              <Video className="mx-auto h-12 w-12 text-muted-foreground opacity-20 mb-4" />
+              <h3 className="text-lg font-semibold">No videos created yet</h3>
+              <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto mb-4">
+                Use the Omni-Launchpad above or select a Signature Studio to generate your first video.
+              </p>
+              <Link
+                href="/create"
+                className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90"
+              >
+                Create New Video
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
+            {allVideos.map((video) => (
+              <DashboardCard key={video.id} video={video} workspaces={workspaces} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
-  )
+  );
 }

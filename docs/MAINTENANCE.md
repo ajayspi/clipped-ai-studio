@@ -6,7 +6,7 @@
 > **Framework:** Next.js 16.3.3 (React 19, App Router, TypeScript, **Turbopack**) — this is *not* the Next.js of older training data; breaking changes are real (read `node_modules/next/dist/docs/` before writing code).
 > **Package manager:** pnpm 11.24.0 (`packageManager: pnpm@11.24.0`; `pnpm-lock.yaml` is canonical).
 > **AI Gateway:** OmniRoute single-gateway (`omniroute-server/` vendored; localhost `:20128/v1`) with keyless fallbacks.
-> **DB & Auth:** Supabase PostgreSQL (remote `xbneetfubybzleuwhbnx.supabase.co` — migrated from `agafustlankeieewtvck` 2026-09-26, old project retired), multi-tenant workspaces.
+> **DB & Auth:** Supabase PostgreSQL (remote `agafustlankeieewtvck.supabase.co` — migrated from `agafustlankeieewtvck` 2026-09-26, old project retired), multi-tenant workspaces.
 > **Video engine:** Remotion 4 + FFmpeg (`@ffmpeg-installer/ffmpeg`) + Edge TTS.
 > **Status snapshot (2026-09-26):** Supabase migration agafust → xbneet COMPLETE (schema rebuilt to `schema.sql` shape, settings 39 + users 2 copied, RPCs verified incl. a 42702 fix in the lease migration) and the render pipeline dogfooded end-to-end on `:3100` (generate 202 → enrichment → worker → valid mp4 served). Scoped lint 0 / scoped tsc 0 / vitest 189 / e2e 201 still the baseline (re-verified ahead of the commit). Branch `docs/agent-guide`.
 
@@ -18,19 +18,15 @@
 
 It combines:
 
-1. **10 dedicated creation workflows** (`/create/*`):
-   | Route | Workflow |
-   |---|---|
-   | `/create/stories` | Stories Generator — narrative scenes, text overlays, emotion-matched narration |
-   | `/create/images` | AI Images Video — text-to-image via Fal.ai Flux/SDXL, Pollinations free fallback |
-   | `/create/video` | Generative AI Video — Kling, Luma Dream Machine, Runway Gen-3, Fal.ai video models |
-   | `/create/stock` | Stock Footage — keyword B-roll from Pexels, Pixabay, Openverse |
-   | `/create/bulk` | Bulk 30-Day Planner — content calendar + batch production + scheduled publishing |
-   | `/create/shorts` | Extract Shorts — long-form → viral short clips via transcript analysis + hook detection |
-   | `/create/drama` | Micro-Drama Series — multi-episode arcs, consistent characters, cliffhangers |
-   | `/create/auto` | Auto Pilot — single-prompt autonomous mission with live multi-stage steppers |
-   | `/create/avatar` | Talking Head Avatars — HeyGen / D-ID presenter synthesis |
-   | `/create/whiteboard` | Whiteboard Animation — Gemini vision-prompted character sheets (stickman / saint / modern) |
+1. **6 Signature Creative Studios** (`/create/*`):
+   | Route | Studio | Specialization |
+   |---|---|---|
+   | `/create/shorts` | Social Shorts Studio | Fast viral vertical shorts, talking avatars, Reddit story scraper, hook detection |
+   | `/create/cinema` | Cinema & Drama Studio | Episodic micro-drama arcs, consistent character visual anchors, director lens mode |
+   | `/create/2d` | 2D & Explainer Studio | 11-point vector kinematics, anime stroke tracer, whiteboard sketch, code morphing |
+   | `/create/papercraft` | Papercraft Studio | Tactile stop-motion papercraft, depth shadow casting, layered origami animation |
+   | `/create/code-video` | Technical Architecture Studio | Dynamic architecture diagrams, code diff morphing, WaveDrom waveforms |
+   | `/create/campaign` | Viral Campaign Studio | 30-day viral trend planner, automated newsroom batch generation, podcast dialogues |
 2. **OmniRoute integration** — 45+ AI models unified behind one OpenAI-compatible endpoint. Fallback hierarchy: DB-configured OmniRoute key/URL → env vars → `http://localhost:20128/v1` → zero-cost keyless fallbacks (Edge TTS, Google Translate TTS, Pollinations, Openverse).
 3. **Modern subtitles + Remotion player** — 6 styling presets (Hormozi Pop, Cyber Neon, Minimalist Clean, Cinematic Boxed, Bold Impact, Retro Karaoke); word-by-word pop animations, frosted-glass pills, neon glows, 3-zone vertical positioning; FFmpeg drawtext rendering.
 4. **Global queue + background workers** — async queue with live status in desktop/mobile header + sidebar; dedicated `/queue` page; decoupled `render-worker.ts` / `publish-worker.ts` under PM2.

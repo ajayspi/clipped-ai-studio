@@ -1,18 +1,27 @@
-# Workflow Routes
+# workflows
 
-| Route | Kind | UI Caller | Claimable | Returns |
-|---|---|---|---|---|
-| `generate` | queue | `components/wizard/CreationWizard.tsx` | yes | queue |
-| `stories` | queue | NONE (API only) | yes | queue |
-| `ai-videos` | queue | NONE (API only) | yes | queue |
-| `auto` | queue | `create/auto` | yes | queue |
-| `micro-drama` | queue | `create/drama` | yes | queue |
-| `extract-shorts` | queue | `create/shorts` | yes | queue |
-| `avatar` | queue | `create/avatar` | yes | queue |
-| `whiteboard` | queue | `create/whiteboard` | yes | queue |
-| `bulk-plan/push` | queue | `create/bulk` | yes | queue |
-| `images` | terminal | NONE (API only) | no | terminal |
-| `whiteboard/character-sheet` | plan-only | `create/whiteboard` | no | plan-only |
-| `mission` | plan-only | `create/mission/[id]` | no | plan-only |
-| `bulk-plan` | utility | `create/bulk` | no | utility |
-| `scrape` | utility | `create/url` | no | utility |
+## Overview
+Core video workflow subsystem orchestrating 14 distinct video creation, planning, scripting, and queueing pipelines.
+
+## Interface
+- generate: ./generate/README.md
+- mission: ./mission/README.md
+- images: ./images/README.md
+- auto: ./auto/README.md
+- stories: ./stories/README.md
+- ai-videos: ./ai-videos/README.md
+- micro-drama: ./micro-drama/README.md
+- extract-shorts: ./extract-shorts/README.md
+- whiteboard: ./whiteboard/README.md
+- avatar: ./avatar/README.md
+- bulk-plan: ./bulk-plan/README.md
+- scrape: ./scrape/README.md
+
+## Invariants
+- [workflows:table] Distinguishes queue-writing claimable routes (generate, bulk-plan/push), plan-only routes (auto, stories, ai-videos, micro-drama, extract-shorts, whiteboard, avatar, mission, whiteboard/character-sheet), terminal routes (images), and pure utilities (bulk-plan, scrape)
+
+## Side Effects
+- None
+
+## Verification
+- Run: `pnpm test`

@@ -1,32 +1,37 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
   Menu,
   X,
   LayoutDashboard,
-  Video,
-  Library,
-  Settings,
-  CalendarDays,
-  LogOut,
   Sparkles,
-  Wand2,
+  Folder,
+  Film,
+  ListVideo,
+  CalendarDays,
+  Settings,
+  Video,
+  LogOut,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
+import { createClient } from "@/lib/supabase/client"
 
-const navItems = [
+export const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Create AI Video", href: "/create", icon: Wand2, badge: "AI" },
-  { name: "Library", href: "/library", icon: Library },
-  { name: "Planner", href: "/planner", icon: CalendarDays },
-  { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Create Video", href: "/create", icon: Sparkles },
+  { name: "Library & Assets", href: "/library", icon: Folder },
+  { name: "Timeline Editor", href: "/editor", icon: Film },
+  { name: "Render Queue", href: "/queue", icon: ListVideo },
+  { name: "Publish Calendar", href: "/planner", icon: CalendarDays },
+  { name: "Settings & Keys", href: "/settings", icon: Settings },
 ]
 
 export function MobileNav() {
   const [isOpen, setIsOpen] = useState(false)
+  const [activeJobsCount, setActiveJobsCount] = useState<number>(0)
   const pathname = usePathname()
   const [prevPathname, setPrevPathname] = useState(pathname)
 
@@ -35,6 +40,73 @@ export function MobileNav() {
   if (pathname !== prevPathname) {
     setPrevPathname(pathname)
     setIsOpen(false)
+  }
+
+  // Poll active jobs count for dynamic Render Queue badge
+  useEffect(() => {
+    let isMounted = true
+    async function fetchActiveJobs() {
+      try {
+        const res = await fetch("/api/jobs?limit=20")
+        if (!res.ok) return
+        const data = await res.json()
+        const count =
+          data.counts?.queued ??
+          (Array.isArray(data.queued) ? data.queued.length : 0) ??
+          (Array.isArray(data.jobs)
+            ? data.jobs.filter((j: { status?: string; orchestration_state?: string }) =>
+                [
+                  "pending",
+                  "generating_plan",
+                  "processing",
+                  "queued",
+                  "claimed",
+                  "rendering",
+                  "planning",
+                  "in_progress",
+                  "retryable",
+                ].includes(j.status || "") ||
+                [
+                  "pending",
+                  "generating_plan",
+                  "processing",
+                  "queued",
+                  "claimed",
+                  "rendering",
+                  "planning",
+                  "in_progress",
+                  "retryable",
+                ].includes(j.orchestration_state || "")
+              ).length
+            : 0)
+        if (isMounted) {
+          setActiveJobsCount(count)
+        }
+      } catch {
+        // Ignore polling errors
+      }
+    }
+
+    fetchActiveJobs()
+    const interval = setInterval(fetchActiveJobs, 10000)
+    return () => {
+      isMounted = false
+      clearInterval(interval)
+    }
+  }, [])
+
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    try {
+      const supabase = createClient()
+      await supabase.auth.signOut()
+    } catch (err) {
+      console.error("SignOut error:", err)
+    } finally {
+      router.push("/login")
+      router.refresh()
+    }
   }
 
   return (
@@ -86,6 +158,8 @@ export function MobileNav() {
                     pathname === item.href ||
                     (item.href !== "/dashboard" && pathname.startsWith(item.href))
                   const Icon = item.icon
+                  const isQueue = item.href === "/queue"
+
                   return (
                     <Link
                       key={item.href}
@@ -100,10 +174,9 @@ export function MobileNav() {
                         <Icon className="w-5 h-5" />
                         <span>{item.name}</span>
                       </div>
-                      {item.badge && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/30 flex items-center gap-1">
-                          <Sparkles className="w-2.5 h-2.5" />
-                          {item.badge}
+                      {isQueue && activeJobsCount > 0 && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-600 text-white animate-pulse shadow-sm shadow-violet-500/30">
+                          {activeJobsCount}
                         </span>
                       )}
                     </Link>
@@ -112,7 +185,10 @@ export function MobileNav() {
               </nav>
 
               <div className="p-4 border-t border-border/40 mt-auto">
-                <button className="flex items-center gap-3 w-full text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl px-4 py-3 transition-colors">
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-3 w-full text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl px-4 py-3 transition-colors"
+                >
                   <LogOut className="w-4 h-4" />
                   <span>Logout</span>
                 </button>

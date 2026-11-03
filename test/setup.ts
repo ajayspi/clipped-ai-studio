@@ -30,6 +30,16 @@ vi.mock('next/navigation', () => {
     usePathname: () => '/',
     useSearchParams: () => new URLSearchParams(),
     useParams: () => ({}),
+    redirect: vi.fn((url: string) => {
+      const err = new Error(`NEXT_REDIRECT:${url}`);
+      (err as any).digest = `NEXT_REDIRECT;replace;${url};307;`;
+      throw err;
+    }),
+    notFound: vi.fn(() => {
+      const err = new Error('NEXT_NOT_FOUND');
+      (err as any).digest = 'NEXT_NOT_FOUND';
+      throw err;
+    }),
   };
 });
 

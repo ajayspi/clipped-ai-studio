@@ -8,7 +8,7 @@ export declare const AIVideoGenerationRequestSchema: z.ZodObject<{
     script: z.ZodString;
     prompt: z.ZodOptional<z.ZodString>;
     model: z.ZodOptional<z.ZodUnion<[z.ZodEnum<["kling-v1", "luma-dream", "fal-flux", "alibaba/wan-3.0-prime/text-to-video"]>, z.ZodString]>>;
-    aspectRatio: z.ZodOptional<z.ZodEnum<["16:9", "9:16", "1:1"]>>;
+    aspectRatio: z.ZodOptional<z.ZodEnum<["16:9", "9:16", "1:1", "volumetric"]>>;
     duration: z.ZodOptional<z.ZodNumber>;
     cameraMotion: z.ZodOptional<z.ZodEnum<["static", "zoom_in", "zoom_out", "pan_left", "pan_right", "orbit", "drone", "tilt_up", "tilt_down"]>>;
     negativePrompt: z.ZodOptional<z.ZodString>;
@@ -23,7 +23,7 @@ export declare const AIVideoGenerationRequestSchema: z.ZodObject<{
     prompt?: string | undefined;
     duration?: number | undefined;
     voice?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     model?: string | undefined;
     cameraMotion?: "static" | "zoom_in" | "zoom_out" | "pan_left" | "pan_right" | "orbit" | "drone" | "tilt_up" | "tilt_down" | undefined;
     style?: string | undefined;
@@ -36,7 +36,7 @@ export declare const AIVideoGenerationRequestSchema: z.ZodObject<{
     prompt?: string | undefined;
     duration?: number | undefined;
     voice?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     model?: string | undefined;
     cameraMotion?: "static" | "zoom_in" | "zoom_out" | "pan_left" | "pan_right" | "orbit" | "drone" | "tilt_up" | "tilt_down" | undefined;
     style?: string | undefined;
@@ -242,7 +242,7 @@ export declare const StorySeriesRequestSchema: z.ZodObject<{
     partsCount: z.ZodNumber;
     visualStyle: z.ZodString;
     voice: z.ZodOptional<z.ZodString>;
-    aspectRatio: z.ZodOptional<z.ZodEnum<["16:9", "9:16", "1:1"]>>;
+    aspectRatio: z.ZodOptional<z.ZodEnum<["16:9", "9:16", "1:1", "volumetric"]>>;
     includeHooks: z.ZodOptional<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
     topic: string;
@@ -250,7 +250,7 @@ export declare const StorySeriesRequestSchema: z.ZodObject<{
     partsCount: number;
     visualStyle: string;
     voice?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     includeHooks?: boolean | undefined;
 }, {
     topic: string;
@@ -258,7 +258,7 @@ export declare const StorySeriesRequestSchema: z.ZodObject<{
     partsCount: number;
     visualStyle: string;
     voice?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     includeHooks?: boolean | undefined;
 }>;
 export type StorySeriesRequest = z.infer<typeof StorySeriesRequestSchema>;
@@ -543,7 +543,7 @@ export declare const BulkPlanRequestSchema: z.ZodObject<{
     visualStyle: z.ZodString;
     voice: z.ZodOptional<z.ZodString>;
     platforms: z.ZodArray<z.ZodString, "many">;
-    aspectRatio: z.ZodOptional<z.ZodEnum<["16:9", "9:16", "1:1"]>>;
+    aspectRatio: z.ZodOptional<z.ZodEnum<["16:9", "9:16", "1:1", "volumetric"]>>;
 }, "strip", z.ZodTypeAny, {
     platforms: string[];
     visualStyle: string;
@@ -551,7 +551,7 @@ export declare const BulkPlanRequestSchema: z.ZodObject<{
     contentCount: number;
     cadence: string;
     voice?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
 }, {
     platforms: string[];
     visualStyle: string;
@@ -559,7 +559,7 @@ export declare const BulkPlanRequestSchema: z.ZodObject<{
     contentCount: number;
     cadence: string;
     voice?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
 }>;
 export type BulkPlanRequest = z.infer<typeof BulkPlanRequestSchema>;
 export declare const BulkPlanResponseSchema: z.ZodObject<{
@@ -837,7 +837,7 @@ export declare const DramaSeriesRequestSchema: z.ZodObject<{
         avatarUrl?: string | undefined;
     }>, "many">;
     episodesCount: z.ZodNumber;
-    aspectRatio: z.ZodOptional<z.ZodEnum<["16:9", "9:16", "1:1"]>>;
+    aspectRatio: z.ZodOptional<z.ZodEnum<["16:9", "9:16", "1:1", "volumetric"]>>;
     visualStyle: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     genre: string;
@@ -850,7 +850,7 @@ export declare const DramaSeriesRequestSchema: z.ZodObject<{
     }[];
     episodesCount: number;
     script?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     visualStyle?: string | undefined;
 }, {
     genre: string;
@@ -863,7 +863,7 @@ export declare const DramaSeriesRequestSchema: z.ZodObject<{
     }[];
     episodesCount: number;
     script?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     visualStyle?: string | undefined;
 }>;
 export type DramaSeriesRequest = z.infer<typeof DramaSeriesRequestSchema>;
@@ -1166,12 +1166,12 @@ export declare const ShortsExtractionRequestSchema: z.ZodObject<{
     clipCount: z.ZodOptional<z.ZodNumber>;
     strategy: z.ZodOptional<z.ZodString>;
     captionStyle: z.ZodOptional<z.ZodString>;
-    aspectRatio: z.ZodOptional<z.ZodEnum<["16:9", "9:16", "1:1"]>>;
+    aspectRatio: z.ZodOptional<z.ZodEnum<["16:9", "9:16", "1:1", "volumetric"]>>;
 }, "strip", z.ZodTypeAny, {
     sourceType: "url" | "transcript" | "file";
     transcript?: string | undefined;
     videoUrl?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     clipCount?: number | undefined;
     strategy?: string | undefined;
     captionStyle?: string | undefined;
@@ -1179,7 +1179,7 @@ export declare const ShortsExtractionRequestSchema: z.ZodObject<{
     sourceType: "url" | "transcript" | "file";
     transcript?: string | undefined;
     videoUrl?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     clipCount?: number | undefined;
     strategy?: string | undefined;
     captionStyle?: string | undefined;
@@ -1268,7 +1268,7 @@ export declare const AutoPilotConfigSchema: z.ZodObject<{
     targetPlatforms: z.ZodArray<z.ZodString, "many">;
     voice: z.ZodOptional<z.ZodString>;
     visualStyle: z.ZodOptional<z.ZodString>;
-    aspectRatio: z.ZodOptional<z.ZodEnum<["16:9", "9:16", "1:1"]>>;
+    aspectRatio: z.ZodOptional<z.ZodEnum<["16:9", "9:16", "1:1", "volumetric"]>>;
 }, "strip", z.ZodTypeAny, {
     niche: string;
     pipelineName: string;
@@ -1278,7 +1278,7 @@ export declare const AutoPilotConfigSchema: z.ZodObject<{
     autoPublish: boolean;
     targetPlatforms: string[];
     voice?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     visualStyle?: string | undefined;
 }, {
     niche: string;
@@ -1289,7 +1289,7 @@ export declare const AutoPilotConfigSchema: z.ZodObject<{
     autoPublish: boolean;
     targetPlatforms: string[];
     voice?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     visualStyle?: string | undefined;
 }>;
 export type AutoPilotConfig = z.infer<typeof AutoPilotConfigSchema>;
@@ -1355,13 +1355,13 @@ export declare const AvatarConfigSchema: z.ZodObject<{
     layout: z.ZodOptional<z.ZodEnum<["pip_bottom_right", "pip_bottom_left", "fullscreen", "side_by_side", "circular_bubble"]>>;
     voice: z.ZodOptional<z.ZodUnion<[z.ZodEnum<["nova", "onyx", "rachel", "josh", "alloy", "shimmer"]>, z.ZodString]>>;
     speed: z.ZodOptional<z.ZodNumber>;
-    aspectRatio: z.ZodOptional<z.ZodEnum<["16:9", "9:16", "1:1"]>>;
+    aspectRatio: z.ZodOptional<z.ZodEnum<["16:9", "9:16", "1:1", "volumetric"]>>;
     backgroundVideoUrl: z.ZodOptional<z.ZodString>;
     backgroundMusicUrl: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     avatarType: "preset" | "custom_photo";
     voice?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     speed?: number | undefined;
     avatarId?: string | undefined;
     customImageUrl?: string | null | undefined;
@@ -1371,7 +1371,7 @@ export declare const AvatarConfigSchema: z.ZodObject<{
 }, {
     avatarType: "preset" | "custom_photo";
     voice?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     speed?: number | undefined;
     avatarId?: string | undefined;
     customImageUrl?: string | null | undefined;
@@ -1387,7 +1387,7 @@ export declare const AvatarGenerationRequestSchema: z.ZodObject<{
     layout: z.ZodOptional<z.ZodEnum<["pip_bottom_right", "pip_bottom_left", "fullscreen", "side_by_side", "circular_bubble"]>>;
     voice: z.ZodOptional<z.ZodUnion<[z.ZodEnum<["nova", "onyx", "rachel", "josh", "alloy", "shimmer"]>, z.ZodString]>>;
     speed: z.ZodOptional<z.ZodNumber>;
-    aspectRatio: z.ZodOptional<z.ZodEnum<["16:9", "9:16", "1:1"]>>;
+    aspectRatio: z.ZodOptional<z.ZodEnum<["16:9", "9:16", "1:1", "volumetric"]>>;
     backgroundVideoUrl: z.ZodOptional<z.ZodString>;
     backgroundMusicUrl: z.ZodOptional<z.ZodString>;
 } & {
@@ -1398,7 +1398,7 @@ export declare const AvatarGenerationRequestSchema: z.ZodObject<{
     avatarType: "preset" | "custom_photo";
     mock?: boolean | undefined;
     voice?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     speed?: number | undefined;
     avatarId?: string | undefined;
     customImageUrl?: string | null | undefined;
@@ -1410,7 +1410,7 @@ export declare const AvatarGenerationRequestSchema: z.ZodObject<{
     avatarType: "preset" | "custom_photo";
     mock?: boolean | undefined;
     voice?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     speed?: number | undefined;
     avatarId?: string | undefined;
     customImageUrl?: string | null | undefined;
@@ -1571,7 +1571,7 @@ export declare const WhiteboardGenerationRequestSchema: z.ZodObject<{
     customCharacterDescription: z.ZodOptional<z.ZodString>;
     style: z.ZodOptional<z.ZodEnum<["monoline_marker", "blackboard_chalk", "blueprint", "colored_doodle", "sketch_outline"]>>;
     markerColor: z.ZodOptional<z.ZodString>;
-    aspectRatio: z.ZodOptional<z.ZodEnum<["16:9", "9:16", "1:1"]>>;
+    aspectRatio: z.ZodOptional<z.ZodEnum<["16:9", "9:16", "1:1", "volumetric"]>>;
     voice: z.ZodOptional<z.ZodString>;
     mock: z.ZodOptional<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
@@ -1579,7 +1579,7 @@ export declare const WhiteboardGenerationRequestSchema: z.ZodObject<{
     mock?: boolean | undefined;
     script?: string | undefined;
     voice?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     style?: "monoline_marker" | "blackboard_chalk" | "blueprint" | "colored_doodle" | "sketch_outline" | undefined;
     markerColor?: string | undefined;
     characterArchetype?: "stickman" | "saint" | "old man" | "founder" | "doctor" | "teacher" | "scientist" | "custom" | undefined;
@@ -1589,7 +1589,7 @@ export declare const WhiteboardGenerationRequestSchema: z.ZodObject<{
     mock?: boolean | undefined;
     script?: string | undefined;
     voice?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     style?: "monoline_marker" | "blackboard_chalk" | "blueprint" | "colored_doodle" | "sketch_outline" | undefined;
     markerColor?: string | undefined;
     characterArchetype?: "stickman" | "saint" | "old man" | "founder" | "doctor" | "teacher" | "scientist" | "custom" | undefined;
@@ -1790,7 +1790,7 @@ export type MissionStepStatus = z.infer<typeof MissionStepStatusSchema>;
 export declare const MissionJobStateSchema: z.ZodObject<{
     jobId: z.ZodString;
     prompt: z.ZodString;
-    aspectRatio: z.ZodEnum<["16:9", "9:16", "1:1"]>;
+    aspectRatio: z.ZodEnum<["16:9", "9:16", "1:1", "volumetric"]>;
     style: z.ZodString;
     voice: z.ZodString;
     currentStage: z.ZodEnum<["prompt_analysis", "script_generation", "scene_planning", "asset_sourcing", "voice_synthesis", "video_composition", "ready"]>;
@@ -1915,7 +1915,7 @@ export declare const MissionJobStateSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     prompt: string;
     voice: string;
-    aspectRatio: "16:9" | "9:16" | "1:1";
+    aspectRatio: "16:9" | "9:16" | "1:1" | "volumetric";
     jobId: string;
     style: string;
     currentStage: "prompt_analysis" | "script_generation" | "scene_planning" | "asset_sourcing" | "voice_synthesis" | "video_composition" | "ready";
@@ -1960,7 +1960,7 @@ export declare const MissionJobStateSchema: z.ZodObject<{
 }, {
     prompt: string;
     voice: string;
-    aspectRatio: "16:9" | "9:16" | "1:1";
+    aspectRatio: "16:9" | "9:16" | "1:1" | "volumetric";
     jobId: string;
     style: string;
     currentStage: "prompt_analysis" | "script_generation" | "scene_planning" | "asset_sourcing" | "voice_synthesis" | "video_composition" | "ready";
@@ -2013,7 +2013,7 @@ export declare function validateAIVideoRequest(data: unknown): {
     prompt?: string | undefined;
     duration?: number | undefined;
     voice?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     model?: string | undefined;
     cameraMotion?: "static" | "zoom_in" | "zoom_out" | "pan_left" | "pan_right" | "orbit" | "drone" | "tilt_up" | "tilt_down" | undefined;
     style?: string | undefined;
@@ -2027,7 +2027,7 @@ export declare function validateStorySeriesRequest(data: unknown): {
     partsCount: number;
     visualStyle: string;
     voice?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     includeHooks?: boolean | undefined;
 };
 export declare function validateBulkPlanRequest(data: unknown): {
@@ -2037,7 +2037,7 @@ export declare function validateBulkPlanRequest(data: unknown): {
     contentCount: number;
     cadence: string;
     voice?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
 };
 export declare function validateDramaSeriesRequest(data: unknown): {
     genre: string;
@@ -2050,14 +2050,14 @@ export declare function validateDramaSeriesRequest(data: unknown): {
     }[];
     episodesCount: number;
     script?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     visualStyle?: string | undefined;
 };
 export declare function validateShortsExtractionRequest(data: unknown): {
     sourceType: "url" | "transcript" | "file";
     transcript?: string | undefined;
     videoUrl?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     clipCount?: number | undefined;
     strategy?: string | undefined;
     captionStyle?: string | undefined;
@@ -2071,13 +2071,13 @@ export declare function validateAutoPilotConfig(data: unknown): {
     autoPublish: boolean;
     targetPlatforms: string[];
     voice?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     visualStyle?: string | undefined;
 };
 export declare function validateAvatarConfig(data: unknown): {
     avatarType: "preset" | "custom_photo";
     voice?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     speed?: number | undefined;
     avatarId?: string | undefined;
     customImageUrl?: string | null | undefined;
@@ -2090,7 +2090,7 @@ export declare function validateWhiteboardRequest(data: unknown): {
     mock?: boolean | undefined;
     script?: string | undefined;
     voice?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     style?: "monoline_marker" | "blackboard_chalk" | "blueprint" | "colored_doodle" | "sketch_outline" | undefined;
     markerColor?: string | undefined;
     characterArchetype?: "stickman" | "saint" | "old man" | "founder" | "doctor" | "teacher" | "scientist" | "custom" | undefined;
@@ -2099,7 +2099,7 @@ export declare function validateWhiteboardRequest(data: unknown): {
 export declare function validateMissionJobState(data: unknown): {
     prompt: string;
     voice: string;
-    aspectRatio: "16:9" | "9:16" | "1:1";
+    aspectRatio: "16:9" | "9:16" | "1:1" | "volumetric";
     jobId: string;
     style: string;
     currentStage: "prompt_analysis" | "script_generation" | "scene_planning" | "asset_sourcing" | "voice_synthesis" | "video_composition" | "ready";

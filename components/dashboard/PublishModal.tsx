@@ -17,6 +17,7 @@ import {
   FileVideo,
   FileAudio,
   Film,
+  FileCode,
 } from "lucide-react";
 
 interface PublishModalProps {
@@ -130,6 +131,41 @@ export function PublishModal({
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to export video");
+    } finally {
+      setExporting(null);
+    }
+  }
+
+  async function handleNleExport(format: 'otio' | 'fcpxml') {
+    setExporting(format);
+    setError(null);
+    try {
+      const res = await fetch("/api/export/nle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobId,
+          format,
+          timelineName: title || `Clipped_${jobId.slice(0, 8)}`,
+        }),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || "NLE Export failed");
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${title || 'timeline'}.${format}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to export timeline");
     } finally {
       setExporting(null);
     }
@@ -515,6 +551,59 @@ export function PublishModal({
                   {exporting === "mp3" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
                   Download MP3
                 </button>
+              </div>
+
+              {/* Professional NLE Timeline Export */}
+              <div className="pt-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-2">
+                  Professional NLE Timeline Export
+                </label>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* DaVinci Resolve OTIO */}
+                  <div className="p-3 rounded-xl border bg-muted/20 hover:bg-muted/40 transition-colors flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 overflow-hidden">
+                      <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 flex items-center justify-center shrink-0">
+                        <Film className="w-4 h-4" />
+                      </div>
+                      <div className="truncate">
+                        <span className="font-semibold text-xs text-foreground block truncate">DaVinci Resolve</span>
+                        <p className="text-[10px] text-muted-foreground">OTIO Schema 1.0</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={exporting !== null}
+                      onClick={() => handleNleExport("otio")}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border bg-background hover:bg-muted text-foreground font-medium text-xs transition-all shrink-0 disabled:opacity-50"
+                    >
+                      {exporting === "otio" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                      .otio
+                    </button>
+                  </div>
+
+                  {/* Premiere / Final Cut FCPXML */}
+                  <div className="p-3 rounded-xl border bg-muted/20 hover:bg-muted/40 transition-colors flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 overflow-hidden">
+                      <div className="w-8 h-8 rounded-lg bg-pink-500/10 text-pink-500 border border-pink-500/20 flex items-center justify-center shrink-0">
+                        <FileCode className="w-4 h-4" />
+                      </div>
+                      <div className="truncate">
+                        <span className="font-semibold text-xs text-foreground block truncate">Premiere / FCP</span>
+                        <p className="text-[10px] text-muted-foreground">FCPXML v1.10</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={exporting !== null}
+                      onClick={() => handleNleExport("fcpxml")}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border bg-background hover:bg-muted text-foreground font-medium text-xs transition-all shrink-0 disabled:opacity-50"
+                    >
+                      {exporting === "fcpxml" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                      .fcpxml
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 

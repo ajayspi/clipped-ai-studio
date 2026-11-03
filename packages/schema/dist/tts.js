@@ -20,6 +20,8 @@ export const TTSRequestSchema = z.object({
     apiKey: z.string().optional(),
     region: z.string().optional(),
     model: z.string().optional(),
+    sampleRate: z.number().optional(),
+    commercialSafe: z.boolean().optional(),
 });
 /**
  * Provider attempt log for fallback tracking
@@ -81,6 +83,9 @@ export const TTSVoiceOptionSchema = z.object({
     description: z.string().optional(),
     sampleUrl: z.string().url().optional(),
     previewText: z.string().optional(),
+    sampleRate: z.number().optional(),
+    commercialSafe: z.boolean().optional(),
+    license: z.string().optional(),
 });
 /**
  * Resolved voice provider key

@@ -2,7 +2,7 @@ import { z } from 'zod';
 /**
  * Common enums and base types shared across the pipeline
  */
-export const AspectRatioSchema = z.enum(['16:9', '9:16', '1:1']);
+export const AspectRatioSchema = z.enum(['16:9', '9:16', '1:1', 'volumetric']);
 export const WorkflowTypeSchema = z.enum([
     'footage',
     'images',
@@ -37,6 +37,9 @@ export const TTSProviderSchema = z.enum([
     'elevenlabs',
     'google',
     'coqui',
+    'sarvam',
+    'piper',
+    'voicestudio',
     'keyless',
     'mock',
     'auto',

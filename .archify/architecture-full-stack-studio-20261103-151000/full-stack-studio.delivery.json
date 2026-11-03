@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "0e879498-05f3-4d07-81e3-861e05a1af61",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "C:\\Users\\vigilare\\.gemini\\antigravity\\scratch\\clipped\\.archify\\architecture-full-stack-studio-20261103-151000\\candidate.json",
+  "output": "C:\\Users\\vigilare\\.gemini\\antigravity\\scratch\\clipped\\.archify\\architecture-full-stack-studio-20261103-151000\\full-stack-studio.html",
+  "specification": {
+    "sha256": "a5feca20e90ea78f4307b3b37e2455324e81e6a1b5a30667d62128814680b358",
+    "bytes": 10264
+  },
+  "artifact": {
+    "sha256": "bda9cd0b21ebc9cba780086911916327b3f8aef4eded66f8e8f85ccd944a67db",
+    "bytes": 784520
+  }
+}

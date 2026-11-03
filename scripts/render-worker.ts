@@ -292,7 +292,7 @@ export function buildSubtitleDrawtextFilter(text: string, settings?: SubtitleCon
 
   const s: SubtitleConfig = settings || {} as SubtitleConfig;
   let content = text.trim();
-  if (s.subtitleUppercase === true || (s.subtitleUppercase !== false && s.subtitlePreset && ['Hormozi Pop', 'Cyber Neon', 'Cinematic Boxed', 'Bold Impact'].includes(s.subtitlePreset))) {
+  if (s.subtitleUppercase === true || (s as any).brandTokens?.typography?.textTransform === 'uppercase' || (s.subtitleUppercase !== false && s.subtitlePreset && ['Hormozi Pop', 'Cyber Neon', 'Cinematic Boxed', 'Bold Impact'].includes(s.subtitlePreset))) {
     content = content.toUpperCase();
   }
   
@@ -316,7 +316,7 @@ export function buildSubtitleDrawtextFilter(text: string, settings?: SubtitleCon
     return clean;
   };
 
-  const fontColor = normalizeColor((s as any).brandKit?.customSubtitleColor || s.subtitleColor || (s.subtitlePreset === 'Hormozi Pop' ? '#FACC15' : '#FFFFFF'), 'white');
+  const fontColor = normalizeColor((s as any).brandTokens?.colors?.primary || (s as any).brandKit?.customSubtitleColor || s.subtitleColor || (s.subtitlePreset === 'Hormozi Pop' ? '#FACC15' : '#FFFFFF'), 'white');
 
   const yPercent = typeof s.subtitleY === 'number' && s.subtitleY >= 0 ? s.subtitleY / 100 : 0.75;
   const xExpr = '(w-text_w)/2';
@@ -329,7 +329,7 @@ export function buildSubtitleDrawtextFilter(text: string, settings?: SubtitleCon
       ? Math.round(s.subtitleOutlineWidth) 
       : (s.subtitleOutline === 'thick' ? 4 : 2);
     // Prefer the requested outline color, fallback to glow color, then black
-    bordercolor = normalizeColor((s as any).subtitleOutlineColor as string || (s.subtitleGlow ? (s as any).subtitleGlowColor : 'black'), 'black');
+    bordercolor = normalizeColor((s as any).brandTokens?.colors?.outlineColor || (s as any).subtitleOutlineColor as string || (s.subtitleGlow ? (s as any).subtitleGlowColor : 'black'), 'black');
   } else if (s.subtitlePreset === 'Hormozi Pop') {
     borderw = 3;
     bordercolor = normalizeColor((s as any).subtitleOutlineColor as string, 'black');
@@ -341,7 +341,7 @@ export function buildSubtitleDrawtextFilter(text: string, settings?: SubtitleCon
   const isBox = s.subtitleBox === true || s.subtitlePreset === 'Cinematic Boxed' || s.subtitlePreset === 'Retro Karaoke';
   let boxParam = '';
   if (isBox) {
-    const boxColor = normalizeBoxColor(s.subtitleBoxColor);
+    const boxColor = normalizeBoxColor((s as any).brandTokens?.colors?.background || s.subtitleBoxColor);
     boxParam = `:box=1:boxcolor=${boxColor}:boxborderw=10`;
   }
 
@@ -919,6 +919,8 @@ async function pollAndProcess() {
             '-c:a aac',
             '-b:a 192k',
             '-pix_fmt yuv420p',
+            '-preset veryfast',
+            '-threads 2',
             '-shortest'
           ];
           if (!isVideo) outputOpts.push('-tune stillimage');
@@ -937,6 +939,8 @@ async function pollAndProcess() {
             '-c:a aac',
             '-b:a 192k',
             '-pix_fmt yuv420p',
+            '-preset veryfast',
+            '-threads 2',
             '-shortest'
           ];
           if (!isVideo) outputOpts.push('-tune stillimage');
@@ -983,6 +987,8 @@ async function pollAndProcess() {
             '-pix_fmt yuv420p',
             '-c:a aac',
             '-b:a 192k',
+            '-preset veryfast',
+            '-threads 2',
             '-shortest'
           ])
           .save(slatePath)
@@ -1062,6 +1068,8 @@ async function pollAndProcess() {
           '-c:v libx264',
           '-c:a aac',
           '-b:a 192k',
+          '-preset veryfast',
+          '-threads 2',
           '-shortest'
         ];
 

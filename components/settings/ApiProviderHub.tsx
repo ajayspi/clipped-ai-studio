@@ -108,17 +108,17 @@ export function ApiProviderHub() {
   return (
     <div className="space-y-6">
       {/* ── Main Gateway Health Card ────────────────────────────────────────── */}
-      <div className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm shadow-sm overflow-hidden">
+      <div className="rounded-2xl border border-border/70 bg-card backdrop-blur-sm shadow-xs overflow-hidden">
         {/* Header */}
-        <div className="p-6 border-b border-border/40 bg-muted/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="p-6 border-b border-border/60 bg-muted/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20 flex items-center justify-center shrink-0">
               <Server className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-semibold text-foreground">OmniRoute AI Gateway</h3>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-purple-500/15 text-purple-400 border border-purple-500/20">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-purple-500/15 text-purple-700 dark:text-purple-400 border border-purple-500/20">
                   Unified Router
                 </span>
               </div>
@@ -212,7 +212,7 @@ export function ApiProviderHub() {
                 <div className="p-4 rounded-xl border border-border/50 bg-muted/10 flex flex-col justify-between gap-2">
                   <span className="text-xs text-muted-foreground font-medium">Available Models</span>
                   <div className="flex items-center gap-2">
-                    <Cpu className="w-4 h-4 text-purple-400" />
+                    <Cpu className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                     <span className="text-xl font-bold font-mono text-foreground">
                       {status?.modelCount ?? 0}
                     </span>
@@ -226,7 +226,7 @@ export function ApiProviderHub() {
                 <div className="p-4 rounded-xl border border-border/50 bg-muted/10 flex flex-col justify-between gap-2">
                   <span className="text-xs text-muted-foreground font-medium">Storage Source</span>
                   <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-blue-400" />
+                    <Shield className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                     <span className="text-sm font-semibold capitalize text-foreground">
                       {status?.source || "default"}
                     </span>
@@ -238,7 +238,7 @@ export function ApiProviderHub() {
               </div>
 
               {/* Endpoint Address Banner */}
-              <div className="p-4 rounded-xl border border-border/50 bg-muted/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div className="p-4 rounded-xl border border-border/70 bg-muted/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2.5 overflow-hidden">
                   <Globe className="w-4 h-4 text-primary shrink-0" />
                   <span className="text-muted-foreground font-medium shrink-0">Gateway Endpoint:</span>

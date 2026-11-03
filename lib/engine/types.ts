@@ -2,6 +2,7 @@ import type { MediaAsset } from '@/lib/media/types';
 // Type-only, and the dependency runs one way: shot-planner.ts does not import
 // this file (it takes a structural input), so there is no cycle.
 import type { CameraMove, ShotType } from './shot-planner';
+export type { CameraMove, ShotType };
 
 export interface Video {
   id: string;
@@ -41,6 +42,18 @@ export interface Scene {
   audioUrl?: string;
   /** Canonical provenance-bearing media asset. Coexists with imageUrl/videoUrl for backward compat. */
   mediaAsset?: MediaAsset;
+  speaker?: string;
+  dialogue?: string;
+  voice?: string;
+}
+
+export interface DramaScene extends Scene {
+  speaker: string;
+  dialogue?: string;
+  visualPrompt: string;
+  shotType?: ShotType;
+  cameraMove?: CameraMove;
+  duration: number;
 }
 
 
@@ -312,7 +325,17 @@ export type WorkflowType =
   | 'mission'
   | 'character'
   | 'v2v'
-  | 'outpaint';
+  | 'outpaint'
+  | 'cinema'
+  | 'stick-figure'
+  | 'podcast'
+  | 'code-video'
+  | 'reddit'
+  | 'trivia'
+  | 'url'
+  | 'previs'
+  | 'scriptbreak'
+  | 'yaml';
 
 export type RenderJobStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
@@ -356,6 +379,55 @@ export interface WorkflowStatusResult {
   message?: string;
 }
 
+export type StudioCategory = 'shorts' | 'cinema' | '2d' | 'campaign';
+
+export interface BrandMotionTokens {
+  easing: string;
+  easingCurve: string;
+  durationScale?: number;
+  zoomPanEasing?: string;
+}
+
+export interface BrandDesignTokens {
+  typography: {
+    fontFamily: string;
+    fontSize: number;
+    fontWeight?: string;
+    textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+  };
+  colors: {
+    primary: string;
+    accent: string;
+    background?: string;
+    outlineColor?: string;
+    shadow?: string;
+  };
+  geometry: {
+    aspectRatio: '16:9' | '9:16' | '1:1';
+  };
+  motion?: BrandMotionTokens;
+}
+
+export function getDefaultBrandTokens(): BrandDesignTokens {
+  return {
+    typography: {
+      fontFamily: 'Inter, sans-serif',
+      fontSize: 24,
+      fontWeight: 'bold',
+      textTransform: 'none',
+    },
+    colors: {
+      primary: '#ffffff',
+      accent: '#6366f1',
+      background: 'rgba(0,0,0,0.7)',
+      outlineColor: '#000000',
+    },
+    geometry: {
+      aspectRatio: '9:16',
+    },
+  };
+}
+
 export interface WorkflowDefinition {
   id: WorkflowType;
   title: string;
@@ -365,7 +437,7 @@ export interface WorkflowDefinition {
   bg: string;
   borderHover?: string;
   href: string;
-  category?: 'ai-video' | 'stock' | 'avatar-wb' | 'automation' | string;
+  category?: StudioCategory | 'ai-video' | 'stock' | 'avatar-wb' | 'automation' | string;
   costTier: CostTier;
   primaryProviders: string[];
   fallbackProviders?: string[];

@@ -1,5 +1,5 @@
 import React from 'react';
-import { WorkflowBuilder } from '@/components/workflow-builder/WorkflowBuilder';
+import { DynamicWorkflowBuilder as WorkflowBuilder } from '@/components/workflow-builder/DynamicWorkflowBuilder';
 
 export default function WorkflowEditorPage() {
   return (

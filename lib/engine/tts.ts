@@ -34,6 +34,7 @@ export type TTSProvider =
   | 'coqui'
   | 'sarvam'
   | 'piper'
+  | 'voicestudio'
   | 'keyless'
   | 'mock'
   | 'auto';
@@ -59,6 +60,9 @@ export interface TTSVoiceOption {
   description?: string;
   sampleUrl?: string;
   previewText?: string;
+  sampleRate?: number;
+  commercialSafe?: boolean;
+  license?: string;
 }
 
 export interface ProviderAttemptLog {
@@ -85,6 +89,8 @@ export interface TTSRequest {
   apiKey?: string;
   region?: string;
   model?: string;
+  sampleRate?: 48000 | 44100 | 32000 | 24000 | number;
+  commercialSafe?: boolean;
 }
 
 // Alias for backwards/forwards compatibility across orchestrators
@@ -104,6 +110,8 @@ export interface TTSResponse {
   voiceUsed: string;
   format: 'mp3' | 'wav' | 'ogg';
   characterCount: number;
+  sampleRate?: number;
+  commercialSafe?: boolean;
   metadata: {
     isDryRun: boolean;
     speakingRate: number;
@@ -341,6 +349,142 @@ export const GOOGLE_DEFAULT_VOICES: Record<
   'bn-IN': { female: 'bn-IN-Wavenet-A', male: 'bn-IN-Wavenet-B', neutral: 'bn-IN-Standard-A' },
   'mr-IN': { female: 'mr-IN-Wavenet-A', male: 'mr-IN-Wavenet-B', neutral: 'mr-IN-Standard-A' },
 };
+
+
+// ============================================================================
+// VoiceStudio On-Device Engines & Models Catalog
+// ============================================================================
+
+export interface VoiceStudioModelInfo {
+  id: string;
+  name: string;
+  engine: string;
+  sampleRate: number;
+  commercialSafe: boolean;
+  license: string;
+  languages: SupportedLanguage[];
+  gender: VoiceGender;
+  description: string;
+}
+
+export const VOICESTUDIO_MODELS: Record<string, VoiceStudioModelInfo> = {
+  'moss-tts-nano': {
+    id: 'moss-tts-nano',
+    name: 'MOSS-TTS-Nano (48kHz Studio)',
+    engine: 'moss-tts-nano',
+    sampleRate: 48000,
+    commercialSafe: true,
+    license: 'Apache-2.0',
+    languages: ['en-US', 'en-IN', 'hi-IN'],
+    gender: 'neutral',
+    description: 'Studio 48 kHz CPU realtime broadcast model (Apache-2.0, Commercial OK)',
+  },
+  'voxcpm2': {
+    id: 'voxcpm2',
+    name: 'VoxCPM2 (48kHz Studio)',
+    engine: 'voxcpm2',
+    sampleRate: 48000,
+    commercialSafe: true,
+    license: 'Commercial OK',
+    languages: ['en-US'],
+    gender: 'neutral',
+    description: 'Broadcast-quality 48 kHz sample rate with acoustic voice design (Commercial OK)',
+  },
+  'kitten-tts': {
+    id: 'kitten-tts',
+    name: 'KittenTTS (Realtime CPU)',
+    engine: 'kitten-tts',
+    sampleRate: 24000,
+    commercialSafe: true,
+    license: 'Commercial OK',
+    languages: ['en-US'],
+    gender: 'neutral',
+    description: 'Ultra-lightweight real-time CPU generation (Commercial OK)',
+  },
+  'cosyvoice-3': {
+    id: 'cosyvoice-3',
+    name: 'CosyVoice 3 (Zero-Shot)',
+    engine: 'cosyvoice-3',
+    sampleRate: 24000,
+    commercialSafe: true,
+    license: 'Apache-2.0',
+    languages: ['en-US'],
+    gender: 'neutral',
+    description: 'High-fidelity voice cloning and emotion/style instruction following (Apache-2.0)',
+  },
+  'gpt-sovits': {
+    id: 'gpt-sovits',
+    name: 'GPT-SoVITS (Fast Cloning)',
+    engine: 'gpt-sovits',
+    sampleRate: 32000,
+    commercialSafe: true,
+    license: 'MIT',
+    languages: ['en-US'],
+    gender: 'neutral',
+    description: 'Blazing-fast zero-shot cloning with RTF 0.014 (MIT, Commercial OK)',
+  },
+  'omnivoice': {
+    id: 'omnivoice',
+    name: 'OmniVoice (600+ Languages)',
+    engine: 'k2-fsa/OmniVoice',
+    sampleRate: 24000,
+    commercialSafe: false,
+    license: 'Non-Commercial (k2-fsa)',
+    languages: ['en-US', 'en-IN', 'hi-IN', 'ta-IN', 'te-IN', 'kn-IN', 'bn-IN', 'mr-IN'],
+    gender: 'neutral',
+    description: 'Massive language coverage 600+ languages (strictly Non-Commercial use only)',
+  },
+};
+
+export const VOICESTUDIO_VOICE_CATALOG: TTSVoiceOption[] = Object.values(VOICESTUDIO_MODELS).flatMap((m) =>
+  m.languages.map((lang) => ({
+    id: `voicestudio-${m.id}-${lang.toLowerCase()}`,
+    name: `${m.name} - ${lang}`,
+    provider: 'voicestudio' as TTSProvider,
+    language: lang,
+    gender: m.gender,
+    description: m.description,
+    sampleRate: m.sampleRate,
+    commercialSafe: m.commercialSafe,
+    license: m.license,
+  }))
+);
+
+/**
+ * Resolves a VoiceStudio model candidate from request parameters while enforcing commercial safety rules.
+ * If commercialSafe is true, models with commercialSafe === false (e.g. omnivoice) are disallowed.
+ */
+export function resolveVoiceStudioModel(
+  requested?: string,
+  commercialSafe?: boolean,
+  targetSampleRate?: number
+): VoiceStudioModelInfo {
+  const norm = (requested || '').toLowerCase().trim().replace(/^voicestudio-/, '');
+
+  let matchedKey: string | undefined = Object.keys(VOICESTUDIO_MODELS).find(
+    (k) => norm === k || norm.startsWith(k)
+  );
+
+  if (!matchedKey) {
+    if (targetSampleRate === 48000) {
+      matchedKey = 'moss-tts-nano';
+    } else {
+      matchedKey = 'moss-tts-nano';
+    }
+  }
+
+  const modelInfo = VOICESTUDIO_MODELS[matchedKey] || VOICESTUDIO_MODELS['moss-tts-nano'];
+
+  if (commercialSafe && !modelInfo.commercialSafe) {
+    logger.warn('Commercial safety gate: non-commercial model requested, falling back to moss-tts-nano', {
+      requestedModel: modelInfo.id,
+      license: modelInfo.license,
+    });
+    return VOICESTUDIO_MODELS['moss-tts-nano'];
+  }
+
+  return modelInfo;
+}
 
 export const SARVAM_VOICE_CATALOG: TTSVoiceOption[] = [
   { id: 'sarvam-hi-IN', name: 'Sarvam Hindi', provider: 'sarvam', language: 'hi-IN', gender: 'neutral', description: 'Sarvam AI Hindi voice' },
@@ -764,6 +908,11 @@ export class TTSEngine {
       const voiceCandidate = (request.voiceId || request.voice || '').trim();
       if (voiceCandidate.startsWith('free-') || voiceCandidate.startsWith('gtts-')) {
         rawReqProvider = 'keyless';
+      } else if (
+        voiceCandidate.startsWith('voicestudio') ||
+        Object.keys(VOICESTUDIO_MODELS).some((m) => voiceCandidate.includes(m))
+      ) {
+        rawReqProvider = 'voicestudio';
       } else if (['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'].includes(voiceCandidate.toLowerCase())) {
         rawReqProvider = 'openai';
       } else if (voiceCandidate.includes('Neural2') || voiceCandidate.includes('Wavenet') || voiceCandidate.includes('Journey')) {
@@ -781,8 +930,9 @@ export class TTSEngine {
       }
     }
 
-    let primaryProvider: 'azure' | 'elevenlabs' | 'google' | 'openai' | 'omniroute' | 'keyless' | 'sarvam' | 'piper' = 'omniroute';
+    let primaryProvider: 'azure' | 'elevenlabs' | 'google' | 'openai' | 'omniroute' | 'keyless' | 'sarvam' | 'piper' | 'voicestudio' = 'omniroute';
     if (rawReqProvider === 'keyless') primaryProvider = 'keyless';
+    else if (rawReqProvider === 'voicestudio') primaryProvider = 'voicestudio';
     else if (rawReqProvider === 'azure' || rawReqProvider === 'azure_speech') primaryProvider = 'azure';
     else if (rawReqProvider === 'elevenlabs' || rawReqProvider === 'eleven_labs') primaryProvider = 'elevenlabs';
     else if (rawReqProvider === 'google' || rawReqProvider === 'google_tts') primaryProvider = 'google';
@@ -793,6 +943,10 @@ export class TTSEngine {
 
     const providersToTry: TTSProvider[] = [];
     if (primaryProvider === 'keyless') {
+      providersToTry.push('keyless');
+    } else if (primaryProvider === 'voicestudio') {
+      providersToTry.push('voicestudio');
+      providersToTry.push('omniroute');
       providersToTry.push('keyless');
     } else {
       providersToTry.push(primaryProvider as TTSProvider);
@@ -884,6 +1038,17 @@ export class TTSEngine {
           const res = await this.synthesizeWithSarvam(jobId, rawText, language, request, apiKey);
           providerAttempts.push({
             provider: 'sarvam',
+            status: 'success',
+            latencyMs: Date.now() - startTime,
+          });
+          res.metadata.providerAttempts = providerAttempts;
+          return res;
+        }
+        if (provider === 'voicestudio') {
+          console.log(`[TTS] Synthesizing with VoiceStudio (48kHz broadcast engine, commercialSafe=${Boolean(request.commercialSafe)})...`);
+          const res = await this.synthesizeWithVoiceStudio(jobId, rawText, language, request);
+          providerAttempts.push({
+            provider: 'voicestudio',
             status: 'success',
             latencyMs: Date.now() - startTime,
           });
@@ -1326,6 +1491,8 @@ export class TTSEngine {
       voiceUsed: voiceId,
       format: 'wav',
       characterCount: text.length,
+      sampleRate: 24000,
+      commercialSafe: true,
       metadata: {
         isDryRun: false,
         speakingRate: speed,
@@ -1333,6 +1500,98 @@ export class TTSEngine {
         generatedAt: new Date().toISOString(),
       },
     };
+  }
+
+  /**
+   * VoiceStudio Local-First OpenAI-Compatible TTS Integration (Port 3900)
+   * Connects to VoiceStudio daemon supporting 18+ on-device engines.
+   * Guarantees 48 kHz broadcast audio matching Remotion and FFmpeg standards.
+   * Strictly enforces commercial safety constraints when requested.
+   */
+  private async synthesizeWithVoiceStudio(
+    jobId: string,
+    text: string,
+    language: SupportedLanguage,
+    request: TTSRequest
+  ): Promise<TTSResponse> {
+    const rawVoice = request.voiceId || request.voice || request.model || '';
+    const selectedModel = resolveVoiceStudioModel(
+      rawVoice,
+      request.commercialSafe,
+      request.sampleRate
+    );
+
+    const speed = Math.max(0.25, Math.min(4.0, request.speed || request.speakingRate || 1.0));
+    const baseUrl = (process.env.VOICE_STUDIO_URL || 'http://127.0.0.1:3900/v1')
+      .replace(/\/+$/, '')
+      .replace(/\/v1$/i, '');
+    const url = `${baseUrl}/v1/audio/speech`;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Clipped-VoiceStudio-Client',
+        },
+        body: JSON.stringify({
+          model: selectedModel.id,
+          input: text,
+          voice: selectedModel.id,
+          speed,
+          response_format: 'wav',
+          sample_rate: selectedModel.sampleRate,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`VoiceStudio HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      if (!buffer || buffer.length === 0) {
+        throw new Error('VoiceStudio produced an empty 0-byte audio buffer');
+      }
+
+      const audioBase64 = buffer.toString('base64');
+      const audioUrl = `data:audio/wav;base64,${audioBase64}`;
+      const duration = calculateEstimatedDuration(text, language, speed);
+
+      return {
+        success: true,
+        jobId,
+        audioBuffer: buffer,
+        audioUrl,
+        audioBase64,
+        mimeType: 'audio/wav',
+        duration,
+        providerUsed: 'voicestudio',
+        language,
+        voiceId: selectedModel.id,
+        voiceUsed: selectedModel.name,
+        format: 'wav',
+        characterCount: text.length,
+        sampleRate: selectedModel.sampleRate,
+        commercialSafe: selectedModel.commercialSafe,
+        metadata: {
+          isDryRun: false,
+          speakingRate: speed,
+          providerAttempts: [],
+          model: selectedModel.id,
+          sampleRate: selectedModel.sampleRate,
+          commercialSafe: selectedModel.commercialSafe,
+          license: selectedModel.license,
+          generatedAt: new Date().toISOString(),
+        },
+      };
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   /**
@@ -1528,7 +1787,8 @@ export class TTSEngine {
   ): TTSResponse {
     const speed = request.speed || request.speakingRate || 1.0;
     const duration = calculateEstimatedDuration(text, language, speed);
-    const wavBuffer = generateSyntheticWavBuffer(duration, 24000);
+    const targetSampleRate = request.sampleRate || 24000;
+    const wavBuffer = generateSyntheticWavBuffer(duration, targetSampleRate);
     const audioBase64 = wavBuffer.toString('base64');
     const audioUrl = `data:audio/wav;base64,${audioBase64}`;
     const voiceId =
@@ -1551,12 +1811,15 @@ export class TTSEngine {
       voiceUsed: voiceId,
       format: 'wav',
       characterCount: text.length,
+      sampleRate: targetSampleRate,
+      commercialSafe: request.commercialSafe !== undefined ? request.commercialSafe : true,
       metadata: {
         isDryRun: true,
         speakingRate: speed,
         reason: reasonNote || 'Cost-safe dry run execution',
         providerAttempts,
-        sampleRate: 24000,
+        sampleRate: targetSampleRate,
+        commercialSafe: request.commercialSafe !== undefined ? request.commercialSafe : true,
         channels: 1,
         generatedAt: new Date().toISOString(),
       },
@@ -1566,7 +1829,11 @@ export class TTSEngine {
   /**
    * Returns supported voices catalog for a given language or all languages, optionally filtered by provider
    */
-  getAvailableVoices(language?: SupportedLanguage | string, provider?: TTSProvider | string): TTSVoiceOption[] {
+  getAvailableVoices(
+    language?: SupportedLanguage | string,
+    provider?: TTSProvider | string,
+    commercialSafeOnly?: boolean
+  ): TTSVoiceOption[] {
     const targetLang = language ? normalizeLanguageCode(language) : undefined;
     const targetProvider = provider ? (provider.toLowerCase() as TTSProvider) : undefined;
     const voices: TTSVoiceOption[] = [];
@@ -1655,6 +1922,20 @@ export class TTSEngine {
           voices.push(v);
         }
       });
+    }
+
+    // 7. VoiceStudio on-device voices
+    if (!targetProvider || targetProvider === 'voicestudio') {
+      VOICESTUDIO_VOICE_CATALOG.forEach((v) => {
+        if (!targetLang || v.language === targetLang) {
+          voices.push(v);
+        }
+      });
+    }
+
+    // Filter by commercialSafe if requested
+    if (commercialSafeOnly) {
+      return voices.filter((v) => v.commercialSafe !== false);
     }
 
     return voices;

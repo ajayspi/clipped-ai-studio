@@ -5,6 +5,7 @@ import { Sparkles, RefreshCw, Key, ListVideo } from "lucide-react";
 import { useApiKeys } from "@/components/create/useApiKeys";
 import { WORKFLOWS } from "@/components/create/workflow-definitions";
 import { MissionPromptBar } from "@/components/create/MissionPromptBar";
+import { SignatureStudios } from "@/components/create/SignatureStudios";
 import { WorkflowGrid } from "@/components/create/WorkflowGrid";
 
 export default function CreateHubPage() {
@@ -21,7 +22,7 @@ export default function CreateHubPage() {
             </h1>
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20">
               <Sparkles className="w-3 h-3" />
-              10 Workflows
+              {WORKFLOWS.length} Workflows
             </span>
           </div>
           <p className="text-sm text-muted-foreground mt-1.5">
@@ -62,7 +63,10 @@ export default function CreateHubPage() {
       {/* Hero 1-Click Automatic Mission Prompt Bar */}
       <MissionPromptBar />
 
-      {/* 10 Workflow Cards Grid with Status Badges & Filtering */}
+      {/* 4 Signature Studios Hero Section */}
+      <SignatureStudios />
+
+      {/* Video Generation Pipelines with Filtering */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold tracking-tight text-foreground">

@@ -305,7 +305,7 @@ export declare const RenderParamsSchema: z.ZodObject<{
     message: z.ZodOptional<z.ZodString>;
     script: z.ZodOptional<z.ZodString>;
     duration: z.ZodOptional<z.ZodNumber>;
-    aspectRatio: z.ZodOptional<z.ZodEnum<["16:9", "9:16", "1:1"]>>;
+    aspectRatio: z.ZodOptional<z.ZodEnum<["16:9", "9:16", "1:1", "volumetric"]>>;
     voice: z.ZodOptional<z.ZodString>;
     voiceProvider: z.ZodOptional<z.ZodString>;
     voiceSpeed: z.ZodDefault<z.ZodNumber>;
@@ -1143,7 +1143,7 @@ export declare const RenderParamsSchema: z.ZodObject<{
     script?: string | undefined;
     duration?: number | undefined;
     voice?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     voiceProvider?: string | undefined;
     musicVolume?: string | undefined;
     musicSource?: string | undefined;
@@ -1346,7 +1346,7 @@ export declare const RenderParamsSchema: z.ZodObject<{
     script?: string | undefined;
     duration?: number | undefined;
     voice?: string | undefined;
-    aspectRatio?: "16:9" | "9:16" | "1:1" | undefined;
+    aspectRatio?: "16:9" | "9:16" | "1:1" | "volumetric" | undefined;
     voiceProvider?: string | undefined;
     voiceSpeed?: number | undefined;
     voiceVolume?: number | undefined;

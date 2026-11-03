@@ -49,6 +49,21 @@ Synthesize trending topics, news summaries, or niche prompts into polished, prod
 Get straight to the point, don't start with unnecessary things like 'welcome to this video'.
 NEVER USE A TITLE. YOU MUST NOT INCLUDE ANY TYPE OF MARKDOWN.
 ONLY RETURN THE RAW CONTENT. DO NOT INCLUDE 'VOICEOVER', 'NARRATOR' OR SIMILAR INDICATORS.`,
+
+  STICKMAN_DIRECTOR: `You are an autonomous 2D animation director and screenplay choreographer inspired by viral stickman storytelling (similar to kaomei/stickman-video-director).
+Your job is to transform a topic, story, or joke into a tightly choreographed 2D screenplay script with staging, comedic timing, camera moves, and sound effects.
+
+Rules for staging tags:
+1. Every scene/beat must begin with explicit screenplay tags in brackets:
+   - [ACTION: enter_stage | walk_left | walk_right | sprint | freeze | idle | turn_around]
+   - [POSE: neutral | pointing | eureka | explaining | facepalm | hands_up | arms_crossed | sitting | victory | ready]
+   - [REACTION: none | jaw_drop | eye_pop | sweat_drop | lightbulb | question_marks | anger_vein]
+   - [CAMERA: static | slow_zoom_in | snap_push | dutch_tilt | whip_pan | shake]
+   - [SFX: record_scratch | cartoon_boing | drum_roll | rimshot | cash_register | thunder | pop | whoosh | ding]
+   - [PAUSE: 0.3s - 0.8s] (inject immediately before punchlines for comedic timing)
+   - [STAGE: 0.1 - 0.9] (horizontal stage blocking: 0.2=left, 0.5=center, 0.8=right)
+2. Keep spoken narration conversational, punchy, and timed for 20-45 second vertical shorts.
+3. Use dramatic pauses [PAUSE: 0.6s] and [CAMERA: snap_push] on sudden realizations or comedic twists.`,
 };
 
 // ==========================================
@@ -328,4 +343,31 @@ Return valid JSON:
     }
   ]
 }`;
+}
+
+/**
+ * Builds a prompt for autonomous stickman screenplay choreography and comedic staging.
+ */
+export function buildStickmanDirectorPrompt(
+  topic: string,
+  mood: string = 'dusk',
+  targetSeconds: number = 30
+): string {
+  return `Write a comedic, high-retention 2D stickman animation screenplay on the topic: "${topic}".
+Target Total Duration: ~${targetSeconds} seconds.
+Atmospheric Mood: ${mood}.
+
+Format every scene block with explicit bracket tags followed by spoken dialogue.
+Example Format:
+[STAGE: 0.3] [ACTION: enter_stage] [POSE: explaining] [CAMERA: slow_zoom_in] [SFX: none]
+Dialogue line goes here...
+
+[STAGE: 0.5] [ACTION: freeze] [POSE: facepalm] [REACTION: jaw_drop] [CAMERA: snap_push] [SFX: record_scratch] [PAUSE: 0.6s]
+Comedic punchline or sudden realization goes here!
+
+Ensure you include:
+1. An instant scroll-stopping hook in the first 3 seconds.
+2. At least one comedic timing pause [PAUSE: 0.5s - 0.7s] preceding the punchline.
+3. Expressive physical comedy (facepalms, eureka moments, dramatic camera pushes, sound effect triggers).
+4. Do NOT output markdown code blocks. Output the plain choreographed screenplay text directly.`;
 }

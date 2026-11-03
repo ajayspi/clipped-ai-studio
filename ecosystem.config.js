@@ -8,6 +8,7 @@ module.exports = {
       autorestart: true,
       max_restarts: 10,
       restart_delay: 5000,
+      max_memory_restart: '1500M',
       env: {
         NODE_ENV: 'production',
         PORT: 20128
@@ -20,6 +21,7 @@ module.exports = {
       autorestart: true,
       max_restarts: 10,
       restart_delay: 5000,
+      max_memory_restart: '1500M',
       env: {
         NODE_ENV: 'production',
         PORT: 3000
@@ -33,6 +35,7 @@ module.exports = {
       autorestart: true,
       max_restarts: 10,
       restart_delay: 5000,
+      max_memory_restart: '1200M',
       env: {
         NODE_ENV: 'production',
       }
@@ -45,6 +48,7 @@ module.exports = {
       autorestart: true,
       max_restarts: 10,
       restart_delay: 5000,
+      max_memory_restart: '800M',
       env: {
         NODE_ENV: 'production',
       }
@@ -57,6 +61,7 @@ module.exports = {
       autorestart: true,
       max_restarts: 10,
       restart_delay: 5000,
+      max_memory_restart: '800M',
       env: {
         NODE_ENV: 'production',
       }

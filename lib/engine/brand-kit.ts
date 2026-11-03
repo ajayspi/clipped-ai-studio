@@ -1,10 +1,15 @@
 import { supabaseAdmin as supabase } from "@/lib/db"
+import type { BrandDesignTokens } from "./types"
 
 export interface BrandKit {
   watermarkUrl?: string;
   watermarkPosition?: 'Top Left' | 'Top Right' | 'Bottom Left' | 'Bottom Right';
   customFontUrl?: string;
   customSubtitleColor?: string;
+  subtitlePreset?: string;
+  subtitlePosition?: string;
+  brandTokens?: BrandDesignTokens;
+  motionEasing?: string;
 }
 
 export async function getBrandKit(userId: string | null): Promise<BrandKit | null> {

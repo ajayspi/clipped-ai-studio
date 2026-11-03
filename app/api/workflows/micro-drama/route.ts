@@ -1,20 +1,56 @@
 /**
  * WORKFLOW ROUTE — micro-drama
- *   KIND:          queue
+ *   KIND:          queue & two-phase planning
  *   UI CALLER:     create/drama
  *   WRITES QUEUE:  yes
- *   CLAIMABLE:     yes
- *   DISTINCT FROM: generate (drama focuses on dialogue and multiple characters)
+ *   CLAIMABLE:     parent = no ('planning'), children = yes ('qc_pending')
+ *   DISTINCT FROM: generate (episodic series with multi-character dialogue turn-taking)
  */
-import { NextResponse } from "next/server"
-import { enqueueRenderJob } from "@/lib/jobs/enqueue";
+import { NextResponse } from "next/server";
 import { supabaseAdmin as supabase } from "@/lib/db";
 import { dramaOrchestrator } from "@/lib/engine/drama-orchestrator";
-import { AspectRatio, DramaCharacter } from "@/lib/engine/types";
+import { pushDramaSeriesToQueue } from "@/lib/engine/drama-pusher";
+import { AspectRatio, DramaCharacter, DramaSeriesResponse } from "@/lib/engine/types";
 
 export async function POST(req: Request) {
   try {
+    const url = new URL(req.url);
     const body = await req.json().catch(() => ({}));
+    const action = url.searchParams.get("action") || body.action || "plan";
+
+    // =========================================================================
+    // PHASE 2: BATCH RENDER DISPATCH (?action=render)
+    // =========================================================================
+    if (action === "render") {
+      const seriesId = body.seriesId || body.jobId;
+      const seriesPlan: DramaSeriesResponse = body.seriesPlan;
+
+      if (!seriesId || !seriesPlan || !seriesPlan.episodes || seriesPlan.episodes.length === 0) {
+        return NextResponse.json(
+          { error: "seriesId and seriesPlan with episodes are required for rendering", success: false },
+          { status: 400 }
+        );
+      }
+
+      console.log(`[MicroDrama API] Enqueueing ${seriesPlan.episodes.length} episodes for series ${seriesId}...`);
+      const episodeJobIds = await pushDramaSeriesToQueue(
+        seriesId,
+        seriesPlan,
+        body.characters,
+        body.workspaceId
+      );
+
+      return NextResponse.json({
+        success: true,
+        seriesId,
+        episodeJobIds,
+        message: `Successfully enqueued ${episodeJobIds.length} micro-drama episodes for rendering`,
+      });
+    }
+
+    // =========================================================================
+    // PHASE 1: SYNCHRONOUS STORYBOARD PLANNING (?action=plan)
+    // =========================================================================
     const {
       script,
       genre,
@@ -22,6 +58,7 @@ export async function POST(req: Request) {
       episodesCount,
       aspectRatio,
       visualStyle,
+      workspaceId,
     } = body;
 
     // 1. Validation: Genre is required
@@ -32,7 +69,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Default characters if not provided or empty
+    // Normalize characters
     const normalizedCharacters: DramaCharacter[] = (Array.isArray(characters) && characters.length > 0)
       ? characters
       : [
@@ -40,18 +77,14 @@ export async function POST(req: Request) {
             name: "Protagonist",
             description: `Lead character in ${genre} series`,
             visualAnchor: `sharp features, intense gaze, ${genre} attire`,
+            voice: "onyx",
           },
         ];
 
-    // 2. Generate unique Job ID
     const jobId = crypto.randomUUID();
 
-    // 2. Synchronous Supabase render_jobs insert
-    // 'planning' keeps the FFmpeg render worker away: this workflow only produces a
-    // series plan (its result is written to logs.result), it never writes `beats`, so
-    // a claimed job would build an empty ffmpeg concat list and fail all 3 attempts.
-    // The worker selects on orchestration_state, not status — the column defaults to
-    // 'queued' (claimable), so it must be set explicitly.
+    // 2. Synchronous Supabase parent render_jobs insert
+    // 'planning' keeps FFmpeg render worker from accidentally claiming an empty beat plan
     try {
       await supabase.from('render_jobs').insert({
         id: jobId,
@@ -68,59 +101,49 @@ export async function POST(req: Request) {
             aspectRatio: aspectRatio || '9:16',
             visualStyle: visualStyle || '',
           },
+          workspace_id: workspaceId || null,
         }),
         started_at: new Date().toISOString(),
       });
     } catch (dbErr) {
-      console.warn(`[Supabase] Initial pending job insert logged with warning:`, dbErr);
+      console.warn(`[Supabase] Initial parent job insert notice:`, dbErr);
     }
 
-    // 4. Fire background execution task
-    setTimeout(async () => {
-      try {
-        console.log(`[JOB ${jobId}] Processing Micro-Drama workflow for genre: ${genre}...`);
+    // 3. Fast-path synchronous narrative generation (SLA <= 15s)
+    console.log(`[MicroDrama API] Planning series for genre: ${genre} with ${normalizedCharacters.length} characters...`);
+    const seriesPlan = await dramaOrchestrator.generateDramaSeries({
+      script,
+      genre,
+      characters: normalizedCharacters,
+      episodesCount: episodesCount ? Number(episodesCount) : 3,
+      aspectRatio: (aspectRatio as AspectRatio) || '9:16',
+      visualStyle,
+    });
 
-        const result = await dramaOrchestrator.generateDramaSeries({
-          script,
-          genre,
+    // 4. Update parent job with completed series plan
+    try {
+      await supabase.from('render_jobs').update({
+        status: seriesPlan.success ? 'completed' : 'failed',
+        progress: seriesPlan.success ? 100 : 0,
+        logs: JSON.stringify({
+          workflow: 'micro-drama',
+          result: seriesPlan,
           characters: normalizedCharacters,
-          episodesCount: episodesCount ? Number(episodesCount) : 3,
-          aspectRatio: aspectRatio as AspectRatio,
-          visualStyle,
-        });
+          aspectRatio: aspectRatio || '9:16',
+          workspace_id: workspaceId || null,
+        }),
+        completed_at: new Date().toISOString(),
+        error_message: seriesPlan.error || null,
+      }).eq('id', jobId);
+    } catch (updateErr) {
+      console.warn(`[Supabase] Failed to update parent job with plan result:`, updateErr);
+    }
 
-        await supabase.from('render_jobs').update({
-          status: result.success ? 'completed' : 'failed',
-          progress: result.success ? 100 : 0,
-          logs: JSON.stringify({
-            workflow: 'micro-drama',
-            result,
-          }),
-          completed_at: new Date().toISOString(),
-          error_message: result.error || null,
-        }).eq('id', jobId);
-
-        console.log(`[JOB ${jobId}] Completed Micro-Drama workflow with status: ${result.success ? 'completed' : 'failed'}`);
-      } catch (err) {
-        console.error(`[JOB ${jobId}] Micro-Drama workflow failed:`, err);
-        try {
-          await supabase.from('render_jobs').update({
-            status: 'failed',
-            progress: 0,
-            error_message: err instanceof Error ? err.message : 'Unknown error occurred during micro-drama generation',
-            completed_at: new Date().toISOString(),
-          }).eq('id', jobId);
-        } catch (updateErr) {
-          console.error(`[JOB ${jobId}] Failed to update error status in DB:`, updateErr);
-        }
-      }
-    }, 0);
-
-    // 5. Return immediate 200 response with jobId
     return NextResponse.json({
-      success: true,
+      success: seriesPlan.success,
       jobId,
-      message: "Micro-Drama generation started",
+      seriesPlan,
+      message: "Micro-Drama series plan generated successfully",
     });
   } catch (error) {
     console.error("Workflow trigger error:", error);

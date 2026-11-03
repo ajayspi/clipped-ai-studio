@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import Link from "next/link";
 import {
   Video,
   Folder,
@@ -9,18 +10,13 @@ import {
   X,
   Loader2,
   RefreshCw,
-  Zap,
+  Search,
+  ArrowUpDown,
+  CheckSquare,
+  Square,
 } from "lucide-react";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { motion, AnimatePresence } from "framer-motion";
-
-interface QueueJob {
-  id: string;
-  thumbnail?: string;
-  title?: string;
-  workflow_type?: string;
-  status: string;
-}
 
 interface LibraryVideo {
   id: string;
@@ -32,6 +28,7 @@ interface LibraryVideo {
   workspace_id?: string | null;
   workspace_name?: string;
   created_at?: string;
+  output_url?: string;
 }
 
 interface WorkspaceSummary {
@@ -40,75 +37,15 @@ interface WorkspaceSummary {
   color?: string;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  pending: "text-yellow-400",
-  generating_plan: "text-blue-400",
-  processing: "text-purple-400",
-  completed: "text-green-400",
-  failed: "text-red-400",
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  pending: "Queued",
-  generating_plan: "Generating Plan",
-  processing: "Rendering",
-  completed: "Completed",
-  failed: "Failed",
-};
-
-function QueueCard({ job }: { job: QueueJob }) {
-  const isActive = ["pending", "generating_plan", "processing"].includes(job.status);
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="flex items-center gap-3 p-3 rounded-xl bg-card/60 border border-border/50 backdrop-blur-sm"
-    >
-      <div className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-muted">
-        {/* eslint-disable-next-line @next/next/no-img-element -- Rendered-video thumbnail (data:/signed URL) */}
-        <img src={job.thumbnail} alt={job.title} className="w-full h-full object-cover" />
-        {isActive && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-            <Loader2 className="w-4 h-4 animate-spin text-white" />
-          </div>
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold truncate">{job.title}</p>
-        <p className="text-[10px] text-muted-foreground mt-0.5">{job.workflow_type}</p>
-        <div className="flex items-center gap-1.5 mt-1.5">
-          {isActive ? (
-            <div className="w-full bg-muted rounded-full h-1">
-              <motion.div
-                className="h-1 rounded-full bg-gradient-to-r from-purple-500 to-blue-500"
-                animate={{ width: ["20%", "80%", "20%"] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              />
-            </div>
-          ) : (
-            <span className={`text-[10px] font-medium ${STATUS_COLORS[job.status] || "text-muted-foreground"}`}>
-              {STATUS_LABELS[job.status] || job.status}
-            </span>
-          )}
-        </div>
-      </div>
-      <span className={`text-[10px] font-bold px-2 py-1 rounded-lg ${
-        job.status === "completed" ? "bg-green-500/10 text-green-400" :
-        job.status === "failed" ? "bg-red-500/10 text-red-400" :
-        "bg-purple-500/10 text-purple-400"
-      }`}>
-        {STATUS_LABELS[job.status] || job.status}
-      </span>
-    </motion.div>
-  );
-}
+type SortOption = "newest" | "oldest" | "title";
 
 export default function LibraryPage() {
   const [videos, setVideos] = useState<LibraryVideo[]>([]);
-  const [queuedJobs, setQueuedJobs] = useState<QueueJob[]>([]);
-  const [failedJobs, setFailedJobs] = useState<QueueJob[]>([]);
   const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([]);
   const [activeWorkspace, setActiveWorkspace] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
+  const [selectedVideoIds, setSelectedVideoIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
@@ -123,12 +60,10 @@ export default function LibraryPage() {
 
       if (data.success) {
         setVideos(data.completed || []);
-        setQueuedJobs(data.queued || []);
-        setFailedJobs(data.failed || []);
         setLastRefreshed(new Date());
       }
     } catch (e) {
-      console.error("Failed to refresh jobs:", e);
+      console.error("Failed to refresh library assets:", e);
     }
   }, []);
 
@@ -139,7 +74,7 @@ export default function LibraryPage() {
       const wsData = await wsRes.json();
       if (wsData.workspaces) setWorkspaces(wsData.workspaces);
 
-      // 2. Fetch all jobs from Supabase
+      // 2. Fetch completed video catalog
       await refreshJobs();
     } catch (e) {
       console.error("Failed to load library data:", e);
@@ -148,24 +83,12 @@ export default function LibraryPage() {
     }
   }, [refreshJobs]);
 
-  // Initial load: `loading` defaults to true and the fetch is deferred one
-  // macrotask so no setState runs synchronously inside the effect body
-  // (set-state-in-effect).
   useEffect(() => {
     const timer = setTimeout(loadLibraryData, 0);
     return () => clearTimeout(timer);
   }, [loadLibraryData]);
 
-  // Auto-poll while jobs are queued. The interval lives in this effect so
-  // refreshJobs never references itself (react-hooks/immutability).
-  useEffect(() => {
-    if (queuedJobs.length === 0) return;
-    const interval = setInterval(refreshJobs, 8000);
-    return () => clearInterval(interval);
-  }, [queuedJobs.length, refreshJobs]);
-
   async function handleCreateFolder(e: React.FormEvent) {
-
     e.preventDefault();
     if (!newFolderName.trim()) return;
 
@@ -198,7 +121,7 @@ export default function LibraryPage() {
     const targetWs = workspaces.find((w) => w.id === workspaceId);
     setVideos((prev) =>
       prev.map((v) =>
-        (v.video_id === videoId || v.id === videoId)
+        v.video_id === videoId || v.id === videoId
           ? {
               ...v,
               workspace_id: workspaceId === "default" ? null : workspaceId,
@@ -209,32 +132,79 @@ export default function LibraryPage() {
     );
   }
 
-  // Filtered videos based on activeWorkspace
-  const filteredVideos = videos.filter((v) => {
-    if (activeWorkspace === "all") return true;
-    return v.workspace_id === activeWorkspace;
-  });
+  // Filter and sort videos
+  const filteredVideos = useMemo(() => {
+    return videos
+      .filter((v) => {
+        // Workspace filter
+        if (activeWorkspace !== "all" && v.workspace_id !== activeWorkspace) {
+          return false;
+        }
+        // Search query filter
+        if (searchQuery.trim()) {
+          const query = searchQuery.toLowerCase();
+          const title = (v.title || "").toLowerCase();
+          const workflow = (v.workflow_type || v.workflowType || "").toLowerCase();
+          return title.includes(query) || workflow.includes(query);
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        if (sortBy === "title") {
+          return (a.title || "").localeCompare(b.title || "");
+        }
+        if (sortBy === "oldest") {
+          return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
+        }
+        // "newest" default
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+      });
+  }, [videos, activeWorkspace, searchQuery, sortBy]);
+
+  // Batch actions
+  const toggleSelectAll = () => {
+    if (selectedVideoIds.size === filteredVideos.length) {
+      setSelectedVideoIds(new Set());
+    } else {
+      setSelectedVideoIds(new Set(filteredVideos.map((v) => v.id)));
+    }
+  };
+
+  const handleBatchMoveWorkspace = async (targetWsId: string) => {
+    const ids = Array.from(selectedVideoIds);
+    if (ids.length === 0) return;
+    for (const id of ids) {
+      handleMoveVideo(id, targetWsId);
+    }
+    setSelectedVideoIds(new Set());
+  };
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6 max-w-[1600px] mx-auto w-full">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-5">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-5">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2.5">
-            <Video className="w-7 h-7 text-primary" />
-            Library
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+              <Video className="w-7 h-7 text-primary" />
+              Library & Assets
+            </h1>
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-violet-500/10 text-violet-400 border border-violet-500/20">
+              {videos.length} {videos.length === 1 ? "Video" : "Videos"}
+            </span>
+          </div>
           <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
-            Organize, filter, and manage your AI video assets.
+            Browse, search, and organize your rendered video assets and workspaces.
             <button
               type="button"
               onClick={refreshJobs}
-              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              title="Refresh"
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              title="Refresh Catalog"
+              aria-label="Refresh Catalog"
             >
               <RefreshCw className="w-3 h-3" />
               <span className="hidden sm:inline">
-                {lastRefreshed ? `Refreshed ${lastRefreshed.toLocaleTimeString()}` : "Refreshing..."}
+                {lastRefreshed ? `Updated ${lastRefreshed.toLocaleTimeString()}` : "Refresh"}
               </span>
             </button>
           </p>
@@ -244,56 +214,28 @@ export default function LibraryPage() {
           <button
             type="button"
             onClick={() => setShowNewFolderModal(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border bg-background hover:bg-muted font-semibold text-xs transition-colors shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-border/60 bg-card hover:bg-muted font-medium text-xs text-foreground transition-all shadow-sm hover:border-primary/40 cursor-pointer"
           >
             <FolderPlus className="w-4 h-4 text-violet-500" />
             New Folder
           </button>
 
-          <a
-            href="/create/footage"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold text-xs shadow hover:bg-primary/90 transition-colors"
+          <Link
+            href="/create"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 text-white font-semibold text-xs shadow-md shadow-indigo-500/20 hover:from-violet-500 hover:to-indigo-500 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
           >
             <Plus className="w-4 h-4" />
             Create Video
-          </a>
+          </Link>
         </div>
       </div>
-
-      {/* Live Queue Status Panel */}
-      {(queuedJobs.length > 0 || failedJobs.length > 0) && (
-        <div className="rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-muted/30">
-            <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-yellow-400" />
-              <span className="text-sm font-semibold">Rendering Queue</span>
-              {queuedJobs.length > 0 && (
-                <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 text-[10px] font-bold">
-                  {queuedJobs.length} active
-                </span>
-              )}
-              {failedJobs.length > 0 && (
-                <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[10px] font-bold">
-                  {failedJobs.length} failed
-                </span>
-              )}
-            </div>
-            <span className="text-[10px] text-muted-foreground">Auto-refreshing every 8s</span>
-          </div>
-          <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {[...queuedJobs, ...failedJobs].map((job) => (
-              <QueueCard key={job.id} job={job} />
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Workspace Folder Bar Chips */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 select-none">
         <button
           type="button"
           onClick={() => setActiveWorkspace("all")}
-          className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+          className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
             activeWorkspace === "all"
               ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
               : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/60"
@@ -301,7 +243,7 @@ export default function LibraryPage() {
         >
           <Folder className="w-3.5 h-3.5" />
           <span>All Videos</span>
-          <span className="ml-1 px-1.5 py-0.2 rounded-md bg-black/20 text-[10px]">
+          <span className="ml-1 px-1.5 py-0.5 rounded-md bg-black/20 text-[10px]">
             {videos.length}
           </span>
         </button>
@@ -314,7 +256,7 @@ export default function LibraryPage() {
               key={ws.id}
               type="button"
               onClick={() => setActiveWorkspace(ws.id)}
-              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
                 isActive
                   ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
                   : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/60"
@@ -325,7 +267,7 @@ export default function LibraryPage() {
                 style={{ backgroundColor: ws.color || "#8b5cf6" }}
               />
               <span>{ws.name}</span>
-              <span className="ml-1 px-1.5 py-0.2 rounded-md bg-black/20 text-[10px]">
+              <span className="ml-1 px-1.5 py-0.5 rounded-md bg-black/20 text-[10px]">
                 {count}
               </span>
             </button>
@@ -335,12 +277,118 @@ export default function LibraryPage() {
         <button
           type="button"
           onClick={() => setShowNewFolderModal(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 border border-dashed border-border transition-colors shrink-0"
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 border border-dashed border-border/60 transition-colors shrink-0 cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>New Workspace</span>
         </button>
       </div>
+
+      {/* Search, Filter & Sort Toolbar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 rounded-2xl bg-card/60 border border-border/50 backdrop-blur-md">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search videos by title or workflow..."
+            className="w-full rounded-xl border border-border/60 bg-background/80 py-2 pl-9 pr-8 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              aria-label="Clear search"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {filteredVideos.length > 0 && (
+            <button
+              type="button"
+              onClick={toggleSelectAll}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border/60 bg-background/80 hover:bg-muted text-xs font-medium text-foreground transition-all cursor-pointer"
+            >
+              {selectedVideoIds.size === filteredVideos.length ? (
+                <CheckSquare className="w-3.5 h-3.5 text-primary" />
+              ) : (
+                <Square className="w-3.5 h-3.5 text-muted-foreground" />
+              )}
+              <span>
+                {selectedVideoIds.size > 0 ? `${selectedVideoIds.size} Selected` : "Select All"}
+              </span>
+            </button>
+          )}
+
+          <div className="flex items-center gap-1.5 border border-border/60 rounded-xl px-2.5 py-1.5 bg-background/80 text-xs">
+            <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortOption)}
+              className="bg-transparent text-xs text-foreground outline-none cursor-pointer"
+              aria-label="Sort videos"
+            >
+              <option value="newest" className="bg-popover text-foreground">Newest First</option>
+              <option value="oldest" className="bg-popover text-foreground">Oldest First</option>
+              <option value="title" className="bg-popover text-foreground">Title (A-Z)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Batch Floating Action Bar (Appears when items are selected) */}
+      <AnimatePresence>
+        {selectedVideoIds.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="sticky bottom-6 z-30 flex items-center justify-between gap-4 p-3.5 rounded-2xl bg-popover/90 border border-violet-500/40 shadow-2xl backdrop-blur-xl max-w-2xl mx-auto w-full"
+          >
+            <div className="flex items-center gap-2 text-xs font-semibold text-foreground px-2">
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span>{selectedVideoIds.size} videos selected</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {workspaces.length > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-muted-foreground hidden sm:inline">Move to:</span>
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value) handleBatchMoveWorkspace(e.target.value);
+                    }}
+                    defaultValue=""
+                    className="rounded-xl border border-border/60 bg-background px-2.5 py-1.5 text-xs text-foreground outline-none cursor-pointer"
+                    aria-label="Move selected to workspace"
+                  >
+                    <option value="" disabled>Select Folder...</option>
+                    <option value="default">Default (None)</option>
+                    {workspaces.map((ws) => (
+                      <option key={ws.id} value={ws.id}>
+                        {ws.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setSelectedVideoIds(new Set())}
+                className="px-3 py-1.5 rounded-xl border border-border/60 hover:bg-muted text-xs font-medium transition-colors cursor-pointer"
+              >
+                Clear
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Videos Grid */}
       {loading ? (
@@ -348,30 +396,74 @@ export default function LibraryPage() {
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       ) : filteredVideos.length === 0 ? (
-        <div className="flex h-64 items-center justify-center rounded-2xl border border-dashed bg-card text-center p-8">
+        <div className="flex h-64 items-center justify-center rounded-2xl border border-dashed border-border/60 bg-card/60 text-center p-8">
           <div>
-            <Folder className="mx-auto h-12 w-12 text-muted-foreground opacity-30 mb-3" />
-            <h3 className="text-base font-semibold">No videos in this workspace</h3>
+            <Video className="mx-auto h-12 w-12 text-muted-foreground opacity-25 mb-3" />
+            <h3 className="text-base font-semibold text-foreground">
+              {searchQuery ? "No videos match your search" : "No videos in this workspace"}
+            </h3>
             <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto mb-4">
-              Move existing videos into this folder or generate a new AI video for this campaign.
+              {searchQuery
+                ? "Try clearing your search terms or checking another workspace folder."
+                : "Move existing videos into this folder or generate a new AI video from the creation hub."}
             </p>
-            <a
-              href="/create/footage"
-              className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow hover:bg-primary/90"
-            >
-              Generate Video
-            </a>
+            {searchQuery ? (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="inline-flex items-center justify-center rounded-xl border border-border/60 bg-card px-4 py-2 text-xs font-semibold hover:bg-muted transition-colors cursor-pointer"
+              >
+                Clear Search
+              </button>
+            ) : (
+              <Link
+                href="/create"
+                className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
+              >
+                Create Video
+              </Link>
+            )}
           </div>
         </div>
       ) : (
         <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
           {filteredVideos.map((video) => (
-            <DashboardCard
-              key={video.id}
-              video={video}
-              workspaces={workspaces}
-              onMoveWorkspace={handleMoveVideo}
-            />
+            <div key={video.id} className="relative group">
+              {/* Optional selection checkbox badge */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedVideoIds((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(video.id)) {
+                      next.delete(video.id);
+                    } else {
+                      next.add(video.id);
+                    }
+                    return next;
+                  });
+                }}
+                className={`absolute top-3 left-3 z-20 w-6 h-6 rounded-lg flex items-center justify-center transition-all ${
+                  selectedVideoIds.has(video.id)
+                    ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary/40"
+                    : "bg-black/60 text-white/70 opacity-0 group-hover:opacity-100 hover:bg-black/80 hover:text-white"
+                }`}
+                title="Select video"
+                aria-label={`Select ${video.title || "video"}`}
+              >
+                {selectedVideoIds.has(video.id) ? (
+                  <CheckSquare className="w-3.5 h-3.5" />
+                ) : (
+                  <Square className="w-3.5 h-3.5" />
+                )}
+              </button>
+
+              <DashboardCard
+                video={video}
+                workspaces={workspaces}
+                onMoveWorkspace={handleMoveVideo}
+              />
+            </div>
           ))}
         </div>
       )}
@@ -392,16 +484,17 @@ export default function LibraryPage() {
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="relative w-full max-w-md bg-card border rounded-2xl shadow-2xl overflow-hidden z-10"
+              className="relative w-full max-w-md bg-card border border-border/60 rounded-2xl shadow-2xl overflow-hidden z-10"
             >
-              <div className="p-5 border-b flex items-center justify-between bg-muted/30">
+              <div className="p-5 border-b border-border/40 flex items-center justify-between bg-muted/30">
                 <div className="flex items-center gap-2">
                   <FolderPlus className="w-5 h-5 text-primary" />
-                  <h3 className="text-base font-bold">Create New Workspace</h3>
+                  <h3 className="text-base font-bold text-foreground">Create New Workspace</h3>
                 </div>
                 <button
                   onClick={() => setShowNewFolderModal(false)}
                   className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted"
+                  aria-label="Close modal"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -418,7 +511,7 @@ export default function LibraryPage() {
                     placeholder="e.g. Q3 Fitness Series, Roman Empire..."
                     value={newFolderName}
                     onChange={(e) => setNewFolderName(e.target.value)}
-                    className="flex h-10 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="flex h-10 w-full rounded-xl border border-input bg-transparent px-3 py-1 text-xs text-foreground shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
                   />
                 </div>
 
@@ -436,23 +529,24 @@ export default function LibraryPage() {
                           newFolderColor === c ? "scale-125 ring-2 ring-white shadow-md" : "hover:scale-110"
                         }`}
                         style={{ backgroundColor: c }}
+                        aria-label={`Select color ${c}`}
                       />
                     ))}
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-2 pt-3 border-t">
+                <div className="flex justify-end gap-2 pt-3 border-t border-border/40">
                   <button
                     type="button"
                     onClick={() => setShowNewFolderModal(false)}
-                    className="px-4 py-2 text-xs font-medium border rounded-lg hover:bg-muted"
+                    className="px-4 py-2 text-xs font-medium border border-border/60 rounded-xl hover:bg-muted transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={creatingFolder || !newFolderName.trim()}
-                    className="px-5 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-semibold shadow hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+                    className="px-5 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-semibold shadow-sm hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2 transition-colors cursor-pointer"
                   >
                     {creatingFolder && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                     Create Folder
