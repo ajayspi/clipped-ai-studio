@@ -1,87 +1,131 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Image as ImageIcon, Video, Mic, Download, Plus, RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
+import { RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/db';
 
-const defaultSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://xbneetfubybzleuwhbnx.supabase.co';
-const defaultSupabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhibmVldGZ1YnliemxldXdoYm54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczNDk0NzAsImV4cCI6MjEwMjkyNTQ3MH0.ecQ1lDbSkxJDUOZoAgS3kPSf5Qw6tidesSJ4HmirYGg';
-const supabase = createClient(defaultSupabaseUrl, defaultSupabaseAnonKey);
+interface AssetJob {
+  id: string;
+  output_url?: string;
+  created_at?: string;
+  logs?: string | Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+interface ParsedAssetJob extends AssetJob {
+  logsObj: {
+    shotId?: string;
+    version?: number;
+    prompt?: string;
+    model?: string;
+    seed?: string | number;
+    [key: string]: unknown;
+  };
+}
 
 export default function GenerativeAssetBoard() {
-  const [jobs, setJobs] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<AssetJob[]>([]);
   const [filter, setFilter] = useState<'all' | 'video' | 'image' | 'audio'>('all');
   const [loading, setLoading] = useState(true);
   const [regenerating, setRegenerating] = useState<string | null>(null);
 
-  const fetchJobs = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
+  const fetchJobs = React.useCallback(async () => {
+    const { data } = await supabase
       .from('render_jobs')
       .select('*')
       .order('created_at', { ascending: false });
     
-    if (data) setJobs(data);
+    if (data) setJobs(data as AssetJob[]);
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
-    fetchJobs();
+    let active = true;
+    void supabase
+      .from('render_jobs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        if (active) {
+          if (data) setJobs(data as AssetJob[]);
+          setLoading(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleRegenerate = async (jobId: string) => {
     setRegenerating(jobId);
     try {
-      const res = await fetch(`/api/jobs/${jobId}/regenerate`, { method: 'POST' });
-      if (res.ok) {
-        await fetchJobs();
-      }
+      await fetch(`/api/jobs/${jobId}/regenerate`, { method: 'POST' });
+      await fetchJobs();
     } catch (e) {
       console.error(e);
+    } finally {
+      setRegenerating(null);
     }
-    setRegenerating(null);
   };
 
-  // Group by shotId
-  const groups: Record<string, any[]> = {};
+  // Group jobs by shotId or fallback to id
+  const groupedShots: Record<string, ParsedAssetJob[]> = {};
   jobs.forEach(job => {
-    let logsObj: any = {};
-    if (job.logs) {
-      try {
-        logsObj = typeof job.logs === 'string' ? JSON.parse(job.logs) : job.logs;
-      } catch (e) {}
+    let logsObj: ParsedAssetJob['logsObj'] = {};
+    if (typeof job.logs === 'string') {
+      try { logsObj = JSON.parse(job.logs); } catch { logsObj = {}; }
+    } else if (job.logs && typeof job.logs === 'object') {
+      logsObj = job.logs as ParsedAssetJob['logsObj'];
     }
-    const shotId = logsObj.shotId || job.id;
-    if (!groups[shotId]) groups[shotId] = [];
-    groups[shotId].push({ ...job, logsObj });
-  });
 
-  const filteredGroups = Object.entries(groups).filter(([shotId, stack]) => {
-    // Assuming video for all right now or checking logs
-    if (filter === 'all') return true;
-    return false; // Implement type filtering if types are stored
+    const shotId = logsObj.shotId || job.id;
+    if (!groupedShots[shotId]) {
+      groupedShots[shotId] = [];
+    }
+    groupedShots[shotId].push({ ...job, logsObj });
   });
 
   return (
-    <div className="flex flex-col flex-1 p-6 space-y-6 max-w-7xl mx-auto w-full">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div className="flex flex-col space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Shot Manager</h1>
-          <p className="text-muted-foreground max-w-2xl">
-            A centralized gallery of every shot, grouped by version stacks.
+    <div className="flex-1 space-y-6 p-8 max-w-7xl mx-auto">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Version-Stacked Asset Board</h1>
+          <p className="text-muted-foreground mt-1">
+            Compare shot iterations, inspect prompts and seeds, and re-roll generations seamlessly.
           </p>
+        </div>
+        <div className="flex bg-muted p-1 rounded-xl gap-1">
+          {(['all', 'video', 'image', 'audio'] as const).map(f => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg capitalize transition-all ${
+                filter === f ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {f}
+            </button>
+          ))}
         </div>
       </div>
 
       {loading ? (
-        <div className="text-center py-12">Loading assets...</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="h-64 rounded-2xl bg-muted/50 border border-border/50" />
+          ))}
+        </div>
+      ) : Object.keys(groupedShots).length === 0 ? (
+        <div className="flex flex-col items-center justify-center p-12 border border-dashed rounded-2xl border-border/60 text-center">
+          <p className="text-sm font-medium text-foreground">No generation assets found</p>
+          <p className="text-xs text-muted-foreground mt-1">Run a studio pipeline to populate the asset board.</p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredGroups.map(([shotId, stack]) => (
+          {Object.entries(groupedShots).map(([shotId, stack]) => (
             <ShotGroup 
               key={shotId} 
-              shotId={shotId} 
               stack={stack} 
               onRegenerate={handleRegenerate}
               regenerating={regenerating}
@@ -93,9 +137,9 @@ export default function GenerativeAssetBoard() {
   );
 }
 
-function ShotGroup({ shotId, stack, onRegenerate, regenerating }: { shotId: string, stack: any[], onRegenerate: (id: string) => void, regenerating: string | null }) {
+function ShotGroup({ stack, onRegenerate, regenerating }: { stack: ParsedAssetJob[], onRegenerate: (id: string) => void, regenerating: string | null }) {
   const [expanded, setExpanded] = useState(false);
-  const sortedStack = [...stack].sort((a, b) => (b.logsObj.version || 1) - (a.logsObj.version || 1));
+  const sortedStack = [...stack].sort((a, b) => (Number(b.logsObj.version) || 1) - (Number(a.logsObj.version) || 1));
   const activeJob = sortedStack[0];
   const version = activeJob.logsObj.version || 1;
   const prompt = activeJob.logsObj.prompt || 'No prompt';
@@ -124,7 +168,7 @@ function ShotGroup({ shotId, stack, onRegenerate, regenerating }: { shotId: stri
 
       <div className="p-3 bg-card/80 backdrop-blur-sm border-t border-border/50 flex flex-col gap-2">
         <p className="text-xs text-foreground font-medium line-clamp-2" title={prompt}>
-          "{prompt}"
+          &quot;{prompt}&quot;
         </p>
         <div className="text-[10px] text-muted-foreground">
           Seed: {seed}
@@ -137,35 +181,48 @@ function ShotGroup({ shotId, stack, onRegenerate, regenerating }: { shotId: stri
             className="flex items-center gap-1 text-xs px-2 py-1 bg-primary/10 text-primary rounded hover:bg-primary/20 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3 h-3 ${regenerating === activeJob.id ? 'animate-spin' : ''}`} />
-            Regenerate (V{version + 1})
+            Re-roll Shot
           </button>
-          
+
           {sortedStack.length > 1 && (
             <button 
               onClick={() => setExpanded(!expanded)}
               className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
             >
+              {sortedStack.length} Versions
               {expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-              {sortedStack.length - 1} earlier versions
             </button>
           )}
         </div>
       </div>
 
       <AnimatePresence>
-        {expanded && (
+        {expanded && sortedStack.length > 1 && (
           <motion.div 
-            initial={{ height: 0, opacity: 0 }} 
-            animate={{ height: 'auto', opacity: 1 }} 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="flex flex-col border-t border-border/50 bg-muted/30"
+            className="p-3 bg-muted/40 border-t border-border/40 space-y-2 overflow-hidden"
           >
-            {sortedStack.slice(1).map(oldJob => (
-              <div key={oldJob.id} className="p-2 border-b border-border/50 last:border-0 text-xs flex justify-between items-center">
-                <span>V{oldJob.logsObj.version || 1}</span>
-                <span className="text-muted-foreground truncate max-w-[150px]">{oldJob.output_url || 'No URL'}</span>
-              </div>
-            ))}
+            <div className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider mb-1">
+              Version History
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {sortedStack.slice(1).map(pastJob => (
+                <div key={pastJob.id} className="w-20 shrink-0 flex flex-col gap-1">
+                  <div className="aspect-video bg-black/40 rounded-lg overflow-hidden border border-border/50 relative">
+                    {pastJob.output_url ? (
+                      <video src={pastJob.output_url} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="text-[8px] text-center p-1 text-muted-foreground">V{pastJob.logsObj.version}</div>
+                    )}
+                  </div>
+                  <div className="text-[9px] text-muted-foreground truncate">
+                    V{pastJob.logsObj.version || 1} • {pastJob.logsObj.seed || 'R'}
+                  </div>
+                </div>
+              ))}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

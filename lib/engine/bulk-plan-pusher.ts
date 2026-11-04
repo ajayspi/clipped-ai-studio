@@ -53,12 +53,20 @@ export async function pushBulkPlanToQueue(items: BulkPlanItem[], planTitle: stri
         created_at: createdAt,
       });
 
+      let scheduledForIso = createdAt;
+      if (item.scheduledDate && typeof item.scheduledDate === 'string') {
+        const parsedDate = new Date(`${item.scheduledDate.trim()}T12:00:00Z`);
+        if (!isNaN(parsedDate.getTime())) {
+          scheduledForIso = parsedDate.toISOString();
+        }
+      }
+
       // Create the scheduled post linked to the render job
       await supabase.from('scheduled_posts').insert({
         render_job_id: jobId,
         caption: item.title,
         platforms: item.targetPlatform ? [item.targetPlatform] : [],
-        scheduled_for: new Date(`${item.scheduledDate}T12:00:00Z`).toISOString(),
+        scheduled_for: scheduledForIso,
         status: 'pending'
       });
 

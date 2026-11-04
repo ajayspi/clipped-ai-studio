@@ -546,7 +546,17 @@ async function pollAndProcess() {
   const jobTempDir = path.join(TEMP_DIR, job.id);
   if (!fs.existsSync(jobTempDir)) fs.mkdirSync(jobTempDir, { recursive: true });
 
+  const MAX_JOB_DURATION_MS = Number(process.env.RENDER_MAX_JOB_MS) || 20 * 60 * 1000;
+  let jobTimeoutHandle: NodeJS.Timeout | null = null;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    jobTimeoutHandle = setTimeout(() => {
+      reject(new Error("Render job exceeded maximum timeout of " + (MAX_JOB_DURATION_MS / 60000) + " minutes"));
+    }, MAX_JOB_DURATION_MS);
+  });
+
   try {
+    await Promise.race([
+      (async () => {
     if (job.workflow_type === 'code-video') {
       console.log(`🎥 Processing code-video (Hyperframes) job ${job.id}`);
       let html = '';
@@ -1153,7 +1163,9 @@ async function pollAndProcess() {
       outputUrl: publicUrl,
       logs: { ...params, finalVideoUrl: publicUrl, duration: totalDurationSeconds },
     })
-
+      })(),
+      timeoutPromise,
+    ]);
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err)
     logger.error('Job failed', { jobId: job.id, error: err })
@@ -1165,6 +1177,7 @@ async function pollAndProcess() {
       errorMessage: errorMsg,
     })
   } finally {
+    if (jobTimeoutHandle) clearTimeout(jobTimeoutHandle);
     clearInterval(renewTimer)
     try { fs.rmSync(jobTempDir, { recursive: true, force: true }); } catch {}
   }

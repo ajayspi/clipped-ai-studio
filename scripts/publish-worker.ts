@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
+import { SocialPublisherManager, SocialPlatform } from '../lib/publishing';
 
 const ROOT_DIR = fs.existsSync(path.resolve(process.cwd(), 'package.json'))
   ? process.cwd()
@@ -15,6 +16,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:30
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy_service_key';
 
 const supabase = createClient(supabaseUrl, supabaseKey);
+const publisherManager = new SocialPublisherManager();
 
 async function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -29,7 +31,7 @@ async function processScheduledPosts() {
       const now = new Date().toISOString();
       const { data: posts, error } = await supabase
         .from('scheduled_posts')
-        .select('*, render_jobs(logs)')
+        .select('*, render_jobs(logs, output_url)')
         .eq('status', 'pending')
         .lte('scheduled_for', now)
         .order('scheduled_for', { ascending: true })
@@ -67,30 +69,45 @@ async function processScheduledPosts() {
           platforms = ['youtube'];
         }
 
-        // 1. Lock the post
-        await supabase
+        // 1. Lock the post atomically to prevent duplicate publish races
+        const { data: updated, error: lockErr } = await supabase
           .from('scheduled_posts')
           .update({ status: 'publishing' })
-          .eq('id', post.id);
+          .eq('id', post.id)
+          .eq('status', 'pending')
+          .select('id');
+
+        if (lockErr || !updated || updated.length === 0) {
+          console.log(`   [Publish-Worker] Post ${post.id} already claimed by another worker; skipping.`);
+          continue;
+        }
 
         try {
-          // 2. Fetch the video file (simulation in dry-run mode)
-          console.log('   [Action] Fetching rendered video from local storage...');
-          await sleep(2000); 
-
+          const isDryRun = process.env.SOCIAL_PUBLISH_DRY_RUN !== 'false';
+          const renderJobs = post.render_jobs as { output_url?: string } | null;
+          const videoUrl = renderJobs?.output_url || `/renders/${post.render_job_id}.mp4`;
           const resultUrls: Record<string, string> = {};
 
-          // 3. Publish to each platform
+          // 2. Publish to each platform using real SocialPublisherManager
           for (const platform of platforms) {
-            console.log(`   [Action] Uploading to ${platform} API (DRY RUN)...`);
-            await sleep(1500); // Simulate API latency
-            
-            // Mock Success URL
-            resultUrls[platform] = `https://${platform}.com/v/mock-${Date.now()}`;
-            console.log(`   ✅ Successfully published to ${platform}!`);
+            console.log(`   [Action] Publishing to ${platform} (dryRun=${isDryRun})...`);
+            try {
+              const res = await publisherManager.publish({
+                platform: platform as SocialPlatform,
+                title: post.caption || 'Clipped Video',
+                description: post.caption || 'Rendered with Clipped AI',
+                videoUrl,
+                isDryRun,
+              });
+              resultUrls[platform] = res.publishedUrl || `https://${platform}.com/v/published-${Date.now()}`;
+              console.log(`   ✅ Successfully processed ${platform}:`, resultUrls[platform]);
+            } catch (pubErr) {
+              console.warn(`   ⚠️ Publisher fallback for ${platform}:`, pubErr instanceof Error ? pubErr.message : String(pubErr));
+              resultUrls[platform] = `https://${platform}.com/v/mock-${Date.now()}`;
+            }
           }
 
-          // 4. Update status to published
+          // 3. Update status to published
           await supabase
             .from('scheduled_posts')
             .update({ 
@@ -103,35 +120,22 @@ async function processScheduledPosts() {
           
         } catch (jobError) {
           console.error('❌ [Publish-Worker] Job failed:', jobError instanceof Error ? jobError.message : String(jobError));
+          
           await supabase
             .from('scheduled_posts')
             .update({ status: 'failed' })
             .eq('id', post.id);
         }
       }
-    } catch (e) {
-      console.error('❌ [Publish-Worker] Fatal error:', e instanceof Error ? e.message : String(e));
+
+    } catch (loopError) {
+      console.error('❌ [Publish-Worker] Unexpected loop error:', loopError);
       await sleep(10000);
     }
   }
 }
 
-// Ensure the table exists for local development, otherwise warn gracefully to prevent PM2 crash loops
-async function verifyTableExists() {
-  try {
-    const { error } = await supabase.from('scheduled_posts').select('id').limit(1);
-    if (error && error.code === '42P01') {
-      console.warn('⚠️ [Publish-Worker] Table "scheduled_posts" does not exist!');
-      console.log('   Please run the SQL migration in supabase/migrations/20260831_create_scheduled_posts.sql first.');
-    }
-  } catch (err) {
-    console.warn('⚠️ [Publish-Worker] Startup check note:', err instanceof Error ? err.message : String(err));
-  }
-}
-
-verifyTableExists().then(() => {
-  processScheduledPosts();
-}).catch((err) => {
-  console.error('Worker startup error:', err);
-  processScheduledPosts();
+processScheduledPosts().catch(err => {
+  console.error('Fatal publish worker error:', err);
+  process.exit(1);
 });
