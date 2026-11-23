@@ -6,11 +6,10 @@
  *   CLAIMABLE:     yes
  *   DISTINCT FROM: generate (extract-shorts processes existing video vs creating from scratch)
  */
-import { NextResponse } from "next/server"
-import { enqueueRenderJob } from "@/lib/jobs/enqueue";
+import { NextResponse } from "next/server";
 import { supabaseAdmin as supabase } from "@/lib/db";
 import { shortsExtractor } from "@/lib/engine/shorts-extractor";
-import { AspectRatio } from "@/lib/engine/types";
+import { AspectRatio, FacecamCorner } from "@/lib/engine/types";
 
 export async function POST(req: Request) {
   try {
@@ -23,6 +22,10 @@ export async function POST(req: Request) {
       strategy,
       captionStyle,
       aspectRatio,
+      enableAudioSpikeDetection,
+      streamerLayout,
+      facecamCorner,
+      customFacecamCrop,
     } = body;
 
     // 1. Validation: sourceType is required
@@ -46,12 +49,11 @@ export async function POST(req: Request) {
     // 2. Generate unique Job ID
     const jobId = crypto.randomUUID();
 
-    // 2. Synchronous Supabase render_jobs insert
+    // 3. Synchronous Supabase render_jobs insert
     // 'planning' keeps the FFmpeg render worker away: this workflow only produces
     // clip suggestions (its result is written to logs.result), it never writes
     // `beats`, so a claimed job would build an empty ffmpeg concat list and fail
-    // all 3 attempts. The worker selects on orchestration_state, not status — the
-    // column defaults to 'queued' (claimable), so it must be set explicitly.
+    // all 3 attempts.
     try {
       await supabase.from('render_jobs').insert({
         id: jobId,
@@ -70,6 +72,9 @@ export async function POST(req: Request) {
             strategy: strategy || 'highest_virality',
             captionStyle: captionStyle || 'bold-yellow-stroke',
             aspectRatio: aspectRatio || '9:16',
+            enableAudioSpikeDetection: Boolean(enableAudioSpikeDetection),
+            streamerLayout: streamerLayout || 'facecam_top_gameplay_bottom',
+            facecamCorner: facecamCorner || 'bottom-left',
           },
         }),
         started_at: new Date().toISOString(),
@@ -91,6 +96,10 @@ export async function POST(req: Request) {
           strategy,
           captionStyle,
           aspectRatio: aspectRatio as AspectRatio,
+          enableAudioSpikeDetection: Boolean(enableAudioSpikeDetection),
+          streamerLayout,
+          facecamCorner: facecamCorner as FacecamCorner,
+          customFacecamCrop,
         });
 
         await supabase.from('render_jobs').update({

@@ -11,5 +11,8 @@ export * from './animals';
 export * from './vehicles';
 export * from './props';
 export * from './script-director';
+export * from './origami-splits';
+export * from './filters';
+export * from './theatre-timeline';
 export * from '../stick-figure-choreography';
 export * from '../papercraft-studio';

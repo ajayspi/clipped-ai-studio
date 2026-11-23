@@ -119,6 +119,9 @@ export interface AIVideoGenerationRequest {
   mock?: boolean;
   characterSheetUrl?: string;
   seed?: number;
+  firstFrameUrl?: string;
+  lastFrameUrl?: string;
+  transitionType?: 'direct_cut' | 'morph' | 'motion_match' | 'zoom_punch';
 }
 
 export interface AIVideoGenerationResponse {
@@ -204,12 +207,24 @@ export interface BulkPlanResponse {
 // Workflow 4: Micro-Drama Orchestrator Types
 // ==========================================
 
+export type CharacterTurnaroundAngle = 'front' | 'three_quarter' | 'side' | 'back';
+
+export interface CharacterTurnaround {
+  front: string;
+  threeQuarter: string;
+  side: string;
+  back: string;
+  characterSheetPrompt: string;
+  turnaroundUrls?: Partial<Record<CharacterTurnaroundAngle, string>>;
+}
+
 export interface DramaCharacter {
   name: string;
   description: string;
   visualAnchor: string;
   voice?: string;
   avatarUrl?: string;
+  turnaround?: CharacterTurnaround;
 }
 
 export interface DramaEpisode {
@@ -247,6 +262,38 @@ export interface DramaSeriesResponse {
 // Workflow 5: Shorts Extractor Types
 // ==========================================
 
+export type FacecamCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center' | 'custom';
+
+export interface StreamerSplitConfig {
+  layout: 'facecam_top_gameplay_bottom' | 'stacked_50_50' | 'single_crop';
+  facecamCorner?: FacecamCorner;
+  facecamCrop?: { x: number; y: number; width: number; height: number };
+  gameplayCrop?: { x: number; y: number; width: number; height: number };
+  safeZoneSubtitleY?: number;
+  ffmpegFiltergraph?: string;
+}
+
+export interface AudioSpikePoint {
+  timestamp: number;
+  rmsDb: number;
+  energy: number;
+  isSpike: boolean;
+  type?: 'laughter' | 'scream' | 'hype' | 'reaction';
+}
+
+export interface StreamPartialDownloadSpec {
+  platform: 'youtube' | 'twitch' | 'kick' | 'direct';
+  isLivestreamVod: boolean;
+  startTime: number;
+  endTime: number;
+  duration: number;
+  downloadSectionsArg: string;
+  ytdlpCommand: string;
+  ffmpegSeekCommand: string;
+  estimatedAudioOnlyDownloadMb: number;
+  estimatedVideoChunkDownloadMb: number;
+}
+
 export interface ExtractedClip {
   clipId: string;
   title: string;
@@ -257,6 +304,17 @@ export interface ExtractedClip {
   reason: string;
   transcriptSegment?: string;
   videoUrl?: string;
+  audioPeakTime?: number;
+  audioPeakRms?: number;
+  thumbnailTimestamp?: number;
+  splitConfig?: StreamerSplitConfig;
+  partialDownloadSpec?: StreamPartialDownloadSpec;
+  postingKit?: {
+    title: string;
+    description: string;
+    hashtags: string[];
+    caption: string;
+  };
 }
 
 export interface ShortsExtractionRequest {
@@ -267,6 +325,10 @@ export interface ShortsExtractionRequest {
   strategy?: string;
   captionStyle?: string;
   aspectRatio?: AspectRatio | string;
+  enableAudioSpikeDetection?: boolean;
+  streamerLayout?: 'facecam_top_gameplay_bottom' | 'stacked_50_50' | 'single_crop';
+  facecamCorner?: FacecamCorner;
+  customFacecamCrop?: { x: number; y: number; width: number; height: number };
 }
 
 export interface ShortsExtractionResponse {
@@ -633,3 +695,67 @@ export interface MissionJobState {
   videoUrl?: string;
   error?: string;
 }
+
+// ==========================================
+// Advanced Workflow: Continuity, QA & Keyframe Matrix
+// ==========================================
+
+export interface DualFrameKeyframeSpec {
+  shotIndex: number;
+  firstFrameUrl?: string;
+  lastFrameUrl?: string;
+  transitionType: 'direct_cut' | 'morph' | 'motion_match' | 'zoom_punch';
+  interpolationPrompt: string;
+}
+
+export interface VisionContinuityResult {
+  pass: boolean;
+  score: number; // 0 - 100
+  issues: string[];
+  metrics: {
+    clothingConsistency: number; // 0 - 100
+    lightingMatch: number; // 0 - 100
+    anatomicalPlausibility: number; // 0 - 100
+    paletteCohesion: number; // 0 - 100
+  };
+}
+
+export interface VisionQualityResult {
+  pass: boolean;
+  score: number; // 0 - 100
+  issues: string[];
+  metrics: {
+    facialIntegrity: number; // 0 - 100
+    anatomicalIntegrity: number; // 0 - 100
+    artifactFreedom: number; // 0 - 100
+    promptAdherence: number; // 0 - 100
+  };
+}
+
+export interface ContinuousNarrationTrack {
+  audioUrl: string;
+  duration: number;
+  words: Array<{ word: string; start: number; end: number }>;
+  sceneSlices: Array<{ sceneId: string; start: number; end: number; duration: number }>;
+}
+
+export interface SplitSubtitleConfig {
+  topTitle: string;
+  bottomCaption: string;
+  topScale?: number;
+  bottomScale?: number;
+  topY?: number;
+  bottomY?: number;
+  topColor?: string;
+  bottomColor?: string;
+}
+
+export interface SeedVR2UpscaleConfig {
+  scale: 2 | 4;
+  model: 'seedvr2-3b' | 'seedvr2-7b';
+  format: '10bit-x265' | 'yuv420p';
+  colorTransfer: 'lab' | 'rgb';
+  temporalChunkSize?: number;
+  fps?: number;
+}
+

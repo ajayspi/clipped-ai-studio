@@ -6,6 +6,24 @@
 // System Prompts
 // ==========================================
 
+import {
+  LEMO_OPUSCAR_DIRECTOR_SYSTEM_PROMPT,
+  buildLemoOpuscarTreatmentPrompt,
+  buildLemoShotVisualPrompt,
+  getVisualStoryStyle,
+  calculateSubtitleDuration,
+  calculateReadingHoldTime
+} from './visual-storytelling';
+
+export {
+  LEMO_OPUSCAR_DIRECTOR_SYSTEM_PROMPT,
+  buildLemoOpuscarTreatmentPrompt,
+  buildLemoShotVisualPrompt,
+  getVisualStoryStyle,
+  calculateSubtitleDuration,
+  calculateReadingHoldTime
+};
+
 export const SYSTEM_PROMPTS = {
   SCENE_BREAKDOWN: `You are an expert cinematic director and AI video prompt engineer.
 Your task is to break down a narration script into concise, visually rich scene prompts suitable for generative AI video models (such as Kling AI, Luma Dream Machine, and Flux).
@@ -64,6 +82,8 @@ Rules for staging tags:
    - [STAGE: 0.1 - 0.9] (horizontal stage blocking: 0.2=left, 0.5=center, 0.8=right)
 2. Keep spoken narration conversational, punchy, and timed for 20-45 second vertical shorts.
 3. Use dramatic pauses [PAUSE: 0.6s] and [CAMERA: snap_push] on sudden realizations or comedic twists.`,
+
+  LEMO_OPUSCAR_DIRECTOR: LEMO_OPUSCAR_DIRECTOR_SYSTEM_PROMPT,
 };
 
 // ==========================================

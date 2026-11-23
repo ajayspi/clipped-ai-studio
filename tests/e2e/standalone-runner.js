@@ -4792,7 +4792,12 @@ tests.push({ tier: 'Tier 8: Background Workers & Pipeline', id: 'T8-WRK-06', tit
     'Tier 54: VoiceStudio 48kHz Broadcast Engine & Commercial Safety Gate',
     'Tier 55: Hardware-Accelerated 60fps NLE Canvas Scrubber & VoiceStudio API Hub',
     'Tier 56: 3DTexel PBR Shaders & Utkarsh Pathrabe Vehicle Engine',
-    'Tier 57: Autonomous Agentic Video Director, Dynamic Style Video Resolvers & Optimized Library'
+    'Tier 57: Autonomous Agentic Video Director, Dynamic Style Video Resolvers & Optimized Library',
+    'Tier 58: Lemo-Opuscar Visual Storytelling & Script Prompting Engine',
+    'Tier 59: Real-World Video Benchmark & Live Tweaking Suite',
+    'Tier 60: Parallax Architecture, Micro-Apps & Agent Approval Protocol',
+    'Tier 61: Livestream VOD Clipping, Audio Spikes & Streamer Split Compositor',
+    'Tier 62: Advanced Continuity, 4-View Character Matrix, Vision QA & Dual-Frame Keyframes'
 ];
 
 tests.push({
@@ -6661,6 +6666,416 @@ tests.push({
     expect(fs.existsSync(path.join(process.cwd(), 'public', 'renders', 'celestial-stickman.mp4'))).toBe(true);
   }
 });
+
+
+// ==========================================
+// TIER 58: LEMO-OPUSCAR VISUAL STORYTELLING & SCRIPT PROMPTING
+// ==========================================
+
+tests.push({
+  tier: 'Tier 58: Lemo-Opuscar Visual Storytelling & Script Prompting Engine',
+  id: 'T58-LEMO-01',
+  title: 'Mathematical pacing and readability formulas conform to Lemo-Opuscar standard',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'visual-storytelling.ts'), 'utf8');
+    expect(src).toContain('export function calculateSubtitleDuration');
+    expect(src).toContain('Math.max(1.8');
+    expect(src).toContain('export function calculateReadingHoldTime');
+    expect(src).toContain('letters / 15 + 1.5');
+    expect(src).toContain('chars / 4.5 + 1.5');
+    expect(src).toContain('TITLE_CARD_MIN_DURATION = 4.0');
+  }
+});
+
+tests.push({
+  tier: 'Tier 58: Lemo-Opuscar Visual Storytelling & Script Prompting Engine',
+  id: 'T58-LEMO-02',
+  title: 'Lemo-Opuscar system prompt & treatment generator prompt are exported and contain key directives',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'visual-storytelling.ts'), 'utf8');
+    expect(src).toContain('LEMO_OPUSCAR_DIRECTOR_SYSTEM_PROMPT');
+    expect(src).toContain('Sound -> Rhythm -> Camera -> Directing');
+    expect(src).toContain('0-3s Hook');
+    expect(src).toContain('endingEcho');
+    expect(src).toContain('nativeMove');
+    expect(src).toContain('buildLemoOpuscarTreatmentPrompt');
+    expect(src).toContain('buildLemoShotVisualPrompt');
+
+    const promptSrc = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'prompts.ts'), 'utf8');
+    expect(promptSrc).toContain('LEMO_OPUSCAR_DIRECTOR');
+    expect(promptSrc).toContain('buildLemoOpuscarTreatmentPrompt');
+  }
+});
+
+tests.push({
+  tier: 'Tier 58: Lemo-Opuscar Visual Storytelling & Script Prompting Engine',
+  id: 'T58-LEMO-03',
+  title: 'Style presets catalog and getVisualStoryStyle resolve palettes, camera moves, and sound design',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'visual-storytelling.ts'), 'utf8');
+    expect(src).toContain('LEMO_STYLE_PRESETS');
+    expect(src).toContain('blueprint');
+    expect(src).toContain('swiss-motion');
+    expect(src).toContain('teardown');
+    expect(src).toContain('ascii-crt');
+    expect(src).toContain('cel-anime-80s');
+    expect(src).toContain('watercolor');
+    expect(src).toContain('ukiyoe');
+    expect(src).toContain('paper-popup');
+    expect(src).toContain('export function getVisualStoryStyle');
+  }
+});
+
+tests.push({
+  tier: 'Tier 58: Lemo-Opuscar Visual Storytelling & Script Prompting Engine',
+  id: 'T58-LEMO-04',
+  title: 'Treatment grammar validator enforces 0-3s hook, min 4 camera moves, and silence pauses',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'visual-storytelling.ts'), 'utf8');
+    expect(src).toContain('export function validateTreatmentGrammar');
+    expect(src).toContain('Violation of 0-3s Hook Rule');
+    expect(src).toContain('Camera Grammar Deficit');
+    expect(src).toContain('Sound Staging Invariant');
+    expect(src).toContain('Missing Ending Echo');
+    expect(src).toContain('Missing Native Move');
+  }
+});
+
+tests.push({
+  tier: 'Tier 58: Lemo-Opuscar Visual Storytelling & Script Prompting Engine',
+  id: 'T58-LEMO-05',
+  title: 'Visual storytelling rule and skill exist on disk in .agents directory',
+  fn: async () => {
+    const rulePath = path.join(process.cwd(), '.agents', 'rules', 'visual-storytelling-doctrine.md');
+    const skillPath = path.join(process.cwd(), '.agents', 'skills', 'visual-storytelling', 'SKILL.md');
+    expect(fs.existsSync(rulePath)).toBe(true);
+    expect(fs.existsSync(skillPath)).toBe(true);
+    
+    const ruleContent = fs.readFileSync(rulePath, 'utf8');
+    expect(ruleContent).toContain('Hierarchy of Quality');
+    expect(ruleContent).toContain('Story Arc & Hook Architecture');
+    expect(ruleContent).toContain('-14 LUFS');
+  }
+});
+
+
+// ==========================================
+// TIER 59: REAL-WORLD VIDEO BENCHMARK & LIVE TWEAKING SUITE
+// ==========================================
+
+tests.push({
+  tier: 'Tier 59: Real-World Video Benchmark & Live Tweaking Suite',
+  id: 'T59-BENCH-01',
+  title: 'Canonical benchmarks registered with -14 LUFS, 9:16 aspect, and camera targets',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'video-benchmark-suite.ts'), 'utf8');
+    expect(src).toContain('CANONICAL_BENCHMARKS');
+    expect(src).toContain('vox-explainer');
+    expect(src).toContain('fireship-tech');
+    expect(src).toContain('viral-narrative');
+    expect(src).toContain('targetLufs: -14');
+  }
+});
+
+tests.push({
+  tier: 'Tier 59: Real-World Video Benchmark & Live Tweaking Suite',
+  id: 'T59-BENCH-02',
+  title: 'Benchmark compiler generates Theatre.js keyframes, procedural Foley, and OTIO export',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'video-benchmark-suite.ts'), 'utf8');
+    expect(src).toContain('export function compileBenchmarkVideo');
+    expect(src).toContain('new TheatreHeadlessTimeline');
+    expect(src).toContain('exportToOtio');
+    expect(src).toContain('theatreKeyframesCount');
+    expect(src).toContain('foleyEvents');
+  }
+});
+
+tests.push({
+  tier: 'Tier 59: Real-World Video Benchmark & Live Tweaking Suite',
+  id: 'T59-BENCH-03',
+  title: 'Quality scorecard audits hook latency <= 3s, distinct camera moves >= 4, and readability',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'video-benchmark-suite.ts'), 'utf8');
+    expect(src).toContain('function computeFidelityScorecard');
+    expect(src).toContain('hookPassed');
+    expect(src).toContain('cameraPassed');
+    expect(src).toContain('readabilityPassed');
+    expect(src).toContain('audioPassed');
+    expect(src).toContain('overallScore');
+  }
+});
+
+tests.push({
+  tier: 'Tier 59: Real-World Video Benchmark & Live Tweaking Suite',
+  id: 'T59-BENCH-04',
+  title: 'Dynamic origami split layout calculations compute multi-pane bounds for 9:16 shorts',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'video-benchmark-suite.ts'), 'utf8');
+    expect(src).toContain('computeSplitBounds');
+    expect(src).toContain('SHORT_LAYOUTS.topBottom()');
+    expect(src).toContain('SHORT_LAYOUTS.quadGrid()');
+    expect(src).toContain('SHORT_LAYOUTS.triHero()');
+  }
+});
+
+tests.push({
+  tier: 'Tier 59: Real-World Video Benchmark & Live Tweaking Suite',
+  id: 'T59-BENCH-05',
+  title: 'Benchmark workflow route /api/workflows/benchmark is implemented with GET and POST',
+  fn: async () => {
+    const routePath = path.join(process.cwd(), 'app', 'api', 'workflows', 'benchmark', 'route.ts');
+    expect(fs.existsSync(routePath)).toBe(true);
+
+    const routeSrc = fs.readFileSync(routePath, 'utf8');
+    expect(routeSrc).toContain('export async function GET');
+    expect(routeSrc).toContain('export async function POST');
+    expect(routeSrc).toContain('compileBenchmarkVideo');
+    expect(routeSrc).toContain('CANONICAL_BENCHMARKS');
+  }
+});
+
+
+// ==========================================
+// TIER 60: PARALLAX ARCHITECTURE, MICRO-APPS & AGENT APPROVAL PROTOCOL
+// ==========================================
+
+tests.push({
+  tier: 'Tier 60: Parallax Architecture, Micro-Apps & Agent Approval Protocol',
+  id: 'T60-PARALLAX-01',
+  title: 'All 7 canonical video micro-apps registered with prompt templates and input slots',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'video-micro-apps.ts'), 'utf8');
+    expect(src).toContain('VIDEO_MICRO_APPS');
+    expect(src).toContain('camera-move');
+    expect(src).toContain('frame-to-frame');
+    expect(src).toContain('product-spin');
+    expect(src).toContain('talking-photo');
+    expect(src).toContain('reveal');
+    expect(src).toContain('time-lapse');
+    expect(src).toContain('animate-photo');
+  }
+});
+
+tests.push({
+  tier: 'Tier 60: Parallax Architecture, Micro-Apps & Agent Approval Protocol',
+  id: 'T60-PARALLAX-02',
+  title: 'Micro-app prompt compiler correctly resolves choices, conditionals, and validates inputs',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'video-micro-apps.ts'), 'utf8');
+    expect(src).toContain('export function compileMicroAppPrompt');
+    expect(src).toContain('Unknown micro-app ID');
+    expect(src).toContain('requires input');
+  }
+});
+
+tests.push({
+  tier: 'Tier 60: Parallax Architecture, Micro-Apps & Agent Approval Protocol',
+  id: 'T60-PARALLAX-03',
+  title: 'Agent Safety Governor enforces daily budget ceiling and issues approval cards',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'agent-approval-cards.ts'), 'utf8');
+    expect(src).toContain('class AgentSafetyGovernor');
+    expect(src).toContain('requestApproval');
+    expect(src).toContain('Budget Exceeded');
+    expect(src).toContain('dailyBudgetUsd');
+  }
+});
+
+tests.push({
+  tier: 'Tier 60: Parallax Architecture, Micro-Apps & Agent Approval Protocol',
+  id: 'T60-PARALLAX-04',
+  title: 'Approval card resolution updates budget spent and supports "always allow" policy',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'agent-approval-cards.ts'), 'utf8');
+    expect(src).toContain('resolveApproval');
+    expect(src).toContain('dailySpentUsd +=');
+    expect(src).toContain('setSessionPolicy');
+    expect(src).toContain('hasAlwaysAllow');
+  }
+});
+
+tests.push({
+  tier: 'Tier 60: Parallax Architecture, Micro-Apps & Agent Approval Protocol',
+  id: 'T60-PARALLAX-05',
+  title: 'Micro-app workflow route provides catalog and enforces claim safety orchestration_state: planning',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'app', 'api', 'workflows', 'micro-app', 'route.ts'), 'utf8');
+    expect(src).toContain('VIDEO_MICRO_APPS');
+    expect(src).toContain('compileMicroAppPrompt');
+    expect(src).toContain("orchestration_state: 'planning'");
+    expect(src).toContain("previewOnly");
+  }
+});
+
+// ==========================================
+// TIER 61: LIVESTREAM VOD CLIPPING, AUDIO SPIKES & STREAMER SPLIT COMPOSITOR
+// ==========================================
+
+tests.push({
+  tier: 'Tier 61: Livestream VOD Clipping, Audio Spikes & Streamer Split Compositor',
+  id: 'T61-CLIP-01',
+  title: 'Audio spike detection and energy profile synthesis detect shouting and emotional peaks',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'shorts-extractor.ts'), 'utf8');
+    expect(src).toContain('export function detectAudioSpikes');
+    expect(src).toContain('export function synthesizeAudioEnvelope');
+    expect(src).toContain('rmsDb');
+    expect(src).toContain('isSpike');
+  }
+});
+
+tests.push({
+  tier: 'Tier 61: Livestream VOD Clipping, Audio Spikes & Streamer Split Compositor',
+  id: 'T61-CLIP-02',
+  title: 'Peak-RMS frame thumbnailing calculates argmax(audio_energy) for high-CTR reaction shots',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'shorts-extractor.ts'), 'utf8');
+    expect(src).toContain('export function calculatePeakRmsThumbnail');
+    expect(src).toContain('thumbnailTimestamp');
+    expect(src).toContain('ffmpegThumbnailCommand');
+    expect(src).toContain('-vframes 1');
+  }
+});
+
+tests.push({
+  tier: 'Tier 61: Livestream VOD Clipping, Audio Spikes & Streamer Split Compositor',
+  id: 'T61-CLIP-03',
+  title: 'Streamer split-screen compositor generates 9:16 vertical stack with facecam top & gameplay bottom',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'shorts-extractor.ts'), 'utf8');
+    expect(src).toContain('export function buildStreamerSplitConfig');
+    expect(src).toContain('crop=1080:960[facecam]');
+    expect(src).toContain('crop=1080:960[gameplay]');
+    expect(src).toContain('[facecam][gameplay]vstack=inputs=2[v]');
+    expect(src).toContain('safeZoneSubtitleY: 1350');
+  }
+});
+
+tests.push({
+  tier: 'Tier 61: Livestream VOD Clipping, Audio Spikes & Streamer Split Compositor',
+  id: 'T61-CLIP-04',
+  title: 'Direct livestream VOD support generates sub-minute byte-range download specs for YouTube and Twitch',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'shorts-extractor.ts'), 'utf8');
+    expect(src).toContain('export function buildPartialStreamDownloadSpec');
+    expect(src).toContain('detectStreamPlatform');
+    expect(src).toContain('--download-sections');
+    expect(src).toContain('estimatedAudioOnlyDownloadMb');
+  }
+});
+
+tests.push({
+  tier: 'Tier 61: Livestream VOD Clipping, Audio Spikes & Streamer Split Compositor',
+  id: 'T61-CLIP-05',
+  title: 'Extract-shorts workflow route accepts streamerLayout and forwards audio spike options',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'app', 'api', 'workflows', 'extract-shorts', 'route.ts'), 'utf8');
+    expect(src).toContain('enableAudioSpikeDetection');
+    expect(src).toContain('streamerLayout');
+    expect(src).toContain('facecamCorner');
+  }
+});
+
+// ==========================================
+// TIER 62: ADVANCED CONTINUITY, 4-VIEW CHARACTER MATRIX, VISION QA & DUAL-FRAME KEYFRAMES
+// ==========================================
+
+tests.push({
+  tier: 'Tier 62: Advanced Continuity, 4-View Character Matrix, Vision QA & Dual-Frame Keyframes',
+  id: 'T62-CONT-01',
+  title: '4-view character turnaround generates front, threeQuarter, side, back, and model sheet prompts',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'continuity-director.ts'), 'utf8');
+    expect(src).toContain('export function buildCharacterTurnaroundPrompts');
+    expect(src).toContain('frontPrompt');
+    expect(src).toContain('threeQuarterPrompt');
+    expect(src).toContain('sidePrompt');
+    expect(src).toContain('backPrompt');
+    expect(src).toContain('sheetPrompt');
+
+    const typesSrc = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'types.ts'), 'utf8');
+    expect(typesSrc).toContain('export interface CharacterTurnaround');
+    expect(typesSrc).toContain('CharacterTurnaroundAngle');
+  }
+});
+
+tests.push({
+  tier: 'Tier 62: Advanced Continuity, 4-View Character Matrix, Vision QA & Dual-Frame Keyframes',
+  id: 'T62-CONT-02',
+  title: 'Dual-frame keyframe pairing connects Shot N tail to Shot N+1 head with interpolation transition prompts',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'continuity-director.ts'), 'utf8');
+    expect(src).toContain('export function pairShotKeyframes');
+    expect(src).toContain('firstFrameUrl');
+    expect(src).toContain('lastFrameUrl');
+    expect(src).toContain('interpolationPrompt');
+
+    const typesSrc = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'types.ts'), 'utf8');
+    expect(typesSrc).toContain('export interface DualFrameKeyframeSpec');
+    expect(typesSrc).toContain('firstFrameUrl?: string');
+    expect(typesSrc).toContain('lastFrameUrl?: string');
+  }
+});
+
+tests.push({
+  tier: 'Tier 62: Advanced Continuity, 4-View Character Matrix, Vision QA & Dual-Frame Keyframes',
+  id: 'T62-CONT-03',
+  title: 'Vision continuity and single-frame visual quality checks evaluate clothing, lighting, anatomy, and artifacts',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'continuity-director.ts'), 'utf8');
+    expect(src).toContain('export async function checkShotContinuity');
+    expect(src).toContain('export async function checkVisualQuality');
+    expect(src).toContain('clothingConsistency');
+    expect(src).toContain('lightingMatch');
+    expect(src).toContain('facialIntegrity');
+    expect(src).toContain('anatomicalIntegrity');
+
+    const typesSrc = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'types.ts'), 'utf8');
+    expect(typesSrc).toContain('export interface VisionContinuityResult');
+    expect(typesSrc).toContain('export interface VisionQualityResult');
+  }
+});
+
+tests.push({
+  tier: 'Tier 62: Advanced Continuity, 4-View Character Matrix, Vision QA & Dual-Frame Keyframes',
+  id: 'T62-CONT-04',
+  title: 'Master continuous narration conductor slices scenes against continuous word tokens without inter-shot dead air',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'continuity-director.ts'), 'utf8');
+    expect(src).toContain('export function buildContinuousNarrationConductor');
+    expect(src).toContain('export function buildSplitSubtitleSpecs');
+    expect(src).toContain('sceneSlices');
+    expect(src).toContain('topTitle');
+    expect(src).toContain('bottomCaption');
+
+    const typesSrc = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'types.ts'), 'utf8');
+    expect(typesSrc).toContain('export interface ContinuousNarrationTrack');
+    expect(typesSrc).toContain('export interface SplitSubtitleConfig');
+  }
+});
+
+tests.push({
+  tier: 'Tier 62: Advanced Continuity, 4-View Character Matrix, Vision QA & Dual-Frame Keyframes',
+  id: 'T62-CONT-05',
+  title: 'Continuity-QA workflow route exposes turnaround, keyframes, vision QA, and SeedVR2 CLI command generation',
+  fn: async () => {
+    const src = fs.readFileSync(path.join(process.cwd(), 'app', 'api', 'workflows', 'continuity-qa', 'route.ts'), 'utf8');
+    expect(src).toContain("case 'turnaround':");
+    expect(src).toContain("case 'pair_keyframes':");
+    expect(src).toContain("case 'check_continuity':");
+    expect(src).toContain("case 'check_quality':");
+    expect(src).toContain("case 'continuous_narration':");
+    expect(src).toContain("case 'seedvr2_upscale':");
+
+    const directorSrc = fs.readFileSync(path.join(process.cwd(), 'lib', 'engine', 'continuity-director.ts'), 'utf8');
+    expect(directorSrc).toContain('export function buildSeedVR2Command');
+    expect(directorSrc).toContain('inference_cli.py');
+    expect(directorSrc).toContain('--10bit');
+    expect(directorSrc).toContain('--color_transfer');
+  }
+});
+
 
   for (const tier of tiers) {
     const tierTests = tests.filter(t => t.tier === tier);
