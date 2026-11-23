@@ -16,8 +16,28 @@
  *
  * Every field is best-effort. A logging failure must not become the failure.
  */
-import * as fs from 'fs';
-import * as path from 'path';
+type FsModule = typeof import('fs');
+type PathModule = typeof import('path');
+
+function getFs(): FsModule | null {
+  if (typeof window !== 'undefined') return null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return eval('require')('fs') as FsModule;
+  } catch {
+    return null;
+  }
+}
+
+function getPath(): PathModule | null {
+  if (typeof window !== 'undefined') return null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return eval('require')('path') as PathModule;
+  } catch {
+    return null;
+  }
+}
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -51,36 +71,52 @@ const LEVEL_RANK: Record<LogLevel, number> = {
  * explicit env override for unusual deployments.
  */
 function resolveRootDir(): string {
+  const p = getPath();
+  const f = getFs();
+  if (!p || !f) {
+    return typeof process !== 'undefined' && process.cwd ? process.cwd() : '';
+  }
+
   const override = process.env.CLIPPED_LOG_ROOT;
-  if (override) return path.resolve(override);
+  if (override) return p.resolve(override);
 
   const candidates = [
-    process.cwd(),
+    typeof process !== 'undefined' && process.cwd ? process.cwd() : '',
     // `__dirname` may be a stub; only keep it if it is a real path.
     typeof __dirname === 'string' && !/^[A-Za-z]:?\\?(ROOT|DO_NOT_USE)/.test(__dirname)
-      ? path.resolve(__dirname, '..')
+      ? p.resolve(__dirname, '..')
       : null,
-    typeof __dirname === 'string' ? path.resolve(__dirname, '..', '..') : null,
+    typeof __dirname === 'string' ? p.resolve(__dirname, '..', '..') : null,
   ].filter((c): c is string => Boolean(c));
 
   for (const candidate of candidates) {
     try {
-      if (fs.existsSync(path.join(candidate, 'package.json'))) return candidate;
+      if (f.existsSync(p.join(candidate, 'package.json'))) return candidate;
     } catch {
       // Unreadable candidate; try the next one.
     }
   }
 
   // Nothing looked like a repo root. cwd is the least surprising place for logs.
-  return process.cwd();
+  return typeof process !== 'undefined' && process.cwd ? process.cwd() : '';
 }
 
 const ROOT_DIR = resolveRootDir();
-const LOG_DIR = process.env.CLIPPED_LOG_DIR
-  ? path.resolve(process.env.CLIPPED_LOG_DIR)
-  : path.join(ROOT_DIR, 'logs');
-const LOG_FILE = path.join(LOG_DIR, 'app.log');
-const ERROR_FILE = path.join(LOG_DIR, 'error.log');
+const LOG_DIR = (() => {
+  const p = getPath();
+  if (!p) return '';
+  return process.env.CLIPPED_LOG_DIR
+    ? p.resolve(process.env.CLIPPED_LOG_DIR)
+    : p.join(ROOT_DIR, 'logs');
+})();
+const LOG_FILE = (() => {
+  const p = getPath();
+  return p && LOG_DIR ? p.join(LOG_DIR, 'app.log') : '';
+})();
+const ERROR_FILE = (() => {
+  const p = getPath();
+  return p && LOG_DIR ? p.join(LOG_DIR, 'error.log') : '';
+})();
 
 /** Cap on a single log file so a long-running local server can't fill the disk. */
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -94,8 +130,10 @@ let dirReady = false;
 
 function ensureDir(): boolean {
   if (dirReady) return true;
+  const f = getFs();
+  if (!f || !LOG_DIR) return false;
   try {
-    if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
+    if (!f.existsSync(LOG_DIR)) f.mkdirSync(LOG_DIR, { recursive: true });
     dirReady = true;
     return true;
   } catch {
@@ -108,11 +146,13 @@ function ensureDir(): boolean {
  * cannot rotate is still a log, and losing rotation must never break the caller.
  */
 function rotateIfNeeded(file: string): void {
+  const f = getFs();
+  if (!f || !file) return;
   try {
-    const stat = fs.statSync(file);
+    const stat = f.statSync(file);
     if (stat.size < MAX_BYTES) return;
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-    fs.renameSync(file, `${file}.${stamp}.bak`);
+    f.renameSync(file, `${file}.${stamp}.bak`);
   } catch {
     // No file yet, or not rotatable — fall through and append.
   }
@@ -176,12 +216,13 @@ function write(level: LogLevel, scope: string, message: string, fields?: LogFiel
   const line = `${JSON.stringify(record)}\n`;
 
   try {
-    if (ensureDir()) {
+    const f = getFs();
+    if (f && ensureDir()) {
       rotateIfNeeded(LOG_FILE);
-      fs.appendFileSync(LOG_FILE, line, 'utf8');
+      f.appendFileSync(LOG_FILE, line, 'utf8');
       if (level === 'error') {
         rotateIfNeeded(ERROR_FILE);
-        fs.appendFileSync(ERROR_FILE, line, 'utf8');
+        f.appendFileSync(ERROR_FILE, line, 'utf8');
       }
     }
   } catch {
@@ -232,8 +273,12 @@ export function readLogTail(
   lines = 200,
 ): { file: string; lines: string[]; error: string | null; exists: boolean } {
   const file = which === 'error' ? ERROR_FILE : LOG_FILE;
+  const f = getFs();
+  if (!f || !file) {
+    return { file, lines: [], error: 'filesystem not available in browser runtime', exists: false };
+  }
   try {
-    const raw = fs.readFileSync(file, 'utf8');
+    const raw = f.readFileSync(file, 'utf8');
     const all = raw.split('\n').filter(Boolean);
     return { file, lines: all.slice(-Math.max(1, lines)), error: null, exists: true };
   } catch (err) {
